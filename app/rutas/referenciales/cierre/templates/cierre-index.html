@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+  Cerrar Caja
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Realizar Cierre de Caja</h3>
+
+    <div class="card">
+      <div class="card-header bg-primary">
+        <button type="button" class="btn btn-outline-light" id="btnBuscar">Buscar Cierre</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>ID de Cierre</th>
+              <th>Turno</th>
+              <th>Fecha de Cierre</th>
+              <th>Estado</th>
+              <th>Cajero</th>
+              <th>Fiscal</th>
+              <th>Monto de Apertura</th> <!-- Aquí se debe cambiar el título -->
+              <th>Hora de Apertura</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+const CSRFToken = "{{ csrf_token() }}" || null;
+
+const initDatatable = () => {
+  $('#tbl').DataTable({
+    language: {
+      url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}"
+    },
+    ajax: {
+      url: '/api/v1/cierres',
+      dataSrc: 'data'
+    },
+    columns: [
+      { data: 'id_cierre' },
+      { data: 'nro_turno' },
+      { data: 'registro' },
+      { data: 'estado' },
+      { data: 'cajero' },
+      { data: 'fiscal' },
+      { data: 'monto_inicial' }, <!-- Aquí se debe cambiar 'monto_apertura' por 'monto_inicial' -->
+      { data: 'hora_apertura' },
+      {
+        data: function(row) {
+          return `<button type="button" name="btn_cerrar" class="btn btn-success" data-id="${row.id_cierre}">Cerrar</button>`;
+        }
+      }
+    ]
+  });
+};
+
+const cerrar = () => {
+  $('#tbl').on('click', 'button[name="btn_cerrar"]', function() {
+    const idCierre = $(this).data('id');
+    Swal.fire({
+      title: "¿Deseas cerrar este cierre?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: "Sí",
+      cancelButtonText: "No"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch(`/api/v1/cierres/cerrar/${idCierre}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRFToken
+          },
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            const tabla = $('#tbl').DataTable();
+            tabla.ajax.reload();
+            Swal.fire("Cerrado", "El cierre ha sido cerrado correctamente.", "success");
+          } else {
+            Swal.fire("Error", data.message || "No se pudo cerrar.");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          Swal.fire("Error", "Ocurrió un error al cerrar el cierre.", "error");
+        });
+      }
+    });
+  });
+};
+
+$(document).ready(function() {
+  initDatatable();
+  cerrar();
+});
+</script>
+{% endblock %}

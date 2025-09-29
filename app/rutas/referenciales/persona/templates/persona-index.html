@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Personas
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Personas</h3>
+
+    <div class="card">
+      <div class="card-header">
+        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombres</th>
+              <th>Apellidos</th>
+              <th>Nro. Cédula</th>
+              <th>Fecha Nacimiento</th>
+              <th>Sexo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal formulario -->
+    <div class="modal fade" id="modalFormulario" tabindex="-1" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" id="txtIdPersona">
+            <div class="form-group">
+              <label for="txtNombre">Nombres:</label>
+              <input type="text" class="form-control" placeholder="Ingrese los nombres" id="txtNombre" required>
+            </div>
+            <div class="form-group">
+              <label for="txtApellido">Apellidos:</label>
+              <input type="text" class="form-control" placeholder="Ingrese los apellidos" id="txtApellido" required>
+            </div>
+            <div class="form-group">
+              <label for="txtCi">Nro. Cédula:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el número de cédula" id="txtCi" required>
+            </div>
+            <div class="form-group">
+              <label for="txtFechanac">Fecha de Nacimiento:</label>
+              <input type="date" class="form-control" id="txtFechanac" placeholder="YYYY-MM-DD" required>
+            </div>
+            <div class="form-group">
+              <label>Sexo:</label><br>
+              <label><input type="radio" id="sexoMasculino" name="sexo" value="M"> Masculino</label>
+              <label><input type="radio" id="sexoFemenino" name="sexo" value="F"> Femenino</label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+  const initDatatable = () => {
+    $('#tbl').DataTable({
+      language: {
+        url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+      },
+      ajax: {
+        url: '/api/v1/personas',
+        dataSrc: function(json) {
+          if(json.success) {
+            return json.data;
+          } else {
+            alert("Error al cargar datos: " + (json.error || "Error desconocido"));
+            return [];
+          }
+        }
+      },
+      columns: [
+        { data: 'id_persona' },
+        { data: 'nombres' },
+        { data: 'apellidos' },
+        { data: 'ci' },
+        { data: 'fechanac' },
+        { data: 'sexo' },
+        { data: function(row) {
+            return `
+              <button type="button" class="btn btn-primary btn-sm" name="btn_editar" data-id="${row.id_persona}">Editar</button>
+              <button type="button" class="btn btn-danger btn-sm" name="btn_eliminar" data-id="${row.id_persona}">Eliminar</button>
+            `;
+          }
+        }
+      ],
+      destroy: true,
+    });
+  };
+
+  const agregar = () => {
+    $('#btnAgregar').on('click', function(){
+      $('#modalTitle').text("Agregar una Persona");
+      $('#txtIdPersona').val("");
+      $('#txtNombre').val("");
+      $('#txtApellido').val("");
+      $('#txtCi').val("");
+      $('#txtFechanac').val("");
+      $('input[name="sexo"]').prop('checked', false);
+      $('#modalFormulario').modal('show');
+    });
+  };
+
+  const guardar = () => {
+    $('#btnGuardar').on('click', function() {
+      const idPersona = $('#txtIdPersona').val();
+      const nuevoNombre = $('#txtNombre').val().trim();
+      const nuevoApellido = $('#txtApellido').val().trim();
+      const nuevoCi = $('#txtCi').val().trim();
+      const nuevaFechanac = $('#txtFechanac').val();
+      const nuevoSexo = $('input[name="sexo"]:checked').val();
+
+      if (!nuevoNombre || !nuevoApellido || !nuevoCi || !nuevaFechanac) {
+        Swal.fire("Error", "Complete todos los campos obligatorios", "error");
+        return;
+      }
+
+      if (!nuevoSexo) {
+        Swal.fire("Error", "Debe seleccionar el sexo", "error");
+        return;
+      }
+
+      const personaData = {
+        nombres: nuevoNombre,
+        apellidos: nuevoApellido,
+        ci: nuevoCi,
+        fechanac: nuevaFechanac,
+        sexo: nuevoSexo
+      };
+
+      const tabla = $('#tbl').DataTable();
+
+      if (!idPersona) {
+        // Crear persona
+        fetch(`/api/v1/personas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(personaData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            Swal.fire("Éxito", "Persona creada con éxito", "success");
+            $('#modalFormulario').modal('hide');
+            tabla.ajax.reload(null, false);
+          } else {
+            Swal.fire("Error", data.error || "Error al crear persona", "error");
+          }
+        })
+        .catch(() => Swal.fire("Error", "Error de comunicación", "error"));
+      } else {
+        // Actualizar persona
+        personaData.id_persona = idPersona;
+        fetch(`/api/v1/personas/${idPersona}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(personaData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            Swal.fire("Éxito", "Persona actualizada con éxito", "success");
+            $('#modalFormulario').modal('hide');
+            tabla.ajax.reload(null, false);
+          } else {
+            Swal.fire("Error", data.error || "Error al actualizar persona", "error");
+          }
+        })
+        .catch(() => Swal.fire("Error", "Error de comunicación", "error"));
+      }
+    });
+  };
+
+  const editar = () => {
+    $('#tbl tbody').on('click', 'button[name="btn_editar"]', function() {
+      const id = $(this).data('id');
+      fetch(`/api/v1/personas/${id}`)
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            const persona = data.data;
+            $('#modalTitle').text("Editar Persona");
+            $('#txtIdPersona').val(persona.id_persona);
+            $('#txtNombre').val(persona.nombres);
+            $('#txtApellido').val(persona.apellidos);
+            $('#txtCi').val(persona.ci);
+            $('#txtFechanac').val(persona.fechanac);
+            if (persona.sexo === 'M') {
+              $('#sexoMasculino').prop('checked', true);
+            } else if (persona.sexo === 'F') {
+              $('#sexoFemenino').prop('checked', true);
+            } else {
+              $('input[name="sexo"]').prop('checked', false);
+            }
+            $('#modalFormulario').modal('show');
+          } else {
+            Swal.fire("Error", "No se encontró la persona", "error");
+          }
+        })
+        .catch(() => Swal.fire("Error", "Error de comunicación", "error"));
+    });
+  };
+
+  const eliminar = () => {
+    $('#tbl tbody').on('click', 'button[name="btn_eliminar"]', function() {
+      const id = $(this).data('id');
+      Swal.fire({
+        title: '¿Está seguro?',
+        text: `Eliminar persona ${id}`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/api/v1/personas/${id}`, {
+            method: 'DELETE',
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            if (data.success) {
+              Swal.fire("Éxito", data.mensaje, "success");
+              $('#tbl').DataTable().ajax.reload(null, false);
+            } else {
+              Swal.fire("Error", data.error || "No se pudo eliminar", "error");
+            }
+          })
+          .catch(() => Swal.fire("Error", "Error de comunicación", "error"));
+        }
+      });
+    });
+  };
+
+  $(document).ready(function() {
+    initDatatable();
+    agregar();
+    guardar();
+    editar();
+    eliminar();
+  });
+</script>
+{% endblock %}

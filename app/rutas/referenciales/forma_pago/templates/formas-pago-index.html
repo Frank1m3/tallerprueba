@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Formas de Pago
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Formas de Pago</h3>
+
+    <!-- tarjeta -->
+    <div class="card">
+      <div class="card-header">
+        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Descripción</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- /tarjeta -->
+
+    <!-- El formulario -->
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+
+          <!-- Modal body -->
+          <div class="modal-body">
+            <div class="form-group">
+              <input type="hidden" id="txtIdFormaPago">
+              <label for="txtDescripcion">Descripción:</label>
+              <input type="text" class="form-control" placeholder="Ingrese una forma de pago" id="txtDescripcion" autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Modal footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4 d-none" id="rowAlerta">
+        <div class="col col-md-12">
+            <div class="alert alert-success">
+                <strong>Registro Exitoso!</strong>
+                <div class="row" id="mostrarAlerta"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+  const initDatatable = () => {
+    $('#tbl').DataTable({
+      language: {
+        url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+      },
+      ajax: '/api/v1/formas_pago',
+      columns: [
+        { data: 'id' },
+        { data: 'descripcion' },
+        {
+          data: null,
+          render: function(row) {
+            return `
+              <button type="button" name="btn_editar" class="btn btn-primary btn-sm mr-1" data-id="${row.id}">Editar</button>
+              <button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${row.id}">Eliminar</button>
+            `;
+          },
+          orderable: false,
+          searchable: false
+        }
+      ],
+      destroy: true
+    });
+  }
+
+  const agregar = () => {
+    $('#btnAgregar').on('click', function(){
+      $('#modalTitle').text("Agregar una Forma de Pago");
+      $('#txtIdFormaPago').val("");
+      $('#txtDescripcion').val("");
+      $('#modalFormulario').modal('show');
+    });
+  }
+
+  const guardar = () => {
+    $('#btnGuardar').on('click', function() {
+      const idFormaPago = $('#txtIdFormaPago').val();
+      const nuevaDescripcion = $('#txtDescripcion').val().trim();
+      const tabla = $('#tbl').DataTable();
+
+      if (!nuevaDescripcion) {
+        Swal.fire("Error", "La descripción no puede estar vacía.", "warning");
+        return;
+      }
+
+      if(idFormaPago) {
+        // update
+        fetch(`/api/v1/formas_pago/${idFormaPago}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ descripcion: nuevaDescripcion })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if(data && data.success) {
+            tabla.ajax.reload(null, false);
+            Swal.fire("Actualizado", "La forma de pago ha sido actualizada correctamente.", "success");
+          } else {
+            Swal.fire("Error", data.error || "Error al actualizar.", "error");
+          }
+        }).catch(err => {
+          console.error(err);
+          Swal.fire("Error", "Ocurrió un error al actualizar la forma de pago.", "error");
+        });
+      } else {
+        // insert
+        fetch(`/api/v1/formas_pago`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ descripcion: nuevaDescripcion })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if(data && data.success) {
+            tabla.ajax.reload(null, false);
+            Swal.fire("Agregado", "La forma de pago ha sido agregada correctamente.", "success");
+          } else {
+            Swal.fire("Error", data.error || "Error al guardar.", "error");
+          }
+        }).catch(err => {
+          console.error(err);
+          Swal.fire("Error", "Ocurrió un error al guardar la forma de pago.", "error");
+        });
+      }
+      $('#modalFormulario').modal("hide");
+    });
+  }
+
+  const editar = () => {
+    $('#tbl').on('click', 'button[name="btn_editar"]', function(){
+      const idFormaPago = $(this).data('id');
+      fetch(`/api/v1/formas_pago/${idFormaPago}`)
+      .then(resp => resp.json())
+      .then(data => {
+        if(data && data.success) {
+          $('#modalTitle').text("Editar una Forma de Pago");
+          $('#txtIdFormaPago').val(idFormaPago);
+          $('#txtDescripcion').val(data.data.descripcion);
+          $('#modalFormulario').modal('show');
+        } else {
+          Swal.fire("Error", data.error || "No se pudo obtener la forma de pago.", "error");
+        }
+      }).catch(err => {
+        console.error(err);
+        Swal.fire("Error", "Ocurrió un error al cargar la forma de pago.", "error");
+      });
+    });
+  }
+
+  const eliminar = () => {
+    $('#tbl').on('click', 'button[name="btn_eliminar"]', function(){
+      const idFormaPago = $(this).data('id');
+      Swal.fire({
+        title: "¿Deseas eliminar este registro?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: "Sí",
+        cancelButtonText: "No"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/api/v1/formas_pago/${idFormaPago}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            if(data && data.success) {
+              $('#tbl').DataTable().ajax.reload(null, false);
+              Swal.fire("Eliminado", "La forma de pago fue eliminada.", "success");
+            } else {
+              Swal.fire("Error", data.error || "No se pudo eliminar.", "error");
+            }
+          }).catch(err => {
+            console.error(err);
+            Swal.fire("Error", "Ocurrió un error al eliminar la forma de pago.", "error");
+          });
+        }
+      });
+    });
+  }
+
+  const addEvents = () => {
+    agregar();
+    guardar();
+    editar();
+    eliminar();
+  }
+
+  $(document).ready(() => {
+    initDatatable();
+    addEvents();
+  });
+</script>
+{% endblock %}

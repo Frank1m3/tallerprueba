@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Sucursales{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Sucursales</h3>
+
+    <div class="card">
+      <div class="card-header">
+        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Descripción</th>
+              <th>Activo</th>
+              <th>ID Fiscal</th>
+              <th>Dirección</th>
+              <th>Departamento</th>
+              <th>Ciudad</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modalFormulario">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="txtIdSucursal">
+            <div class="form-group">
+              <label>Descripción:</label>
+              <input type="text" class="form-control" id="txtDescripcion" placeholder="Ingrese la descripción">
+            </div>
+            <div class="form-group">
+              <label>Activo:</label>
+              <select class="form-control" id="txtActivo">
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ID Fiscal:</label>
+              <input type="text" class="form-control" id="txtIdFiscal">
+            </div>
+            <div class="form-group">
+              <label>Dirección:</label>
+              <input type="text" class="form-control" id="txtDireccion">
+            </div>
+            <div class="form-group">
+              <label>Departamento:</label>
+              <input type="text" class="form-control" id="txtDepartamento">
+            </div>
+            <div class="form-group">
+              <label>Ciudad:</label>
+              <input type="text" class="form-control" id="txtCiudad">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+const apiBaseUrl = '/api/v1/sucursales';
+
+const initDatatable = () => {
+  $('#tbl').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax: apiBaseUrl,
+    columns: [
+      { data: 'id_sucursal' },
+      { data: 'descripcion' },
+      { data: row => row.activo ? 'Sí' : 'No' },
+      { data: 'id_fiscal' },
+      { data: 'direccion' },
+      { data: 'departamento' },
+      { data: 'ciudad' },
+      { data: row => `
+        <button type="button" class="btn btn-primary btn-editar" data-id="${row.id_sucursal}">Editar</button>
+        <button type="button" class="btn btn-danger btn-eliminar" data-id="${row.id_sucursal}">Eliminar</button>
+      `}
+    ]
+  });
+}
+
+const abrirModal = (title, data={}) => {
+  $('#modalTitle').text(title);
+  $('#txtIdSucursal').val(data.id_sucursal || '');
+  $('#txtDescripcion').val(data.descripcion || '');
+  $('#txtActivo').val(data.activo ? 'true' : 'false');
+  $('#txtIdFiscal').val(data.id_fiscal || '');
+  $('#txtDireccion').val(data.direccion || '');
+  $('#txtDepartamento').val(data.departamento || '');
+  $('#txtCiudad').val(data.ciudad || '');
+  $('#modalFormulario').modal('show');
+}
+
+const agregar = () => {
+  $('#btnAgregar').click(() => abrirModal("Agregar Sucursal"));
+}
+
+const guardar = () => {
+  $('#btnGuardar').click(() => {
+    const id = $('#txtIdSucursal').val();
+    const data = {
+      descripcion: $('#txtDescripcion').val().trim(),
+      activo: $('#txtActivo').val() === 'true',
+      id_fiscal: $('#txtIdFiscal').val().trim(),
+      direccion: $('#txtDireccion').val().trim(),
+      departamento: $('#txtDepartamento').val().trim(),
+      ciudad: $('#txtCiudad').val().trim()
+    };
+
+    if (!data.descripcion) {
+      Swal.fire("Error", "La descripción es obligatoria.", "warning");
+      return;
+    }
+
+    const url = id ? `${apiBaseUrl}/${id}` : apiBaseUrl;
+    const method = id ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(resp => {
+      if(resp && resp.success) {
+        $('#tbl').DataTable().ajax.reload(null,false);
+        Swal.fire(id ? "Actualizado" : "Guardado", `Sucursal ${id ? 'actualizada' : 'agregada'} correctamente.`, "success");
+        $('#modalFormulario').modal('hide');
+      } else {
+        Swal.fire("Error", resp.error || "Error desconocido", "error");
+      }
+    })
+    .catch(() => Swal.fire("Error", "Ocurrió un error al guardar la sucursal.", "error"));
+  });
+}
+
+const editar = () => {
+  $('#tbl').on('click', '.btn-editar', function(){
+    const id = $(this).data('id');
+    fetch(`${apiBaseUrl}/${id}`)
+      .then(res => res.json())
+      .then(resp => {
+        if(resp && resp.data){
+          abrirModal("Editar Sucursal", resp.data);
+        } else {
+          Swal.fire("Error", "No se pudo cargar la sucursal.", "error");
+        }
+      });
+  });
+}
+
+const eliminar = () => {
+  $('#tbl').on('click', '.btn-eliminar', function(){
+    const id = $(this).data('id');
+    const fila = this;
+    Swal.fire({
+      title: "¿Deseas eliminar este registro?",
+      showCancelButton: true,
+      confirmButtonText: "Sí",
+      cancelButtonText: "No"
+    }).then(result => {
+      if(result.isConfirmed){
+        fetch(`${apiBaseUrl}/${id}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(resp => {
+            if(resp && resp.success){
+              $('#tbl').DataTable().row($(fila).closest('tr')).remove().draw();
+              Swal.fire("Eliminado", "Sucursal eliminada correctamente.", "success");
+            } else {
+              Swal.fire("Error", resp.error || "Error desconocido", "error");
+            }
+          });
+      }
+    });
+  });
+}
+
+$(document).ready(() => {
+  initDatatable();
+  agregar();
+  guardar();
+  editar();
+  eliminar();
+});
+</script>
+{% endblock %}

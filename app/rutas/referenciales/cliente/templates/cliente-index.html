@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Clientes
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Clientes</h3>
+
+    <!-- tarjeta -->
+    <div class="card">
+      <div class="card-header">
+        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Nro. Cédula</th>
+              <th>Dirección</th>
+              <th>Teléfono</th>
+              <th>Fecha Registro</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- /tarjeta -->
+
+    <!-- El formulario -->
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+
+          <!-- Modal body -->
+          <div class="modal-body">
+            <input type="hidden" id="txtIdCliente">
+            <div class="form-group">
+              <label for="txtNombre">Nombre:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el nombre" id="txtNombre">
+            </div>
+            <div class="form-group">
+              <label for="txtApellido">Apellido:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el apellido" id="txtApellido">
+            </div>
+            <div class="form-group">
+              <label for="txtCedula">Nro. Cédula:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el número de cédula" id="txtCedula">
+            </div>
+            <div class="form-group">
+              <label for="txtDireccion">Dirección:</label>
+              <input type="text" class="form-control" placeholder="Ingrese la dirección" id="txtDireccion">
+            </div>
+            <div class="form-group">
+              <label for="txtTelefono">Teléfono:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el teléfono" id="txtTelefono">
+            </div>
+          </div>
+
+          <!-- Modal footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4 d-none" id="rowAlerta">
+        <div class="col col-md-12">
+            <div class="alert alert-success">
+                <strong>Registro Exitoso!</strong>
+                <div class="row" id="mostrarAlerta"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+  let idCliente = null;  // Variable global para controlar si estamos editando o creando
+
+  const initDatatable = () => {
+    $('#tbl').DataTable({
+      language: {
+        url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+      },
+      ajax: '/api/v1/clientes',
+      columns: [
+        { data: 'nombre' },
+        { data: 'apellido' },
+        { data: 'cedula' },
+        { data: 'direccion' },
+        { data: 'telefono' },
+        { 
+          data: 'fecha_registro',
+          render: function(data) {
+            if (!data) return '';
+            // Asume formato ISO 8601, muestra YYYY-MM-DD
+            return data.substring(0, 10);
+          }
+        },
+        { 
+          data: null,
+          orderable: false,
+          render: function(row) {
+            return `
+              <button type="button" name="btn_editar" class="btn btn-primary" data-id="${row.id_cliente}">Editar</button>
+              <button type="button" name="btn_eliminar" class="btn btn-danger" data-id="${row.id_cliente}">Eliminar</button>
+            `;
+          }
+        }
+      ]
+    });
+  };
+
+  const agregar = () => {
+    $('#btnAgregar').on('click', function() {
+      idCliente = null;
+      $('#modalTitle').text("Agregar un Cliente");
+      $('#txtIdCliente').val('');
+      $('#txtNombre').val('');
+      $('#txtApellido').val('');
+      $('#txtCedula').val('');
+      $('#txtDireccion').val('');
+      $('#txtTelefono').val('');
+      $('#modalFormulario').modal('show');
+    });
+  };
+
+  const guardar = () => {
+    $('#btnGuardar').on('click', function() {
+      const nuevoNombre = $('#txtNombre').val().trim();
+      const nuevoApellido = $('#txtApellido').val().trim();
+      const nuevaCedula = $('#txtCedula').val().trim();
+      const nuevaDireccion = $('#txtDireccion').val().trim();
+      const nuevoTelefono = $('#txtTelefono').val().trim();
+
+      if (!nuevoNombre || !nuevoApellido || !nuevaCedula || !nuevaDireccion || !nuevoTelefono) {
+        Swal.fire("Error", "Todos los campos son obligatorios.", "warning");
+        return;
+      }
+
+      const clienteData = {
+        nombre: nuevoNombre,
+        apellido: nuevoApellido,
+        cedula: nuevaCedula,
+        direccion: nuevaDireccion,
+        telefono: nuevoTelefono
+      };
+
+      const tabla = $('#tbl').DataTable();
+
+      if (idCliente) {
+        // Actualizar
+        fetch(`/api/v1/clientes/${idCliente}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(clienteData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if(data && data.success) {
+            tabla.ajax.reload();
+            Swal.fire("Actualizado", "El cliente ha sido actualizado correctamente.", "success");
+          } else {
+            Swal.fire("Error", data.error || "Error al actualizar.", "error");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          Swal.fire("Error", "Ocurrió un error al actualizar el cliente.", "error");
+        });
+      } else {
+        // Crear
+        fetch(`/api/v1/clientes`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(clienteData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if(data && data.success) {
+            tabla.ajax.reload();
+            Swal.fire("Guardado", "El cliente ha sido agregado correctamente.", "success");
+          } else {
+            Swal.fire("Error", data.error || "Error al guardar.", "error");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          Swal.fire("Error", "Ocurrió un error al guardar el cliente.", "error");
+        });
+      }
+
+      $('#modalFormulario').modal('hide');
+    });
+  };
+
+  const editar = () => {
+    $('#tbl').on('click', 'button[name="btn_editar"]', function() {
+      idCliente = $(this).data('id');
+      $('#modalTitle').text("Editar un Cliente");
+      fetch(`/api/v1/clientes/${idCliente}`, {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'}
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data && data.success && data.data) {
+          const cliente = data.data;
+          $('#txtIdCliente').val(cliente.id_cliente);
+          $('#txtNombre').val(cliente.nombre);
+          $('#txtApellido').val(cliente.apellido);
+          $('#txtCedula').val(cliente.cedula);
+          $('#txtDireccion').val(cliente.direccion);
+          $('#txtTelefono').val(cliente.telefono);
+          $('#modalFormulario').modal('show');
+        } else {
+          Swal.fire("Error", data.error || "No se encontró el cliente.", "error");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        Swal.fire("Error", "Error al cargar datos del cliente.", "error");
+      });
+    });
+  };
+
+  const eliminar = () => {
+    $('#tbl').on('click', 'button[name="btn_eliminar"]', function() {
+      const id = $(this).data('id');
+      Swal.fire({
+        title: "¿Deseas eliminar este registro?",
+        showCancelButton: true,
+        confirmButtonText: "Sí",
+        cancelButtonText: "No"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/api/v1/clientes/${id}`, {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'}
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            if(data && data.success) {
+              $('#tbl').DataTable().ajax.reload();
+              Swal.fire("Eliminado", "El cliente ha sido eliminado correctamente.", "success");
+            } else {
+              Swal.fire("Error", data.error || "No se pudo eliminar.", "error");
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            Swal.fire("Error", "Ocurrió un error al eliminar el cliente.", "error");
+          });
+        }
+      });
+    });
+  };
+
+  $(document).ready(() => {
+    initDatatable();
+    agregar();
+    guardar();
+    editar();
+    eliminar();
+  });
+</script>
+{% endblock %}

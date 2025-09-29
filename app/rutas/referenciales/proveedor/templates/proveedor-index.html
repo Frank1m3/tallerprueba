@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block titulo %} Proveedores {% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Proveedores</h3>
+
+    <div class="card">
+      <div class="card-header">
+        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>RUC</th>
+              <th>Razón Social</th>
+              <th>Teléfono</th>
+              <th>Dirección</th>
+              <th>Email</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" id="txtIdProveedor">
+            <div class="form-group">
+              <label for="txtNombre">Nombre:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el nombre" id="txtNombre" required>
+            </div>
+            <div class="form-group">
+              <label for="txtRUC">RUC:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el RUC" id="txtRUC" required>
+            </div>
+            <div class="form-group">
+              <label for="txtRazonSocial">Razón Social:</label>
+              <input type="text" class="form-control" placeholder="Ingrese la razón social" id="txtRazonSocial" required>
+            </div>
+            <div class="form-group">
+              <label for="txtTelefono">Teléfono:</label>
+              <input type="text" class="form-control" placeholder="Ingrese el teléfono" id="txtTelefono">
+            </div>
+            <div class="form-group">
+              <label for="txtDireccion">Dirección:</label>
+              <input type="text" class="form-control" placeholder="Ingrese la dirección" id="txtDireccion">
+            </div>
+            <div class="form-group">
+              <label for="txtEmail">Email:</label>
+              <input type="email" class="form-control" placeholder="Ingrese el email" id="txtEmail">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+const apiBase = '/api/v1/proveedores';
+
+const initDatatable = () => {
+    $('#tbl').DataTable({
+        language: {
+            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}"
+        },
+        ajax: {
+            url: apiBase,
+            dataSrc: 'data',
+            error: function() {
+                Swal.fire('Error', 'No se pudo cargar la lista de proveedores.', 'error');
+            }
+        },
+        columns: [
+            { data: 'id_proveedor' },
+            { data: 'nombre' },
+            { data: 'ruc' },
+            { data: 'razon_social' },
+            { data: 'telefono' },
+            { data: 'direccion' },
+            { data: 'email' },
+            {
+                data: null,
+                orderable: false,
+                render: row => `
+                    <button type="button" name="btn_editar" class="btn btn-primary btn-sm" data-id="${row.id_proveedor}">Editar</button>
+                    <button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${row.id_proveedor}">Eliminar</button>
+                `
+            }
+        ],
+        destroy: true
+    });
+};
+
+const abrirModal = (titulo) => {
+    $('#modalTitle').text(titulo);
+    $('#modalFormulario').modal('show');
+};
+
+const limpiarFormulario = () => {
+    $('#txtIdProveedor').val('');
+    $('#txtNombre,#txtRUC,#txtRazonSocial,#txtTelefono,#txtDireccion,#txtEmail').val('');
+};
+
+const agregar = () => {
+    $('#btnAgregar').on('click', () => {
+        limpiarFormulario();
+        abrirModal('Agregar un Proveedor');
+    });
+};
+
+const validarFormulario = () => {
+    if (!$('#txtNombre').val().trim()) { Swal.fire('Error','El campo Nombre es obligatorio','error'); return false; }
+    if (!$('#txtRUC').val().trim()) { Swal.fire('Error','El campo RUC es obligatorio','error'); return false; }
+    if (!$('#txtRazonSocial').val().trim()) { Swal.fire('Error','El campo Razón Social es obligatorio','error'); return false; }
+    return true;
+};
+
+const guardar = () => {
+    $('#btnGuardar').on('click', () => {
+        if (!validarFormulario()) return;
+
+        const idProveedor = $('#txtIdProveedor').val();
+        const proveedorData = {
+            nombre: $('#txtNombre').val().trim(),
+            ruc: $('#txtRUC').val().trim(),
+            razon_social: $('#txtRazonSocial').val().trim(),
+            telefono: $('#txtTelefono').val().trim(),
+            direccion: $('#txtDireccion').val().trim(),
+            email: $('#txtEmail').val().trim()
+        };
+        const tabla = $('#tbl').DataTable();
+        const url = idProveedor ? `${apiBase}/${idProveedor}` : apiBase;
+        const method = idProveedor ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method,
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(proveedorData)
+        })
+        .then(resp => resp.ok ? resp.json() : Promise.reject(resp))
+        .then(data => {
+            if(data.success){
+                tabla.ajax.reload(null,false);
+                Swal.fire('Éxito', idProveedor ? 'Proveedor actualizado.' : 'Proveedor agregado.','success');
+                $('#modalFormulario').modal('hide');
+            } else {
+                Swal.fire('Error', data.error || 'Error en la operación.','error');
+            }
+        })
+        .catch(() => Swal.fire('Error','Error de comunicación con el servidor.','error'));
+    });
+};
+
+const editar = () => {
+    $('#tbl tbody').on('click', 'button[name="btn_editar"]', function() {
+        const idProveedor = $(this).data('id');
+        fetch(`${apiBase}/${idProveedor}`)
+        .then(resp => resp.ok ? resp.json() : Promise.reject(resp))
+        .then(data => {
+            if(data.success){
+                limpiarFormulario();
+                abrirModal('Editar Proveedor');
+                const p = data.data;
+                $('#txtIdProveedor').val(p.id_proveedor);
+                $('#txtNombre').val(p.nombre);
+                $('#txtRUC').val(p.ruc);
+                $('#txtRazonSocial').val(p.razon_social);
+                $('#txtTelefono').val(p.telefono);
+                $('#txtDireccion').val(p.direccion);
+                $('#txtEmail').val(p.email);
+            } else {
+                Swal.fire('Error', data.error || 'No se encontró el proveedor.','error');
+            }
+        })
+        .catch(() => Swal.fire('Error','Error de comunicación con el servidor.','error'));
+    });
+};
+
+const eliminar = () => {
+    $('#tbl tbody').on('click','button[name="btn_eliminar"]', function() {
+        const idProveedor = $(this).data('id');
+        Swal.fire({
+            title:'¿Está seguro de eliminar este proveedor?',
+            icon:'warning',
+            showCancelButton:true,
+            confirmButtonText:'Sí, eliminar',
+            cancelButtonText:'Cancelar'
+        }).then(result => {
+            if(result.isConfirmed){
+                fetch(`${apiBase}/${idProveedor}`, {method:'DELETE'})
+                .then(resp => resp.ok ? resp.json() : Promise.reject(resp))
+                .then(data => {
+                    if(data.success){
+                        $('#tbl').DataTable().ajax.reload(null,false);
+                        Swal.fire('Eliminado','Proveedor eliminado correctamente.','success');
+                    } else {
+                        Swal.fire('Error', data.error || 'Error al eliminar proveedor.','error');
+                    }
+                })
+                .catch(() => Swal.fire('Error','Error de comunicación con el servidor.','error'));
+            }
+        });
+    });
+};
+
+$(document).ready(() => {
+    initDatatable();
+    agregar();
+    guardar();
+    editar();
+    eliminar();
+});
+</script>
+{% endblock %}

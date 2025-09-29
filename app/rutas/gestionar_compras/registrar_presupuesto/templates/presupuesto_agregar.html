@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Registrar Presupuesto{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4" style="max-width:1400px;">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">REGISTRAR PRESUPUESTO</h4>
+    </div>
+    <div class="card-body">
+      <form id="form_presupuesto" enctype="multipart/form-data">
+        <!-- Cabecera del presupuesto -->
+        <div class="row mb-3">
+          <div class="col-md-2">
+            <label>Nro Presupuesto</label>
+            <input type="text" id="txt_nro_presupuesto" class="form-control" readonly>
+          </div>
+          <div class="col-md-2">
+            <label>Fecha Emisión</label>
+            <input type="date" id="txt_fecha" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label>Fecha Vencimiento</label>
+            <input type="date" id="txt_fecha_aprob" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label>Proveedor</label>
+            <select id="cbo_proveedor" class="form-control">
+              <option value="">Seleccione</option>
+              {% for p in proveedores %}
+              <option value="{{ p.id_proveedor }}">{{ p.nombre_proveedor }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label>Sucursal</label>
+            <select id="cbo_sucursal" class="form-control">
+              <option value="">Seleccione</option>
+              {% for s in sucursales %}
+              <option value="{{ s.id_sucursal }}">{{ s.descripcion }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label>Funcionario</label>
+            <select id="cbo_funcionario" class="form-control">
+              <option value="">Seleccione</option>
+              {% for f in funcionarios %}
+              <option value="{{ f.fun_id }}">{{ f.nombre_completo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+     <div class="col-md-3">
+  <label>Estado</label>
+  <input type="text" id="cbo_estado" name="estado" class="form-control" value="PENDIENTE" readonly>
+</div>
+
+          <div class="col-md-5">
+            <label for="file_presupuesto" class="form-label">Adjuntar Presupuesto de Proveedor</label>
+            <input type="file" name="archivo" id="file_presupuesto" class="form-control" accept=".pdf,.xlsx,.xls,.txt">
+            <small class="form-text text-muted">Formatos permitidos: PDF, XLSX, XLS, TXT</small>
+          </div>
+        </div>
+
+        <!-- Mercadería -->
+        <div class="row mb-3 align-items-end">
+          <div class="col-md-3">
+            <label>Mercadería</label>
+            <div class="input-group">
+              <input type="text" id="txt_mercaderia" class="form-control" placeholder="Ingrese código o barra">
+              <button type="button" class="btn btn-secondary" id="btn_buscar_mercaderia">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label>Descripción</label>
+            <input type="text" id="txt_descripcion" class="form-control" placeholder="Descripción" readonly>
+          </div>
+          <div class="col-md-2">
+            <label>Stock Actual</label>
+            <input type="number" id="txt_stock" class="form-control" readonly>
+          </div>
+          <div class="col-md-2">
+            <label>Cantidad</label>
+            <input type="number" id="txt_cantidad" class="form-control" min="1">
+          </div>
+          <div class="col-md-2">
+            <label>Precio</label>
+            <input type="number" id="txt_precio" class="form-control" step="0.01" min="0">
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12 d-flex justify-content-end">
+            <button type="button" id="btn_agregar" class="btn btn-success" style="min-width:150px;">AGREGAR</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Modal para búsqueda de mercadería -->
+      <div class="modal fade" id="modalMercaderia" tabindex="-1" role="dialog" aria-labelledby="modalMercaderiaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">Buscar Mercadería</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+              <input type="text" id="txt_buscar_mercaderia" class="form-control mb-3" placeholder="Ingrese descripción o barra">
+              <table id="tbl_busqueda_mercaderia" class="table table-bordered table-hover text-center">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Barra</th>
+                    <th>Stock</th>
+                    <th>Precio</th>
+                    <th>Seleccionar</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="table-responsive">
+            <table id="tbl_detalle" class="table table-bordered table-hover text-center table-striped align-middle">
+              <thead class="thead-light">
+                <tr>
+                  <th>Código</th>
+                  <th>Mercadería</th>
+                  <th>Stock</th>
+                  <th>Cantidad</th>
+                  <th>Precio</th>
+                  <th>Subtotal</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="5" class="text-end">TOTAL</th>
+                  <th id="total">0.00</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="row mt-3">
+        <div class="col d-flex justify-content-end">
+          <button type="button" id="btn_guardar" class="btn btn-primary mr-2">GUARDAR</button>
+          <button type="button" id="btn_modificar" class="btn btn-warning mr-2">MODIFICAR</button>
+          <button type="button" id="btn_anular" class="btn btn-danger mr-2">ANULAR</button>
+          <button type="button" id="btn_salir" class="btn btn-secondary">SALIR</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+
+<script>
+$(function(){
+  let detalle = [];
+  let archivoSubido = null; 
+  let tabla = $('#tbl_detalle').DataTable({
+    paging: true,
+    info: true,
+    searching: true,
+    ordering: true,
+    columnDefs: [
+      { targets: -1, orderable: false },
+      { targets: [2,3,4,5], className: 'text-right' }
+    ],
+    columns: [
+      { data: 'codigo' },
+      { data: 'descripcion' },
+      { data: 'stock' },
+      { data: 'cantidad' },
+      { data: 'precio' },
+      { data: 'subtotal' },
+      { data: 'acciones' }
+    ]
+  });
+
+  function actualizarTotal(){
+    let total = detalle.reduce((acc, item) => acc + item.subtotal, 0);
+    $('#total').text(total.toFixed(2));
+  }
+
+  // Cargar nro de presupuesto
+  $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/siguiente-codigo', res => {
+    if(res.success) $('#txt_nro_presupuesto').val(res.siguiente_codigo);
+  });
+
+  // Obtener token CSRF
+  const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+  // Subir archivo automáticamente
+  $('#file_presupuesto').on('change', function(){
+    let file = this.files[0];
+    if(!file) return;
+
+    let formData = new FormData();
+    formData.append('archivo', file);
+    formData.append('csrf_token', csrfToken);
+
+    $.ajax({
+      url: '/gestionar-compras/registrar-presupuesto/subir-archivo',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(res){
+        if(res.success){
+          archivoSubido = res.nombre;
+          Swal.fire('Archivo subido', file.name, 'success');
+        } else {
+          Swal.fire('Error', res.error || 'No se pudo subir archivo', 'error');
+          archivoSubido = null;
+          $('#file_presupuesto').val('');
+        }
+      },
+      error: function(xhr){
+        let msg = xhr.responseJSON ? xhr.responseJSON.error : 'Error al subir archivo';
+        Swal.fire('Error', msg, 'error');
+        archivoSubido = null;
+        $('#file_presupuesto').val('');
+      }
+    });
+  });
+
+  // Autocompletar por código
+  $('#txt_mercaderia').on('change', function(){
+    let valor = $(this).val();
+    if(!valor) return;
+    $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/buscar-mercaderia', {
+      filtro: valor, 
+      id_sucursal: $('#cbo_sucursal').val()
+    }, function(res){
+      if(res.success){
+        let prod = res.data.find(p => p.item_code == valor || (p.cod_barras && p.cod_barras.some(c => c.includes(valor))));
+        if(prod){
+          $('#txt_stock').val(prod.stock);
+          $('#txt_precio').val(prod.precio_unitario);
+          $('#txt_descripcion').val(prod.descripcion);
+          $('#txt_mercaderia').data('id_item', prod.id_item).data('desc', prod.descripcion);
+        } else {
+          Swal.fire('Error','Producto no encontrado','error');
+          $('#txt_stock,#txt_precio,#txt_descripcion').val('');
+        }
+      }
+    });
+  });
+
+  // Búsqueda modal
+  $('#btn_buscar_mercaderia').click(function(){
+    $('#modalMercaderia').modal('show');
+    $('#txt_buscar_mercaderia').val('').trigger('input');
+  });
+
+  $('#txt_buscar_mercaderia').on('input', function(){
+    let filtro = $(this).val().toLowerCase();
+    $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/buscar-mercaderia', {
+      id_sucursal: $('#cbo_sucursal').val(),
+      filtro: filtro
+    }, function(res){
+      if(res.success){
+        let tbody = $('#tbl_busqueda_mercaderia tbody');
+        tbody.empty();
+        res.data.forEach(p => {
+          if(p.descripcion.toLowerCase().includes(filtro) || (p.cod_barras && p.cod_barras.some(c => c.includes(filtro)))){
+            let barras = p.cod_barras ? p.cod_barras.join(', ') : '';
+            tbody.append(`
+              <tr>
+                <td>${p.item_code}</td>
+                <td>${p.descripcion}</td>
+                <td>${barras}</td>
+                <td>${p.stock}</td>
+                <td>${p.precio_unitario}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary btn-seleccionar"
+                    data-id="${p.id_item}" data-codigo="${p.item_code}"
+                    data-desc="${p.descripcion}" data-stock="${p.stock}"
+                    data-precio="${p.precio_unitario}">Seleccionar</button>
+                </td>
+              </tr>
+            `);
+          }
+        });
+      }
+    });
+  });
+
+  $('#tbl_busqueda_mercaderia').on('click', '.btn-seleccionar', function(){
+    let btn = $(this);
+    $('#txt_mercaderia').val(btn.data('codigo'))
+      .data('id_item', btn.data('id'))
+      .data('desc', btn.data('desc'));
+    $('#txt_descripcion').val(btn.data('desc'));
+    $('#txt_stock').val(btn.data('stock'));
+    $('#txt_precio').val(btn.data('precio'));
+    $('#modalMercaderia').modal('hide');
+  });
+
+  // Agregar detalle
+  $('#btn_agregar').click(function(){
+    let id = $('#txt_mercaderia').data('id_item');
+    let cod = $('#txt_mercaderia').val();
+    let desc = $('#txt_descripcion').val();
+    let stock = parseFloat($('#txt_stock').val()) || 0;
+    let cant = parseFloat($('#txt_cantidad').val());
+    let precio = parseFloat($('#txt_precio').val());
+
+    if(!id || !cant || !precio) return Swal.fire('Error','Complete todos los campos','error');
+
+    let subtotal = cant * precio;
+    detalle.push({id_item: id, codigo: cod, descripcion: desc, stock, cantidad: cant, precio, subtotal});
+
+    tabla.row.add({
+      codigo: cod,
+      descripcion: desc,
+      stock: stock,
+      cantidad: cant,
+      precio: precio.toFixed(2),
+      subtotal: subtotal.toFixed(2),
+      acciones: `<button class="btn btn-sm btn-primary btn-edit">Editar</button>
+                 <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
+    }).draw();
+
+    actualizarTotal();
+
+    $('#txt_mercaderia,#txt_descripcion,#txt_stock,#txt_cantidad,#txt_precio')
+      .val('').removeData('id_item').removeData('desc');
+  });
+
+  // Editar / eliminar detalle
+  $('#tbl_detalle').on('click','.btn-del', function(){
+    let idx = tabla.row($(this).parents('tr')).index();
+    detalle.splice(idx, 1);
+    tabla.row($(this).parents('tr')).remove().draw();
+    actualizarTotal();
+  });
+
+  $('#tbl_detalle').on('click','.btn-edit', function(){
+    let idx = tabla.row($(this).parents('tr')).index();
+    let fila = detalle[idx];
+
+    Swal.fire({
+      title: 'Modificar cantidad',
+      input: 'number',
+      inputValue: fila.cantidad,
+      showCancelButton: true,
+      confirmButtonText: 'Actualizar',
+      preConfirm: (v) => { if(v <= 0) return false; return v; }
+    }).then(r => {
+      if(r.isConfirmed){
+        fila.cantidad = parseFloat(r.value);
+        fila.subtotal = fila.cantidad * fila.precio;
+        tabla.row(idx).data({
+          codigo: fila.codigo,
+          descripcion: fila.descripcion,
+          stock: fila.stock,
+          cantidad: fila.cantidad,
+          precio: fila.precio.toFixed(2),
+          subtotal: fila.subtotal.toFixed(2),
+          acciones: `<button class="btn btn-sm btn-primary btn-edit">Editar</button>
+                     <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
+        }).draw(false);
+        actualizarTotal();
+      }
+    });
+  });
+
+  // Guardar presupuesto con archivo
+  $('#btn_guardar').click(function(){
+    if(detalle.length === 0) return Swal.fire('Error','Debe agregar mercaderías','error');
+
+    let payload = new FormData();
+    payload.append('cod_presupuesto', $('#txt_nro_presupuesto').val());
+    payload.append('fecha_emision', $('#txt_fecha').val());
+    payload.append('fecha_vencimiento', $('#txt_fecha_aprob').val());
+    payload.append('id_proveedor', $('#cbo_proveedor').val());
+    payload.append('id_sucursal', $('#cbo_sucursal').val());
+    payload.append('fun_id', $('#cbo_funcionario').val());
+    payload.append('estado', $('#cbo_estado').val());
+    payload.append('detalles', JSON.stringify(detalle.map(d => ({
+      item_code: d.codigo,
+      descripcion: d.descripcion,
+      cantidad: d.cantidad,
+      precio_unitario: d.precio
+    }))));
+    payload.append('csrf_token', csrfToken);
+
+    let fileInput = document.getElementById('file_presupuesto');
+    if(fileInput.files[0]) payload.append('archivo', fileInput.files[0]);
+
+    $.ajax({
+      url: '/gestionar-compras/registrar-presupuesto/guardar-presupuesto',
+      method: 'POST',
+      data: payload,
+      processData: false,
+      contentType: false,
+      success: r => {
+        if(r.success){
+          Swal.fire('Éxito','Presupuesto guardado','success');
+          detalle = [];
+          tabla.clear().draw();
+          actualizarTotal();
+          archivoSubido = null;
+          $('#file_presupuesto').val('');
+        } else Swal.fire('Error', r.error || 'No se pudo guardar', 'error');
+      },
+      error: () => Swal.fire('Error','Error de servidor','error')
+    });
+  });
+
+  $('#btn_salir').click(()=> window.location.href='/');
+});
+</script>
+
+{% endblock %}

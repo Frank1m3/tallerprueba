@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Listar Presupuestos de Compra
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">PRESUPUESTOS</h4>
+ </div>
+    <!-- Tarjeta con tabla -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+    
+            <a href="{{ url_for('presumod.presupuesto_agregar') }}" target="_blank" class="btn btn-primary btn-sm">
+                Agregar Presupuesto
+            </a>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped" id="tbl_presupuestos">
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Fecha Emisión</th>
+                        <th>Estado</th>
+                        <th>Archivo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Alerta -->
+    <div class="row mt-4 d-none" id="rowAlerta">
+        <div class="col-md-12">
+            <div class="alert alert-success">
+                <strong>Registro Exitoso!</strong>
+                <div class="row" id="mostrarAlerta"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+
+    // Inicializar DataTable
+    const tabla = $('#tbl_presupuestos').DataTable({
+        language: {
+            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+        },
+        ajax: '/api/v1/gestionar-compras/registrar-presupuesto/presupuestos',
+        columns: [
+            { data: 'proveedor' },
+            { data: 'fecha_emision' },
+            { data: 'estado' },
+            { 
+                data: 'archivo',
+                render: function(data){
+                    if(data){
+                        return `<a href="{{ url_for('static', filename='') }}${data}" target="_blank" class="btn btn-sm btn-success">Ver PDF</a>`;
+                    }
+                    return '';
+                }
+            },
+            { 
+                data: null,
+                orderable: false,
+                className: 'text-center',
+                render: function(row){
+                    return `<button type="button" class="btn btn-danger btn-sm btn-eliminar" data-id="${row.id_pre_compra_cab}">Eliminar</button>`;
+                }
+            }
+        ],
+        order: [[1,'desc']] // Ordenar por Fecha Emisión descendente
+    });
+
+    // Botón eliminar
+    $('#tbl_presupuestos tbody').on('click', '.btn-eliminar', function(){
+        const id = $(this).data('id');
+        Swal.fire({
+            title: "¿Desea eliminar este presupuesto?",
+            showCancelButton: true,
+            confirmButtonText: "Sí",
+            cancelButtonText: "No"
+        }).then((result)=>{
+            if(result.isConfirmed){
+                fetch(`/api/v1/gestionar-compras/registrar-presupuesto/eliminar/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Content-Type':'application/json'}
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if(data.success){
+                        tabla.ajax.reload(null, false);
+                        Swal.fire("Eliminado","El presupuesto ha sido eliminado.","success");
+                    } else {
+                        Swal.fire("Error", data.error || "No se pudo eliminar","error");
+                    }
+                })
+                .catch(err => {
+                    Swal.fire("Error","Ocurrió un error al eliminar.","error");
+                });
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}

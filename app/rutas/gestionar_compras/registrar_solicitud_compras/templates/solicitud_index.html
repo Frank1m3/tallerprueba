@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Listar Solicitudes de Compra
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Solicitudes de Compra</h3>
+
+    <!-- Tarjeta con tabla -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Solicitudes</span>
+            <a href="{{ url_for('solmod.solicitud_agregar') }}" target="_blank" class="btn btn-primary btn-sm">
+                Agregar Solicitud
+            </a>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped" id="tbl_solicitudes">
+                <thead>
+                    <tr>
+                        <th>Nro Solicitud</th>
+                        <th>Solicitante</th>
+                        <th>Sucursal</th>
+                        <th>Depósito</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Alerta -->
+    <div class="row mt-4 d-none" id="rowAlerta">
+        <div class="col-md-12">
+            <div class="alert alert-success">
+                <strong>Registro Exitoso!</strong>
+                <div class="row" id="mostrarAlerta"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+
+    // Inicializar DataTable
+    const tabla = $('#tbl_solicitudes').DataTable({
+        language: {
+            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+        },
+        // URL CORREGIDA
+        ajax: '/api/v1/gestionar-compras/registrar-solicitud-compras/solicitudes',
+        columns: [
+            { data: 'nro_solicitud' },
+            { data: 'solicitante' },
+            { data: 'sucursal' },
+            { data: 'deposito' },
+            { data: 'fecha_solicitud' },
+            { data: 'estado' },
+            { 
+                data: null,
+                orderable: false,
+                className: 'text-center',
+                render: function(row){
+                    return `<button type="button" class="btn btn-danger btn-sm btn-anular" data-id="${row.id_solicitud}">Anular</button>`;
+                }
+            }
+        ],
+        order: [[0,'desc']] // Ordenar por Nro Solicitud descendente
+    });
+
+    // Botón anular
+    $('#tbl_solicitudes tbody').on('click', '.btn-anular', function(){
+        const id = $(this).data('id');
+        Swal.fire({
+            title: "¿Desea anular esta solicitud?",
+            showCancelButton: true,
+            confirmButtonText: "Sí",
+            cancelButtonText: "No"
+        }).then((result)=>{
+            if(result.isConfirmed){
+                fetch(`/api/v1/gestionar-compras/registrar-solicitud-compras/anular/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'}
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if(data.success){
+                        tabla.ajax.reload(null, false);
+                        Swal.fire("Anulado","La solicitud ha sido anulada.","success");
+                    } else {
+                        Swal.fire("Error", data.error || "No se pudo anular","error");
+                    }
+                })
+                .catch(err => {
+                    Swal.fire("Error","Ocurrió un error al anular.","error");
+                });
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}

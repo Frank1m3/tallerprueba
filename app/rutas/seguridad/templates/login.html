@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>Login</title>
+    <link href="{{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}" rel="stylesheet">
+</head>
+
+<body class="bg-gradient-primary"style="background-image: url('{{ url_for('static', filename='img/bg2.svg') }}'); background-repeat: repeat; background-size: auto; height: 100vh;">
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-10 col-lg-10 col-md-9">
+                <div class="card o-hidden border-0 shadow-lg my-5">
+                    <div class="card-body p-0">
+                        <div class="row">
+                            <div class="col-lg-6 d-none d-lg-block">
+                                <div style="text-align: center;">
+                                    <img src="{{ url_for('static', filename='img/logo.PNG') }}" width="450">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="p-5">
+                                    <div class="text-center">
+                                        <h2 class="h1 text-gray-900 mb-2 text-center font-weight-bold" style="font-size: 3rem;">¡Bienvenido!</h2>
+                                    </div>
+                                    <tr></tr>
+                                    <div class="topbar-divider d-none d-sm-block">
+                                        <!-- Mostrar mensajes flash -->
+                                        {% with messages = get_flashed_messages(with_categories=true) %}
+                                            {% if messages %}
+                                                <div class="alert alert-warning">
+                                                    {% for category, message in messages %}
+                                                        <strong>{{ category.capitalize() }}:</strong> {{ message }} <br>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                        <form class="user" method="post" action="{{ url_for('login.login') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                            <div class="form-group">
+                                                <input type="text" class="form-control form-control-user" name="usuario_nombre"
+                                                    aria-describedby="usuario_nombre" placeholder="Ingrese un usuario" required
+                                                    autocomplete="off">
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="password" class="form-control form-control-user" name="usuario_clave"
+                                                    placeholder="Contraseña" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-user btn-block">INGRESAR</button>
+                                            <p></p>
+                                            <p></p>
+                                            <p></p>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sb-admin-2.min.js') }}"></script>
+
+</body>
+
+</html>

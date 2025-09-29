@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Listar Pedidos de Compra
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Pedidos de Compra</h3>
+
+    <!-- Tarjeta con tabla -->
+    <div class="card shadow">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Pedidos</span>
+            <a href="{{ url_for('pdcmod.pedidos_agregar') }}" class="btn btn-primary btn-sm" target="_blank">
+                Agregar Pedido
+            </a>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered" id="tbl_pedidos">
+                <thead>
+                    <tr>
+                        <th>ID Pedido</th>
+                        <th>N° Pedido</th>
+                        <th>Fecha</th>
+                        <th>Sucursal</th>
+                        <th>Funcionario</th>
+                        <th>Depósito</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Alerta -->
+    <div class="row mt-4 d-none" id="rowAlerta">
+        <div class="col-md-12">
+            <div class="alert alert-success">
+                <strong>Registro Exitoso!</strong>
+                <div class="row" id="mostrarAlerta"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+
+    // Inicializar DataTable
+    const tabla = $('#tbl_pedidos').DataTable({
+        language: {
+            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+        },
+        ajax: {
+            url: '/api/v1/gestionar-compras/registrar-pedido-compras/pedidos',
+            dataSrc: 'data' // porque tu API devuelve {success:true, data:[...]}
+        },
+        columns: [
+            { data: 'id_pedido_compra_cab' },
+            { data: 'nro_pedido' },
+            { data: 'fecha_pedido' },
+            { data: 'sucursal' },
+            { data: 'funcionario' },
+            { data: 'deposito' },
+            { 
+                data: null,
+                orderable: false,
+                className: 'text-center',
+                render: function(row){
+                    return `
+                        <button class="btn btn-info btn-sm ver" data-id="${row.id_pedido_compra_cab}">Ver</button>
+                        <button class="btn btn-warning btn-sm editar" data-id="${row.id_pedido_compra_cab}">Editar</button>
+                        <button class="btn btn-danger btn-sm eliminar" data-id="${row.id_pedido_compra_cab}">Eliminar</button>
+                    `;
+                }
+            }
+        ],
+        order: [[0, 'desc']]
+    });
+
+    // ---------------- Eventos botones ----------------
+
+    // Ver detalle
+    $('#tbl_pedidos').on('click', '.ver', function(){
+        const id = $(this).data('id');
+        window.open(`/gestionar-compras/registrar-pedido-compras/detalle/${id}`, '_blank');
+    });
+
+    // Editar pedido
+    $('#tbl_pedidos').on('click', '.editar', function(){
+        const id = $(this).data('id');
+        window.open(`/gestionar-compras/registrar-pedido-compras/editar/${id}`, '_blank');
+    });
+
+    // Eliminar pedido
+    $('#tbl_pedidos').on('click', '.eliminar', function(){
+        const id = $(this).data('id');
+        Swal.fire({
+            title: '¿Desea anular este pedido?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, anular',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if(result.isConfirmed){
+                fetch(`/api/v1/gestionar-compras/registrar-pedido-compras/pedidos/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Content-Type':'application/json'}
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if(data.success){
+                        Swal.fire('Pedido anulado', '', 'success');
+                        tabla.ajax.reload(null, false);
+                    } else {
+                        Swal.fire('Error', data.error || 'No se pudo anular', 'error');
+                    }
+                })
+                .catch(err => Swal.fire('Error','Ocurrió un error','error'));
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}

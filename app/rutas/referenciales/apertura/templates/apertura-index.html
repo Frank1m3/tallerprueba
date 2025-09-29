@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Nuevo turno
+{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Habilitación turno</h3>
+
+    <!-- Tarjeta -->
+    <div class="card">
+      <div class="card-header bg-primary">
+        <button type="button" class="btn btn-outline-light" id="btnAgregar">Aperturar caja</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>Nro_turno</th>
+              <th>Fiscal</th>
+              <th>Cajero</th>
+              <th>Monto inicial</th>
+              <th>Fecha de registro</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- /tarjeta -->
+
+    <!-- El formulario -->
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+
+          <!-- Modal Header -->
+          <div class="modal-header bg-primary">
+            <h4 class="modal-title text-white mx-auto" id="modalTitle">Agregar apertura</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+
+          <!-- Modal body -->
+          <div class="modal-body">
+            <input type="hidden" id="txtIdApertura" value="">
+            <div class="row">
+              <div class="form-group text-center col-md-3">
+                <label for="txtNro_turno">NRO DE TURNO</label>
+                <input type="text" class="form-control bg-primary text-white" id="txtNro_turno" readonly>
+              </div>
+              <div class="form-group text-center col-md-6">
+                <label for="txtRegistro">FECHA DE REGISTRO</label>
+                <input type="text" class="form-control bg-primary text-white" id="txtRegistro" readonly>
+              </div>
+            </div>
+
+            <div class="row">
+              <!-- Fiscal -->
+              <div class="form-group text-center col-md-6">
+                <label for="txtClaveFiscal">FISCAL:</label>
+                <input type="password" class="form-control" placeholder="INGRESE CLAVE FISCAL" id="txtClaveFiscal">
+              </div>
+
+              <!-- Cajero -->
+              <div class="form-group text-center col-md-6">
+                <label for="txtCajero">CAJERO:</label>
+                <input type="text" class="form-control" placeholder="INGRESE ID DEL CAJERO" id="txtCajero">
+              </div>
+            </div>
+
+            <div class="form-group text-center">
+              <label for="txtMontoInicial">MONTO INICIAL:</label>
+              <input type="number" class="form-control" placeholder="Ingrese el monto inicial" id="txtMontoInicial">
+            </div>
+          </div>
+
+          <!-- Modal footer -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4 d-none" id="rowAlerta">
+        <div class="col col-md-12">
+            <div class="alert alert-success">
+                <strong>Apertura realizada</strong>
+                <div class="row" id="mostrarAlerta"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+const CSRFToken = "{{ csrf_token() }}" || null;
+
+// Obtener siguiente turno + fecha actual desde backend
+async function obtenerDatosIniciales() {
+  try {
+    const response = await fetch('/api/v1/aperturas');
+    const data = await response.json();
+    if (!data.success) throw new Error('No se pudo obtener el siguiente turno');
+
+    // Además, obtener fecha actual del servidor
+    const respFecha = await fetch('/api/v1/aperturas/fecha_actual');
+    const dataFecha = await respFecha.json();
+    if (!dataFecha.success) throw new Error('No se pudo obtener la fecha actual');
+
+    return {
+      siguiente_turno: data.siguiente_turno,
+      fecha_actual: dataFecha.fecha_actual
+    };
+  } catch (error) {
+    Swal.fire("Error", error.message, "error");
+    return null;
+  }
+}
+
+// Inicializar tabla DataTables
+function initDatatable() {
+  $('#tbl').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax: '/api/v1/aperturas',
+    columns: [
+      { data: 'nro_turno' },
+      { data: 'clave_fiscal' },
+      { data: 'cajero' },
+      { data: 'monto_inicial' },
+      { data: 'registro' },
+      { data: 'estado' },
+      { data: row => `<button type="button" name="btn_anular" class="btn btn-warning" data-id="${row.id_apertura}">Anular</button>` }
+    ]
+  });
+}
+
+// Abrir modal para agregar nueva apertura y cargar datos iniciales
+function agregar() {
+  $('#btnAgregar').on('click', async () => {
+    const datos = await obtenerDatosIniciales();
+    if (!datos) return;
+
+    $('#modalTitle').text("REALIZAR APERTURA");
+    $('#txtIdApertura').val('');
+    $('#txtNro_turno').val(datos.siguiente_turno);
+    $('#txtRegistro').val(datos.fecha_actual);
+    $('#txtClaveFiscal').val('');
+    $('#txtCajero').val('');
+    $('#txtMontoInicial').val('');
+    $('#modalFormulario').modal('show');
+  });
+}
+
+// Guardar o actualizar apertura
+function guardar() {
+  $('#btnGuardar').on('click', () => {
+    const clave_fiscal = $('#txtClaveFiscal').val().trim();
+    const cajero = $('#txtCajero').val().trim();
+    const monto_inicial = $('#txtMontoInicial').val().trim();
+    const idApertura = $('#txtIdApertura').val();
+    const tabla = $('#tbl').DataTable();
+
+    if (!clave_fiscal || !cajero || !monto_inicial) {
+      Swal.fire("Atención", "Todos los campos son obligatorios.", "warning");
+      return;
+    }
+
+    if (idApertura) {
+      // Actualizar (no detallado aquí)
+      fetch(`/api/v1/aperturas/${idApertura}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken },
+        body: JSON.stringify({ clave_fiscal, cajero, monto_inicial })
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.success) {
+          tabla.ajax.reload();
+          Swal.fire("Actualizado", "La apertura ha sido actualizada correctamente.", "success");
+        } else {
+          Swal.fire("Error", data.error || "Error al actualizar");
+        }
+      })
+      .catch(() => Swal.fire("Error", "Error en la actualización.", "error"));
+    } else {
+      // Insertar nueva apertura
+      fetch('/api/v1/aperturas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken },
+        body: JSON.stringify({ clave_fiscal, cajero, monto_inicial })
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.success) {
+          // Mostrar valores devueltos, incluido el registro
+          $('#txtIdApertura').val(data.data.id_apertura);
+          $('#txtNro_turno').val(data.data.nro_turno || '');
+          $('#txtRegistro').val(data.data.registro || '');
+
+          tabla.ajax.reload();
+          Swal.fire("Agregado", "La apertura ha sido agregada correctamente.", "success");
+          $('#modalFormulario').modal('hide');
+        } else {
+          Swal.fire("Error", data.error || "Error al agregar apertura");
+        }
+      })
+      .catch(() => Swal.fire("Error", "Error al guardar la apertura.", "error"));
+    }
+  });
+}
+
+// Anular apertura
+function anular() {
+  $('#tbl').on('click', 'button[name="btn_anular"]', function() {
+    const idApertura = $(this).data('id');
+    Swal.fire({
+      title: "¿Deseas anular este registro de apertura?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: "Sí",
+      cancelButtonText: "No"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch(`/api/v1/aperturas/anular/${idApertura}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken }
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.success) {
+            const fila = $(this).closest('tr');
+            const tabla = $('#tbl').DataTable();
+            tabla.row(fila).remove().draw();
+            Swal.fire("Anulado", "El turno ha sido anulado correctamente.", "success");
+          } else {
+            Swal.fire("Error", data.error || "No se pudo anular la apertura.");
+          }
+        })
+        .catch(() => Swal.fire("Error", "Error al anular el turno.", "error"));
+      }
+    });
+  });
+}
+
+$(document).ready(() => {
+  initDatatable();
+  agregar();
+  guardar();
+  anular();
+});
+</script>
+{% endblock %}

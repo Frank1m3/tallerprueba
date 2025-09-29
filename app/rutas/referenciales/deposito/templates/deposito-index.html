@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Depósitos{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Depósitos</h3>
+
+    <div class="card">
+      <div class="card-header">
+        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Descripción</th>
+              <th>Sucursal</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div class="modal fade" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"></h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" id="txtIdDeposito">
+
+            <div class="form-group">
+              <label for="txtDescripcion">Descripción:</label>
+              <input type="text" class="form-control" placeholder="Ingrese descripción" id="txtDescripcion" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="selectSucursal">Sucursal:</label>
+              <select class="form-control" id="selectSucursal">
+                <option value="">Seleccione una sucursal</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+const initDatatable = () => {
+    $('#tbl').DataTable({
+        language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+        ajax: '/api/v1/depositos',
+        columns: [
+            { data: 'id_deposito' },
+            { data: 'descripcion', defaultContent: '' },
+            { data: 'sucursal_nombre', defaultContent: '' },
+            { data: function(row) {
+                return `
+                    <button type="button" name="btn_editar" class="btn btn-primary btn-sm" data-id="${row.id_deposito}">Editar</button>
+                    <button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${row.id_deposito}">Eliminar</button>
+                `;
+            }}
+        ]
+    });
+};
+
+const cargarSucursales = () => {
+    return fetch('/api/v1/sucursales')
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success && data.data) {
+            const select = document.getElementById('selectSucursal');
+            select.innerHTML = '<option value="">Seleccione una sucursal</option>';
+            data.data.forEach(sucursal => {
+                const option = document.createElement('option');
+                option.value = sucursal.id_sucursal;
+                option.textContent = sucursal.descripcion;
+                select.appendChild(option);
+            });
+        } else {
+            console.error("Error al cargar sucursales:", data.error);
+        }
+    }).catch(err => {
+        console.error("Error al cargar sucursales:", err);
+    });
+};
+
+// Abrir modal para agregar depósito
+$('#btnAgregar').on('click', () => {
+    cargarSucursales().then(() => {
+        $('#modalTitle').text("Agregar un Depósito");
+        $('#txtIdDeposito').val("");
+        $('#txtDescripcion').val("");
+        $('#selectSucursal').val("");
+        $('#modalFormulario').modal('show');
+    });
+});
+
+// Guardar o actualizar depósito
+$('#btnGuardar').on('click', function() {
+    const idDeposito = $('#txtIdDeposito').val();
+    const descripcion = $('#txtDescripcion').val();
+    const idSucursal = $('#selectSucursal').val();
+
+    if (!descripcion.trim()) {
+        Swal.fire("Error", "La descripción es obligatoria.", "error");
+        return;
+    }
+    if (!idSucursal) {
+        Swal.fire("Error", "Debe seleccionar una sucursal.", "error");
+        return;
+    }
+
+    const tabla = $('#tbl').DataTable();
+    const depositoData = {
+        descripcion: descripcion.trim(),
+        id_sucursal: idSucursal
+    };
+
+    if (idDeposito) {
+        fetch(`/api/v1/depositos/${idDeposito}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(depositoData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success) {
+                tabla.ajax.reload();
+                Swal.fire("Actualizado", "El depósito ha sido actualizado correctamente.", "success");
+            } else {
+                Swal.fire(data.error || 'Error desconocido');
+            }
+        }).catch(() => {
+            Swal.fire("Error", "Ocurrió un error al actualizar el depósito.", "error");
+        });
+    } else {
+        fetch(`/api/v1/depositos`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(depositoData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success) {
+                tabla.ajax.reload();
+                Swal.fire("Guardado", "El depósito ha sido agregado correctamente.", "success");
+            } else {
+                Swal.fire(data.error || 'Error desconocido');
+            }
+        }).catch(() => {
+            Swal.fire("Error", "Ocurrió un error al guardar el depósito.", "error");
+        });
+    }
+
+    $('#modalFormulario').modal("hide");
+});
+
+// Editar depósito
+$('#tbl').on('click', 'button[name="btn_editar"]', function(){
+    const idDeposito = $(this).data('id');
+    Swal.fire({
+        title: "¿Deseas editar este registro?",
+        showCancelButton: true,
+        confirmButtonText: "Si",
+        cancelButtonText: "No"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cargarSucursales().then(() => {
+                $('#modalTitle').text("Editar un Depósito");
+                $('#txtIdDeposito').val(idDeposito);
+                fetch(`/api/v1/depositos/${idDeposito}`)
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        $('#txtDescripcion').val(data.data.descripcion);
+                        $('#selectSucursal').val(data.data.id_sucursal);
+                        $('#modalFormulario').modal('show');
+                    } else {
+                        Swal.fire("Error", "No se pudo cargar el depósito.", "error");
+                    }
+                });
+            });
+        }
+    });
+});
+
+// Eliminar depósito
+$('#tbl').on('click', 'button[name="btn_eliminar"]', function(){
+    const idDeposito = $(this).data('id');
+    Swal.fire({
+        title: "¿Deseas eliminar este registro?",
+        showCancelButton: true,
+        confirmButtonText: "Si",
+        cancelButtonText: "No"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/v1/depositos/${idDeposito}`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if(data.success) {
+                    const fila = $(this).closest('tr');
+                    const tabla = $('#tbl').DataTable();
+                    tabla.row(fila).remove().draw();
+                    Swal.fire("Eliminado", data.mensaje || "", "success");
+                } else {
+                    Swal.fire(data.error || "Error desconocido");
+                }
+            }).catch(() => {
+                Swal.fire("Error", "Ocurrió un error al eliminar el depósito.", "error");
+            });
+        }
+    });
+});
+
+$(document).ready(function() {
+    initDatatable();
+});
+</script>
+{% endblock %}
