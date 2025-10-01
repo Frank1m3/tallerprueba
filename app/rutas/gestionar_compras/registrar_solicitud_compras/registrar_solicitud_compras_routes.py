@@ -19,6 +19,35 @@ def solicitud_index():
 
 
 # ==============================
+# Modificar solicitud
+# ==============================
+@solmod.route('/solicitudes/modificar/<int:id>')
+def solicitud_modificar(id):
+    dao = SolicitudCompraDao()
+    sdao = SucursalDao()
+    fdao = FuncionarioDao()
+    pdao = ProveedorDao()
+
+    # Obtener la solicitud
+    solicitud = dao.obtener_solicitud_por_id(id)  # Este método debe devolver cabecera + detalles
+
+    # Listas referenciales para selects
+    sucursales = sdao.getSucursales()
+    funcionarios = fdao.get_funcionarios()
+    proveedores = pdao.getProveedores()
+    productos = dao.obtener_productos()  # Todos los productos activos
+
+    return render_template(
+        'solicitud_modificar.html',
+        solicitud=solicitud,
+        sucursales=sucursales,
+        funcionarios=funcionarios,
+        proveedores=proveedores,
+        productos=productos
+    )
+
+
+# ==============================
 # Agregar nueva solicitud
 # ==============================
 @solmod.route('/solicitud-agregar')
@@ -31,9 +60,9 @@ def solicitud_agregar():
 
     # Obtener datos para los selects
     sucursales = sdao.getSucursales()
-    funcionarios = fdao.get_funcionarios()       # [{'fun_id':..., 'nombre_completo':...}]
-    proveedores = pdao.getProveedores()          # [{'id_proveedor':..., 'nombre':...}]
-    productos = dao.obtener_productos()          # Lista de productos activos con stock y proveedor
+    funcionarios = fdao.get_funcionarios()
+    proveedores = pdao.getProveedores()
+    productos = dao.obtener_productos()
 
     # Fecha actual para el input
     fecha_actual = date.today().strftime("%Y-%m-%d")

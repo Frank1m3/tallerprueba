@@ -8,7 +8,7 @@ from app import csrf
 from app.dao.gestionar_compras.registrar_solicitud_compras.dto.solicitud_de_compras_dto import SolicitudDto
 from app.dao.gestionar_compras.registrar_solicitud_compras.dto.solicitud_de_compra_detalle_dto import SolicitudDetalleDto
 
-scapi = Blueprint('scapi', __name__)
+scapi = Blueprint('scapi', __name__, url_prefix='/api/v1/gestionar-compras/registrar-solicitud-compras')
 
 # ================================
 # Obtener siguiente número de solicitud
@@ -60,14 +60,12 @@ def get_productos():
         id_deposito = request.args.get('id_deposito', type=int)
         id_proveedor = request.args.get('id_proveedor', type=int)
 
-        productos = []
-        if id_proveedor:
-            productos = dao.obtener_productos_por_proveedor(id_proveedor, id_sucursal, id_deposito)
+        productos = dao.obtener_productos(id_sucursal=id_sucursal, id_deposito=id_deposito, id_proveedor=id_proveedor)
 
         productos_serializados = [{
             'id_item': p['id_item'],
             'item_code': p['item_code'],
-            'nombre': p['nombre'],
+            'nombre': p['nombre_producto'],
             'stock': p['stock'],
             'precio': p.get('precio', 0),
             'unidad_med': p.get('unidad_med', 1)
@@ -105,7 +103,7 @@ def get_solicitudes():
         return jsonify({'success': False, 'data': [], 'error': str(e)}), 500
 
 # ================================
-# Crear nueva solicitud (con stock y precio)
+# Crear nueva solicitud
 # ================================
 @scapi.route('/solicitudes', methods=['POST'])
 @csrf.exempt
@@ -147,6 +145,42 @@ def crear_solicitud():
             return jsonify({'success': False, 'error': 'No se pudo registrar la solicitud'}), 500
     except Exception as e:
         app.logger.error(f"Error al crear solicitud: {str(e)}")
+        return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
+
+# ================================
+# Modificar solicitud existente
+# ================================
+@scapi.route('/modificar/<int:id_solicitud>', methods=['PUT'])
+@csrf.exempt
+def modificar_solicitud_api(id_solicitud):
+    try:
+        data = request.get_json()
+        if not data or 'detalle_solicitud' not in data:
+            return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
+
+        detalle_objs = []
+        for d in data['detalle_solicitud']:
+            detalle_objs.append(SolicitudDetalleDto(
+                id_item=d.get('id_item'),
+                cant_solicitada=d.get('cant_solicitada', 1)
+            ))
+
+        cabecera = data.get('cabecera')  # opcional, si querés actualizar cabecera
+        if cabecera and 'fecha_solicitud' in cabecera:
+            fecha_raw = cabecera['fecha_solicitud']
+            if isinstance(fecha_raw, str):
+                cabecera['fecha_solicitud'] = datetime.strptime(fecha_raw, "%Y-%m-%d").date()
+
+        dao = SolicitudCompraDao()
+        exito = dao.modificar_solicitud(id_solicitud, detalle_objs, cabecera)
+
+        if exito:
+            return jsonify({'success': True, 'message': 'Solicitud modificada correctamente'}), 200
+        else:
+            return jsonify({'success': False, 'error': 'No se pudo modificar la solicitud'}), 400
+
+    except Exception as e:
+        app.logger.error(f"Error al modificar solicitud {id_solicitud}: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
 
 # ================================

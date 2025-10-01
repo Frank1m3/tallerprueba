@@ -55,7 +55,6 @@ $(document).ready(function(){
         language: {
             url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
         },
-        // URL CORREGIDA
         ajax: '/api/v1/gestionar-compras/registrar-solicitud-compras/solicitudes',
         columns: [
             { data: 'nro_solicitud' },
@@ -69,11 +68,22 @@ $(document).ready(function(){
                 orderable: false,
                 className: 'text-center',
                 render: function(row){
-                    return `<button type="button" class="btn btn-danger btn-sm btn-anular" data-id="${row.id_solicitud}">Anular</button>`;
+                    // Habilitar o deshabilitar botones según estado
+                    const isPendiente = row.estado === "PENDIENTE";
+                    const modificarBtn = `<button type="button" class="btn btn-warning btn-sm btn-modificar" data-id="${row.id_solicitud}" ${!isPendiente ? 'disabled' : ''}>Modificar</button>`;
+                    const anularBtn = `<button type="button" class="btn btn-danger btn-sm btn-anular" data-id="${row.id_solicitud}" ${!isPendiente ? 'disabled' : ''}>Anular</button>`;
+                    return modificarBtn + " " + anularBtn;
                 }
             }
         ],
         order: [[0,'desc']] // Ordenar por Nro Solicitud descendente
+    });
+
+    // Botón modificar
+    $('#tbl_solicitudes tbody').on('click', '.btn-modificar', function(){
+        const id = $(this).data('id');
+        // Redirigir a la vista de modificar (abrir en nueva pestaña)
+        window.open(`/gestionar-compras/registrar-solicitud-compras/solicitudes/modificar/${id}`, '_blank');
     });
 
     // Botón anular
@@ -108,4 +118,5 @@ $(document).ready(function(){
 
 });
 </script>
+
 {% endblock %}

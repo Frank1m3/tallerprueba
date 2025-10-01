@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Modificar Solicitud de Compra{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4" style="max-width:1200px;">
+    <div class="card shadow">
+        <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">Modificar Solicitud N° {{ solicitud.nro_solicitud }}</h4>
+        </div>
+        <div class="card-body">
+            <form id="formModificarSolicitud">
+                <input type="hidden" name="id_solicitud" value="{{ solicitud.id_solicitud }}">
+
+                <!-- Datos generales -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Solicitante</label>
+                        <input type="text" class="form-control" value="{{ solicitud.funcionario_nombre }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Sucursal</label>
+                        <input type="text" class="form-control" value="{{ solicitud.sucursal_nombre }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Depósito</label>
+                        <input type="text" class="form-control" value="{{ solicitud.deposito_nombre }}" readonly>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Proveedor</label>
+                        <input type="text" class="form-control" value="{{ solicitud.proveedor_nombre }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" value="{{ solicitud.fecha_solicitud }}" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estado</label>
+                        <input type="text" class="form-control" value="{{ solicitud.estado }}" readonly>
+                    </div>
+                </div>
+
+                <!-- Selección de producto -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label>Producto</label>
+                        <select id="selectProducto" class="form-control">
+                            <option value="">-- Seleccione --</option>
+                            {% for prod in productos %}
+                                {% if prod.id_proveedor == solicitud.id_proveedor %}
+                                    <option value="{{ prod.id_item }}" data-unidad="{{ prod.unidad_med }}">
+                                        {{ prod.nombre_producto }}
+                                    </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Cantidad</label>
+                        <input type="number" id="inputCantidad" class="form-control" value="1" min="1">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" id="btnAgregarProducto" class="btn btn-success w-100">Agregar</button>
+                    </div>
+                </div>
+
+                <!-- Detalle de solicitud -->
+                <h5>Detalle de solicitud</h5>
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered" id="tblDetalle">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Unidad</th>
+                                <th>Cantidad</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for det in solicitud.detalles %}
+                            <tr data-id="{{ det.id_item }}">
+                                <td>{{ det.nombre_producto }}</td>
+                                <td>{{ det.unidad_med }}</td>
+                                <td><input type="number" class="form-control cantidad" value="{{ det.cantidad }}" min="1"></td>
+                                <td><button type="button" class="btn btn-danger btn-sm btnQuitar">Quitar</button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                    <a href="{{ url_for('solmod.solicitud_index') }}" class="btn btn-secondary ms-2">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+
+    const tblDetalle = $('#tblDetalle').DataTable({
+        paging: false,
+        searching: false,
+        info: false,
+        ordering: false
+    });
+
+    // Agregar producto desde el select al detalle
+    $('#btnAgregarProducto').on('click', function(){
+        const select = $('#selectProducto');
+        const id_item = select.val();
+        const nombre_producto = select.find('option:selected').text();
+        const unidad = select.find('option:selected').data('unidad');
+        const cantidad = parseFloat($('#inputCantidad').val()) || 1;
+
+        if(!id_item) return;
+
+        // Evitar duplicados
+        if($('#tblDetalle tbody tr[data-id="'+id_item+'"]').length){
+            Swal.fire("Atención","El producto ya está agregado","warning");
+            return;
+        }
+
+        const fila = `<tr data-id="${id_item}">
+            <td>${nombre_producto}</td>
+            <td>${unidad}</td>
+            <td><input type="number" class="form-control cantidad" value="${cantidad}" min="1"></td>
+            <td><button type="button" class="btn btn-danger btn-sm btnQuitar">Quitar</button></td>
+        </tr>`;
+
+        tblDetalle.row.add($(fila)).draw(false);
+
+        // Reset select y cantidad
+        select.val('');
+        $('#inputCantidad').val(1);
+    });
+
+    // Quitar producto del detalle
+    $('#tblDetalle tbody').on('click', '.btnQuitar', function(){
+        tblDetalle.row($(this).closest('tr')).remove().draw();
+    });
+
+    // Enviar formulario
+    $('#formModificarSolicitud').on('submit', function(e){
+        e.preventDefault();
+        const id_solicitud = $('input[name=id_solicitud]').val();
+        const detalle_solicitud = [];
+
+        $('#tblDetalle tbody tr').each(function(){
+            const id_item = $(this).data('id');
+            const cant_solicitada = parseFloat($(this).find('input.cantidad').val()) || 1;
+            detalle_solicitud.push({id_item, cant_solicitada});
+        });
+
+        fetch(`/api/v1/gestionar-compras/registrar-solicitud-compras/modificar/${id_solicitud}`, {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({detalle_solicitud})
+        })
+        .then(resp => {
+            if(resp.status === 404) throw new Error('Ruta API no encontrada');
+            return resp.json();
+        })
+        .then(data => {
+            if(data.success){
+                Swal.fire("Éxito","La solicitud fue modificada","success")
+                    .then(()=> window.location.href = "{{ url_for('solmod.solicitud_index') }}");
+            } else {
+                Swal.fire("Error", data.error || "No se pudo modificar","error");
+            }
+        })
+        .catch(err => Swal.fire("Error", err.message,"error"));
+    });
+
+});
+</script>
+{% endblock %}
