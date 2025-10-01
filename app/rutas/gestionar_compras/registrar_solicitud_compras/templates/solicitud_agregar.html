@@ -3,14 +3,14 @@
 {% block titulo %}SOLICITUD de Compra{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4" style="max-width:1200px;">
+<div class="container mt-4" style="max-width:1400px;">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
             <h4 class="mb-0">SOLICITUD DE COMPRA</h4>
         </div>
         <div class="card-body">
 
-            <!-- Encabezado -->
+            <!-- Encabezado solicitud -->
             <div class="row mb-3">
                 <div class="col-md-2">
                     <label>Nro Solicitud</label>
@@ -26,6 +26,15 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label>Proveedor</label>
+                    <select id="cbo_proveedor" class="form-control">
+                        <option value="">Seleccione</option>
+                        {% for p in proveedores %}
+                        <option value="{{ p['id_proveedor'] }}">{{ p['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label>Sucursal</label>
                     <select id="cbo_sucursal" class="form-control">
                         <option value="">Seleccione</option>
@@ -40,15 +49,15 @@
                         <option value="">Seleccione</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 mt-2">
                     <label>Fecha Solicitud</label>
-                    <input type="date" id="txt_fecha_solicitud" class="form-control">
+                    <input type="date" id="txt_fecha_solicitud" class="form-control" value="{{ fecha_actual }}">
                 </div>
             </div>
 
             <!-- Selección de producto -->
             <div class="row mb-3 align-items-end">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label>Producto</label>
                     <select id="cbo_producto" class="form-control">
                         <option value="">Seleccione</option>
@@ -59,11 +68,19 @@
                     <input type="number" id="txt_cantidad" min="1" class="form-control">
                 </div>
                 <div class="col-md-2">
-                    <button type="button" id="btn_agregar" class="btn btn-success">AGREGAR</button>
+                    <label>Stock disponible</label>
+                    <input type="text" id="txt_stock" class="form-control" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label>Precio Unitario</label>
+                    <input type="text" id="txt_precio" class="form-control" readonly>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="btn_agregar" class="btn btn-success mt-4">AGREGAR</button>
                 </div>
             </div>
 
-            <!-- Tabla de detalle -->
+            <!-- Tabla detalle -->
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="table-responsive">
@@ -73,6 +90,9 @@
                                     <th>Código</th>
                                     <th>Producto</th>
                                     <th>Cantidad</th>
+                                    <th>Stock</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -82,7 +102,7 @@
                 </div>
             </div>
 
-            <!-- Botones -->
+            <!-- Botones finales -->
             <div class="row mt-3">
                 <div class="col d-flex justify-content-end">
                     <button type="button" id="btn_grabar_solicitud" class="btn btn-primary mr-2">GRABAR</button>
@@ -109,36 +129,26 @@ $(document).ready(function(){
             {data:'codigo'},
             {data:'producto'},
             {data:'cantidad'},
+            {data:'stock'},
+            {data:'precio'},
+            {data:'estado'},
             {data:'acciones'}
         ]
     });
 
-    // ======================
-    // Cargar Nro de Solicitud
-    // ======================
+    // ====================== Cargar Nro Solicitud ======================
     function cargarNroSolicitud(){
         $.getJSON('/api/v1/gestionar-compras/registrar-solicitud-compras/siguiente-nro-solicitud', function(res){
-            if(res.success){
-                console.log("Número de solicitud recibido:", res.siguiente_nro); // para depuración
-                $('#txt_nro_solicitud').val(res.siguiente_nro);
-            } else {
-                $('#txt_nro_solicitud').val('Error');
-                console.error("Error al obtener nro de solicitud:", res.error);
-            }
-        }).fail(function(xhr, status, error){
-            $('#txt_nro_solicitud').val('Error');
-            console.error("Fallo en AJAX nro de solicitud:", status, error);
+            $('#txt_nro_solicitud').val(res.success ? res.siguiente_nro : 'Error');
         });
     }
-    cargarNroSolicitud(); // Se llama al inicio
+    cargarNroSolicitud();
 
-    // ======================
-    // Cargar depósitos según sucursal
-    // ======================
+    // ====================== Cargar depósitos según sucursal ======================
     function cargarDepositos(id_sucursal){
         $('#cbo_deposito').empty().append('<option value="">Seleccione</option>');
         if(id_sucursal){
-            $.getJSON(`/api/v1/gestionar-compras/registrar-solicitud-compras/sucursal-depositos/${id_sucursal}`, function(res){
+            $.getJSON(`/api/v1/sucursal-depositos/${id_sucursal}`, function(res){
                 if(res.success && res.data){
                     res.data.forEach(d=>{
                         $('#cbo_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`);
@@ -146,65 +156,97 @@ $(document).ready(function(){
                 }
             });
         }
+        // Limpiar stock si se cambia sucursal
+        $('#txt_stock').val('');
     }
 
     $('#cbo_sucursal').change(function(){
         cargarDepositos($(this).val());
-        $('#cbo_producto').empty().append('<option value="">Seleccione</option>');
     });
 
-    // ======================
-    // Cargar productos según sucursal y depósito
-    // ======================
+    // ====================== Cargar productos según proveedor ======================
     function cargarProductos(){
-        let id_sucursal = $('#cbo_sucursal').val();
-        let id_deposito = $('#cbo_deposito').val();
+        let id_proveedor = $('#cbo_proveedor').val();
         $('#cbo_producto').empty().append('<option value="">Seleccione</option>');
-        if(id_sucursal && id_deposito){
-            $.getJSON(`/api/v1/gestionar-compras/registrar-solicitud-compras/productos?id_sucursal=${id_sucursal}&id_deposito=${id_deposito}`, function(res){
+        $('#txt_stock').val('');
+        $('#txt_precio').val('');
+        if(id_proveedor){
+            $.getJSON('/api/v1/gestionar-compras/registrar-solicitud-compras/productos', {id_proveedor:id_proveedor}, function(res){
                 if(res.success && res.data){
                     res.data.forEach(i=>{
-                        $('#cbo_producto').append(`<option value="${i.id_item}" data-codigo="${i.codigo}">${i.nombre}</option>`);
+                        $('#cbo_producto').append(`<option value="${i.id_item}" data-codigo="${i.item_code}" data-precio="${i.precio}">${i.nombre}</option>`);
                     });
                 }
             });
         }
     }
 
-    $('#cbo_deposito').change(cargarProductos);
+    $('#cbo_proveedor').change(cargarProductos);
 
-    // ======================
-    // Agregar producto al detalle
-    // ======================
+    // ====================== Mostrar stock y precio ======================
+    $('#cbo_producto').change(function(){
+        let op = $(this).find('option:selected');
+        let id_sucursal = $('#cbo_sucursal').val();
+        let id_deposito = $('#cbo_deposito').val();
+
+        $('#txt_precio').val(op.data('precio') || 0);
+
+        // Obtener stock según sucursal y depósito
+        if(op.val() && id_sucursal && id_deposito){
+            $.getJSON('/api/v1/gestionar-compras/registrar-solicitud-compras/productos', {
+                id_proveedor: $('#cbo_proveedor').val(),
+                id_sucursal: id_sucursal,
+                id_deposito: id_deposito
+            }, function(res){
+                if(res.success && res.data){
+                    let producto = res.data.find(p=>p.id_item == op.val());
+                    $('#txt_stock').val(producto ? producto.stock : 0);
+                } else {
+                    $('#txt_stock').val(0);
+                }
+            });
+        } else {
+            $('#txt_stock').val('');
+        }
+    });
+
+    $('#cbo_deposito').change(function(){
+        $('#cbo_producto').trigger('change'); // actualizar stock
+    });
+
+    // ====================== Agregar detalle ======================
     $('#btn_agregar').click(function(){
         let op = $('#cbo_producto option:selected');
         let id_item = op.val();
         let producto = op.text();
         let codigo = op.data('codigo');
+        let stock = parseFloat($('#txt_stock').val() || 0);
+        let precio = parseFloat($('#txt_precio').val() || 0);
         let cantidad = parseFloat($('#txt_cantidad').val());
 
         if(!id_item || !cantidad){
             return Swal.fire("Error","Complete todos los campos","error");
         }
 
-        let fila = {id_item, codigo, producto, cantidad};
-        detalle.push(fila);
-
+        detalle.push({id_item,codigo,producto,cantidad,stock,precio,estado:'PENDIENTE'});
         tabla.row.add({
-            codigo:fila.codigo,
-            producto:fila.producto,
-            cantidad:fila.cantidad,
+            codigo: codigo,
+            producto: producto,
+            cantidad: cantidad,
+            stock: stock,
+            precio: precio,
+            estado: 'PENDIENTE',
             acciones:`<button class="btn btn-sm btn-primary btn-modificar">Modificar</button>
-                     <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+                      <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
         }).draw();
 
         $('#cbo_producto').val('');
         $('#txt_cantidad').val('');
+        $('#txt_stock').val('');
+        $('#txt_precio').val('');
     });
 
-    // ======================
-    // Modificar/eliminar fila
-    // ======================
+    // ====================== Modificar y eliminar fila ======================
     $('#tbl_detalle tbody').on('click','.btn-modificar', function(){
         let row = $(this).closest('tr');
         let idx = tabla.row(row).index();
@@ -216,7 +258,7 @@ $(document).ready(function(){
             showCancelButton:true,
             confirmButtonText:'Actualizar',
             cancelButtonText:'Cancelar',
-            preConfirm:(value)=>{
+            preConfirm:(value)=> {
                 let val=parseFloat(value);
                 if(isNaN(val)||val<=0) Swal.showValidationMessage('Cantidad inválida');
                 return val;
@@ -228,8 +270,11 @@ $(document).ready(function(){
                     codigo:fila.codigo,
                     producto:fila.producto,
                     cantidad:fila.cantidad,
+                    stock:fila.stock,
+                    precio:fila.precio,
+                    estado:fila.estado,
                     acciones:`<button class="btn btn-sm btn-primary btn-modificar">Modificar</button>
-                             <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+                              <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
                 }).draw(false);
             }
         });
@@ -241,35 +286,32 @@ $(document).ready(function(){
         tabla.row($(this).parents('tr')).remove().draw();
     });
 
-    // ======================
-    // Botón salir
-    // ======================
+    // ====================== Botón salir ======================
     $('#btn_salir_general').click(()=> window.location.href='/' );
 
-    // ======================
-    // Grabar solicitud
-    // ======================
+    // ====================== Grabar solicitud ======================
     $('#btn_grabar_solicitud').click(function(){
         if(detalle.length===0) return Swal.fire("Error","Debe agregar al menos un producto","error");
         let id_funcionario = $('#cbo_funcionario').val();
         let id_sucursal = $('#cbo_sucursal').val();
         let id_deposito = $('#cbo_deposito').val();
+        let id_proveedor = $('#cbo_proveedor').val();
         let fecha_solicitud = $('#txt_fecha_solicitud').val();
 
-        if(!id_funcionario || !id_sucursal || !id_deposito || !fecha_solicitud){
+        if(!id_funcionario || !id_sucursal || !id_deposito || !fecha_solicitud || !id_proveedor){
             return Swal.fire("Error","Complete todos los campos del encabezado","error");
         }
 
         let payload = {
-            id_funcionario: id_funcionario,
-            id_sucursal: id_sucursal,
-            id_deposito: id_deposito,
-            fecha_solicitud: fecha_solicitud,
+            id_funcionario:id_funcionario,
+            id_sucursal:id_sucursal,
+            id_deposito:id_deposito,
+            id_proveedor:id_proveedor,
+            fecha_solicitud:fecha_solicitud,
             detalle_solicitud: detalle.map(d => ({
                 id_item: d.id_item,
-                item_descripcion: d.producto,
                 cant_solicitada: d.cantidad,
-                unidad_med: 1  // opcional, si todo es unidad
+                unidad_med:1
             }))
         };
 
@@ -282,14 +324,13 @@ $(document).ready(function(){
                 if(res.success){
                     Swal.fire("Éxito","Solicitud registrada","success");
                     detalle=[]; tabla.clear().draw();
-                    cargarNroSolicitud(); // volver a cargar el nro de solicitud
+                    cargarNroSolicitud();
                 } else Swal.fire("Error",res.error,"error");
             },
-            error:function(){Swal.fire("Error","Ocurrió un error","error");}
+            error:function(){ Swal.fire("Error","Ocurrió un error","error"); }
         });
     });
 
 });
 </script>
-
 {% endblock %}

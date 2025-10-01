@@ -10,13 +10,18 @@ class PedidoDeComprasDto:
         id_pedido_compra_cab: Optional[int] = None,
         nro_pedido: str = '',
         id_funcionario: int = 0,
-        id_proveedor: Optional[int] = None,
+        id_proveedor: Optional[int] = None,  # <-- obligatorio al crear pedido
         id_sucursal: Optional[int] = None,
         id_deposito: Optional[int] = None,
         estado: Optional[EstadoPedidoCompra] = None,
         fecha_pedido: Optional[date] = None,
         detalle_pedido: Optional[List[PedidoDeCompraDetalleDto]] = None
     ):
+        if id_proveedor is None:
+            raise ValueError("El id_proveedor no puede ser None al crear un pedido")
+        if id_funcionario == 0:
+            raise ValueError("El id_funcionario no puede ser 0 al crear un pedido")
+
         self.__id_pedido_compra_cab = id_pedido_compra_cab
         self.__nro_pedido = nro_pedido or f'PED-{int(date.today().strftime("%Y%m%d"))}'
         self.__id_funcionario = id_funcionario
@@ -59,11 +64,13 @@ class PedidoDeComprasDto:
         self.__id_funcionario = valor
 
     @property
-    def id_proveedor(self) -> Optional[int]:
+    def id_proveedor(self) -> int:
         return self.__id_proveedor
 
     @id_proveedor.setter
-    def id_proveedor(self, valor: Optional[int]):
+    def id_proveedor(self, valor: int):
+        if valor is None:
+            raise ValueError("El atributo id_proveedor no puede ser None")
         self.__id_proveedor = valor
 
     @property

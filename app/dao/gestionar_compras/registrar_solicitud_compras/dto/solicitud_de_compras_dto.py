@@ -2,6 +2,7 @@ from typing import List, Optional
 from datetime import date
 from app.dao.gestionar_compras.registrar_solicitud_compras.dto.solicitud_de_compra_detalle_dto import SolicitudDetalleDto
 
+
 class SolicitudDto:
     """
     DTO principal de la solicitud de compra.
@@ -14,7 +15,8 @@ class SolicitudDto:
         nro_solicitud: str = '',
         id_funcionario: int = 0,
         id_sucursal: Optional[int] = None,
-        id_deposito: Optional[int] = None,          # <--- NUEVO CAMPO
+        id_deposito: Optional[int] = None,
+        id_proveedor: Optional[int] = None,   # NUEVO CAMPO
         fecha_solicitud: Optional[date] = None,
         detalle_solicitud: Optional[List[SolicitudDetalleDto]] = None
     ):
@@ -22,7 +24,8 @@ class SolicitudDto:
         self.__nro_solicitud = nro_solicitud or f'SOL-{int(date.today().strftime("%Y%m%d"))}'
         self.__id_funcionario = id_funcionario
         self.__id_sucursal = id_sucursal
-        self.__id_deposito = id_deposito            # <--- NUEVO CAMPO
+        self.__id_deposito = id_deposito
+        self.__id_proveedor = id_proveedor
         self.__fecha_solicitud = fecha_solicitud or date.today()
         self.__detalle_solicitud = detalle_solicitud or []
 
@@ -65,7 +68,6 @@ class SolicitudDto:
     def id_sucursal(self, valor: Optional[int]):
         self.__id_sucursal = valor
 
-    # -------- NUEVO CAMPO --------
     @property
     def id_deposito(self) -> Optional[int]:
         return self.__id_deposito
@@ -73,7 +75,14 @@ class SolicitudDto:
     @id_deposito.setter
     def id_deposito(self, valor: Optional[int]):
         self.__id_deposito = valor
-    # -----------------------------
+
+    @property
+    def id_proveedor(self) -> Optional[int]:
+        return self.__id_proveedor
+
+    @id_proveedor.setter
+    def id_proveedor(self, valor: Optional[int]):
+        self.__id_proveedor = valor
 
     @property
     def fecha_solicitud(self) -> date:

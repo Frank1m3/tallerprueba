@@ -88,12 +88,12 @@ def crear_pedido():
         from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compras_dto import PedidoDeComprasDto
         from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_detalle_dto import PedidoDeCompraDetalleDto
 
+        # Construir lista de detalles con id_item (no item_code ni id_proveedor)
         detalle_objs = []
         for d in data.get('detalle_pedido', []):
             detalle_objs.append(PedidoDeCompraDetalleDto(
-                item_code=d.get('item_code', ''),
+                id_item=d.get('id_item'),
                 item_descripcion=d.get('item_descripcion', ''),
-                id_proveedor=d.get('id_proveedor'),
                 cant_pedido=d.get('cant_pedido', 1),
                 costo_unitario=d.get('costo_unitario', 0),
                 stock_actual=d.get('stock_actual', 0),
@@ -101,13 +101,12 @@ def crear_pedido():
                 tipo_impuesto=d.get('tipo_impuesto', None)
             ))
 
-        # Construcción del DTO usando id_sucursal e id_deposito
+        # Construir cabecera del pedido
         pedido_dto = PedidoDeComprasDto(
             nro_pedido=data.get('nro_pedido', f'PED-{int(date.today().strftime("%Y%m%d"))}'),
             id_funcionario=data.get('id_funcionario'),
-            id_sucursal=data.get('id_sucursal'),   # <--- CORREGIDO
-            id_deposito=data.get('id_deposito'),   # <--- CORREGIDO
-            id_proveedor=data.get('id_proveedor', None),
+            id_sucursal=data.get('id_sucursal'),
+            id_deposito=data.get('id_deposito'),
             detalle_pedido=detalle_objs
         )
 

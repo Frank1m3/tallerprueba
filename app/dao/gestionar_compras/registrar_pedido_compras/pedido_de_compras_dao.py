@@ -1,6 +1,7 @@
 from flask import current_app as app
 from app.conexion.Conexion import Conexion
 from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compras_dto import PedidoDeComprasDto
+from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_detalle_dto import PedidoDeCompraDetalleDto
 
 class PedidoDeComprasDao:
 
@@ -19,8 +20,7 @@ class PedidoDeComprasDao:
             p.prov_nombre
         FROM item i
         LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
-        LEFT JOIN stock s 
-            ON s.id_item = i.id_item
+        LEFT JOIN stock s ON s.id_item = i.id_item
         """ + (" AND s.id_sucursal = %s AND s.id_deposito = %s" if id_sucursal and id_deposito else "") + """
         WHERE i.activo = TRUE
         ORDER BY i.descripcion
@@ -85,7 +85,7 @@ class PedidoDeComprasDao:
                 'fun_id': f[3],
                 'funcionario': f[4],
                 'sucursal': f[5],
-                'deposito': f[6] if f[6] is not None else ''
+                'deposito': f[6] if f[6] else ''
             } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al obtener pedidos: {str(e)}")
@@ -98,28 +98,35 @@ class PedidoDeComprasDao:
     # Agregar nuevo pedido
     # ================================
     def agregar(self, pedido_dto: PedidoDeComprasDto) -> bool:
+        if pedido_dto.id_proveedor is None:
+            app.logger.error("No se puede insertar pedido: id_proveedor es None")
+            return False
+
         insert_cabecera = """
         INSERT INTO pedido_compra_cab
-        (fecha_pedido, id_funcionario, id_sucursal, id_deposito)
-        VALUES (%s, %s, %s, %s)
+        (fecha_pedido, id_funcionario, id_sucursal, id_deposito, id_proveedor)
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id_pedido_compra_cab, nro_pedido
         """
+
         insert_detalle = """
         INSERT INTO pedido_compra_det
-        (id_pedido_compra_cab, nro_pedido, item_code, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        (id_pedido_compra_cab, nro_pedido, id_item, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto, id_proveedor)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
+
         conexion = Conexion()
         con = conexion.getConexion()
         con.autocommit = False
         cur = con.cursor()
         try:
-            # ⚡ Ajuste: usar id_sucursal e id_deposito
+            # Insertar cabecera
             parametros_cabecera = (
                 pedido_dto.fecha_pedido,
                 pedido_dto.id_funcionario,
                 pedido_dto.id_sucursal,
-                pedido_dto.id_deposito
+                pedido_dto.id_deposito,
+                pedido_dto.id_proveedor
             )
             app.logger.info(f"Inserting pedido_cab: {parametros_cabecera}")
             cur.execute(insert_cabecera, parametros_cabecera)
@@ -127,19 +134,24 @@ class PedidoDeComprasDao:
             id_pedido_cab = fila[0]
             nro_pedido = fila[1]
 
+            # Insertar detalles
             for det in pedido_dto.detalle_pedido:
+                if det.id_item is None:
+                    raise ValueError("id_item no puede ser None")
                 cur.execute(insert_detalle, (
                     id_pedido_cab,
                     nro_pedido,
-                    det.item_code,
+                    det.id_item,
                     det.item_descripcion,
-                    det.unidad_med if hasattr(det,'unidad_med') else None,
+                    det.unidad_med,
                     det.cant_pedido,
                     det.costo_unitario,
-                    det.tipo_impuesto if hasattr(det,'tipo_impuesto') else None
+                    det.tipo_impuesto,
+                    det.id_proveedor or pedido_dto.id_proveedor
                 ))
 
             con.commit()
+            app.logger.info(f"Pedido {nro_pedido} agregado correctamente con id_proveedor {pedido_dto.id_proveedor}")
             return True
         except Exception as e:
             app.logger.error(f"Error al agregar pedido: {str(e)}")
@@ -174,10 +186,6 @@ class PedidoDeComprasDao:
     # Obtener siguiente número de pedido
     # ================================
     def obtener_siguiente_nro_pedido(self):
-        """
-        Devuelve el siguiente nro_pedido basado en id_pedido_compra_cab.
-        Si no hay pedidos, devuelve 1.
-        """
         query = "SELECT COALESCE(MAX(id_pedido_compra_cab), 0) + 1 FROM pedido_compra_cab"
         conexion = Conexion()
         con = conexion.getConexion()

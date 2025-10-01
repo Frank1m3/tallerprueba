@@ -1,17 +1,30 @@
 class PedidoDeCompraDetalleDto:
 
-    def __init__(self,
-                 id_pedido_compra_cab: int = None,
-                 id_item: int = None,                # <-- Cambiado
-                 item_descripcion: str = '',
-                 unidad_med: int = None,
-                 cant_pedido: float = 1.0,
-                 costo_unitario: float = 0.0,
-                 tipo_impuesto: str = None,
-                 id_proveedor: int = None,
-                 stock_actual: float = 0.0):
+    def __init__(
+        self,
+        id_pedido_compra_cab: int = None,
+        id_item: int = None,
+        item_code: str = '',
+        item_descripcion: str = '',
+        unidad_med: int = None,
+        cant_pedido: float = 1.0,
+        costo_unitario: float = 0.0,
+        tipo_impuesto: str = None,
+        id_proveedor: int = None,
+        stock_actual: float = 0.0
+    ):
+        if id_item is None:
+            raise ValueError("id_item no puede ser None")
+        if not item_code:
+            raise ValueError("item_code no puede estar vacío")
+        if not item_descripcion:
+            raise ValueError("item_descripcion no puede estar vacía")
+        if id_proveedor is None:
+            raise ValueError("id_proveedor no puede ser None")
+
         self.__id_pedido_compra_cab = id_pedido_compra_cab
-        self.__id_item = id_item                     # <-- Cambiado
+        self.__id_item = id_item
+        self.__item_code = item_code
         self.__item_descripcion = item_descripcion
         self.__unidad_med = unidad_med
         self.__cant_pedido = cant_pedido
@@ -21,7 +34,7 @@ class PedidoDeCompraDetalleDto:
         self.__stock_actual = stock_actual
 
     # --------------------
-    # Propiedades originales
+    # Propiedades
     # --------------------
     @property
     def id_pedido_compra_cab(self) -> int:
@@ -38,8 +51,18 @@ class PedidoDeCompraDetalleDto:
     @id_item.setter
     def id_item(self, valor: int):
         if valor is None:
-            raise ValueError("El id_item no puede estar vacío")
+            raise ValueError("id_item no puede ser None")
         self.__id_item = valor
+
+    @property
+    def item_code(self) -> str:
+        return self.__item_code
+
+    @item_code.setter
+    def item_code(self, valor: str):
+        if not valor:
+            raise ValueError("item_code no puede estar vacío")
+        self.__item_code = valor
 
     @property
     def item_descripcion(self) -> str:
@@ -48,7 +71,7 @@ class PedidoDeCompraDetalleDto:
     @item_descripcion.setter
     def item_descripcion(self, valor: str):
         if not valor:
-            raise ValueError("La descripción no puede estar vacía")
+            raise ValueError("item_descripcion no puede estar vacía")
         self.__item_descripcion = valor
 
     @property
@@ -89,15 +112,14 @@ class PedidoDeCompraDetalleDto:
     def tipo_impuesto(self, valor: str):
         self.__tipo_impuesto = valor
 
-    # --------------------
-    # Nuevas propiedades
-    # --------------------
     @property
     def id_proveedor(self) -> int:
         return self.__id_proveedor
 
     @id_proveedor.setter
     def id_proveedor(self, valor: int):
+        if valor is None:
+            raise ValueError("id_proveedor no puede ser None")
         self.__id_proveedor = valor
 
     @property

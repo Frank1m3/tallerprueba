@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from flask import Blueprint, jsonify, request, current_app as app
 from app.dao.gestionar_compras.registrar_solicitud_compras.SolicitudCompraDao import SolicitudCompraDao
+from app.dao.referenciales.sucursal.sucursal_dao import SucursalDao
 from app.dao.referenciales.funcionario.funcionario_dao import FuncionarioDao
+from app.dao.referenciales.proveedor.ProveedorDao import ProveedorDao
 from app import csrf
-
 from app.dao.gestionar_compras.registrar_solicitud_compras.dto.solicitud_de_compras_dto import SolicitudDto
 from app.dao.gestionar_compras.registrar_solicitud_compras.dto.solicitud_de_compra_detalle_dto import SolicitudDetalleDto
 
@@ -17,10 +18,10 @@ def siguiente_nro_solicitud():
     try:
         dao = SolicitudCompraDao()
         siguiente = dao.obtener_siguiente_nro_solicitud()
-        return jsonify(success=True, siguiente_nro=siguiente)
+        return jsonify({'success': True, 'siguiente_nro': siguiente})
     except Exception as e:
         app.logger.error(f"Error al obtener siguiente nro_solicitud: {str(e)}")
-        return jsonify(success=False, error=str(e)), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ================================
 # Obtener funcionarios activos
@@ -36,7 +37,20 @@ def get_funcionarios():
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
 
 # ================================
-# Obtener productos (solo id y descripción)
+# Obtener proveedores activos
+# ================================
+@scapi.route('/proveedores', methods=['GET'])
+def get_proveedores():
+    try:
+        dao = ProveedorDao()
+        proveedores = dao.getProveedores()
+        return jsonify({'success': True, 'data': proveedores, 'error': None}), 200
+    except Exception as e:
+        app.logger.error(f"Error al obtener proveedores: {str(e)}")
+        return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
+
+# ================================
+# Obtener productos filtrando por proveedor, sucursal y depósito
 # ================================
 @scapi.route('/productos', methods=['GET'])
 def get_productos():
@@ -44,10 +58,22 @@ def get_productos():
         dao = SolicitudCompraDao()
         id_sucursal = request.args.get('id_sucursal', type=int)
         id_deposito = request.args.get('id_deposito', type=int)
-        productos = dao.obtener_productos(id_sucursal=id_sucursal, id_deposito=id_deposito)
-        # Eliminar stock y proveedor
-        productos = [{'id_item': p['id_item'], 'nombre': p['nombre']} for p in productos]
-        return jsonify({'success': True, 'data': productos, 'error': None}), 200
+        id_proveedor = request.args.get('id_proveedor', type=int)
+
+        productos = []
+        if id_proveedor:
+            productos = dao.obtener_productos_por_proveedor(id_proveedor, id_sucursal, id_deposito)
+
+        productos_serializados = [{
+            'id_item': p['id_item'],
+            'item_code': p['item_code'],
+            'nombre': p['nombre'],
+            'stock': p['stock'],
+            'precio': p.get('precio', 0),
+            'unidad_med': p.get('unidad_med', 1)
+        } for p in productos]
+
+        return jsonify({'success': True, 'data': productos_serializados, 'error': None}), 200
     except Exception as e:
         app.logger.error(f"Error al obtener productos: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
@@ -58,8 +84,8 @@ def get_productos():
 @scapi.route('/sucursal-depositos/<int:id_sucursal>', methods=['GET'])
 def get_sucursal_depositos(id_sucursal):
     try:
-        dao = SolicitudCompraDao()
-        depositos = dao.obtener_depositos_por_sucursal(id_sucursal)
+        dao = SucursalDao()
+        depositos = dao.get_sucursal_depositos(id_sucursal)
         return jsonify({'success': True, 'data': depositos, 'error': None}), 200
     except Exception as e:
         app.logger.error(f"Error al obtener depósitos: {str(e)}")
@@ -79,7 +105,7 @@ def get_solicitudes():
         return jsonify({'success': False, 'data': [], 'error': str(e)}), 500
 
 # ================================
-# Crear nueva solicitud
+# Crear nueva solicitud (con stock y precio)
 # ================================
 @scapi.route('/solicitudes', methods=['POST'])
 @csrf.exempt
@@ -89,34 +115,27 @@ def crear_solicitud():
         if not data:
             return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
 
-        # Crear objetos de detalle usando id_item
-        detalle_objs = []
-        for d in data.get('detalle_solicitud', []):
-            detalle_objs.append(
-                SolicitudDetalleDto(
-                    id_item=d.get('id_item'),
-                    item_descripcion=d.get('item_descripcion', ''),
-                    unidad_med=d.get('unidad_med', None),
-                    cant_solicitada=d.get('cantidad', 1.0)
-                )
-            )
+        detalle_objs = [SolicitudDetalleDto(
+            id_item=d.get('id_item'),
+            item_descripcion=d.get('item_descripcion', ''),
+            unidad_med=d.get('unidad_med', 1),
+            cant_solicitada=d.get('cant_solicitada', 1),
+            stock=d.get('stock', 0),
+            precio=d.get('precio', 0)
+        ) for d in data.get('detalle_solicitud', [])]
 
-        # Convertir fecha si viene como string
         fecha_raw = data.get('fecha_solicitud')
         if isinstance(fecha_raw, str):
-            try:
-                fecha_solicitud = datetime.strptime(fecha_raw, "%Y-%m-%d").date()
-            except ValueError:
-                fecha_solicitud = date.today()
+            fecha_solicitud = datetime.strptime(fecha_raw, "%Y-%m-%d").date()
         else:
             fecha_solicitud = fecha_raw or date.today()
 
-        # Crear DTO principal
         solicitud_dto = SolicitudDto(
             fecha_solicitud=fecha_solicitud,
             id_sucursal=data.get('id_sucursal'),
             id_deposito=data.get('id_deposito'),
             id_funcionario=data.get('id_funcionario'),
+            id_proveedor=data.get('id_proveedor'),
             detalle_solicitud=detalle_objs
         )
 
@@ -126,19 +145,16 @@ def crear_solicitud():
             return jsonify({'success': True, 'data': None, 'error': None}), 201
         else:
             return jsonify({'success': False, 'error': 'No se pudo registrar la solicitud'}), 500
-
     except Exception as e:
         app.logger.error(f"Error al crear solicitud: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
+
 # ================================
-# Anular una solicitud
+# Anular solicitud
 # ================================
 @scapi.route('/anular/<int:id_solicitud>', methods=['PUT'])
-@csrf.exempt   # si usás CSRF y tu front es AJAX, esto evita problemas de token
+@csrf.exempt
 def anular_solicitud(id_solicitud):
-    """
-    Marca la solicitud de compra como ANULADA.
-    """
     try:
         dao = SolicitudCompraDao()
         exito = dao.anular(id_solicitud)
