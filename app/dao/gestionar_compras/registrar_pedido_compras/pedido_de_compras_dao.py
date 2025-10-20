@@ -1,3 +1,4 @@
+# ---------------------- DAO ----------------------
 from flask import current_app as app
 from app.conexion.Conexion import Conexion
 from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compras_dto import PedidoDeComprasDto
@@ -5,7 +6,9 @@ from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_det
 
 class PedidoDeComprasDao:
 
+    # ------------------------------
     # Obtener todos los productos (items) con stock real y proveedor
+    # ------------------------------
     def obtener_productos(self, id_sucursal=None, id_deposito=None):
         query = """
         SELECT
@@ -49,7 +52,44 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
+    # ------------------------------
+    # Obtener proveedor de un item
+    # ------------------------------
+    def obtener_producto_por_id(self, id_item):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            # Convertimos id_item a string porque item_code es varchar
+            cur.execute("""
+                SELECT i.item_code, i.descripcion, i.id_proveedor, p.prov_nombre
+                FROM item i
+                LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
+                WHERE i.item_code = %s
+            """, (str(id_item),))
+            fila = cur.fetchone()
+            if fila:
+                return {
+                    'item_code': fila[0],
+                    'nombre': fila[1],
+                    'id_proveedor': fila[2],
+                    'proveedor_nombre': fila[3] if fila[3] else ''
+                }
+            return None
+        except Exception as e:
+            app.logger.error(f"Error al obtener proveedor del item {id_item}: {str(e)}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ------------------------------
+    # ... resto del DAO queda igual ...
+
+
+    # ------------------------------
     # Obtener todos los pedidos
+    # ------------------------------
     def obtener_pedidos(self):
         query = """
         SELECT
@@ -95,7 +135,9 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
+    # ------------------------------
     # Agregar nuevo pedido
+    # ------------------------------
     def agregar(self, pedido_dto: PedidoDeComprasDto) -> bool:
         insert_cabecera = """
         INSERT INTO pedido_compra_cab
@@ -149,7 +191,9 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
+    # ------------------------------
     # Anular pedido
+    # ------------------------------
     def anular(self, id_pedido_compra_cab: int) -> bool:
         sql = "UPDATE pedido_compra_cab SET estado='ANULADO' WHERE id_pedido_compra_cab=%s"
         conexion = Conexion()
@@ -167,7 +211,9 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
+    # ------------------------------
     # Obtener siguiente número de pedido
+    # ------------------------------
     def obtener_siguiente_nro_pedido(self):
         query = "SELECT COALESCE(MAX(id_pedido_compra_cab), 0) + 1 FROM pedido_compra_cab"
         conexion = Conexion()
@@ -184,7 +230,9 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
+    # ------------------------------
     # Obtener datos de una solicitud específica por NRO
+    # ------------------------------
     def obtener_solicitud_por_nro(self, nro_solicitud):
         conexion = Conexion()
         con = conexion.getConexion()

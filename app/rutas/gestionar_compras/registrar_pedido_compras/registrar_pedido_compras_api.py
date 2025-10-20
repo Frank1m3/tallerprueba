@@ -1,3 +1,4 @@
+# ---------------------- Blueprint ----------------------
 from datetime import date
 from flask import Blueprint, jsonify, request, current_app as app
 from app.dao.gestionar_compras.registrar_pedido_compras.pedido_de_compras_dao import PedidoDeComprasDao
@@ -6,6 +7,26 @@ from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_det
 from app import csrf
 
 pdcapi = Blueprint('pdcapi', __name__)
+
+# =================================
+# Obtener proveedor de un producto
+# =================================
+@pdcapi.route('/item-proveedor/<string:id_item>', methods=['GET'])
+def get_item_proveedor(id_item):
+    try:
+        dao = PedidoDeComprasDao()
+        producto = dao.obtener_producto_por_id(id_item)
+        if not producto:
+            return jsonify(success=False, error='Producto no encontrado'), 404
+
+        return jsonify(
+            success=True,
+            id_proveedor=producto.get('id_proveedor'),
+            proveedor=producto.get('proveedor_nombre','')
+        )
+    except Exception as e:
+        app.logger.error(f"Error al obtener proveedor del item {id_item}: {str(e)}")
+        return jsonify(success=False, error=f'Ocurrió un error interno: {str(e)}'), 500
 
 # =================================
 # Siguiente número de pedido
@@ -47,6 +68,7 @@ def get_productos():
     except Exception as e:
         app.logger.error(f"Error al obtener productos: {str(e)}")
         return jsonify(success=False, error='Ocurrió un error interno.'), 500
+
 
 # =================================
 # Obtener depósitos por sucursal
@@ -117,6 +139,7 @@ def crear_pedido():
     except Exception as e:
         app.logger.error(f"Error al crear pedido: {str(e)}")
         return jsonify(success=False, error=f'Ocurrió un error interno: {str(e)}'), 500
+        
 
 # =================================
 # Obtener solicitud por nro

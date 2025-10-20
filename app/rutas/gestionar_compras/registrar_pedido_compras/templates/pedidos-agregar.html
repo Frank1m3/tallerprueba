@@ -9,15 +9,12 @@
             <h4 class="mb-0">PEDIDO DE COMPRA</h4>
         </div>
         <div class="card-body">
-
             <!-- Encabezado pedido -->
             <div class="row mb-3">
                 <div class="col-md-2">
                     <label>Nro Pedido</label>
                     <input type="text" id="txt_nro_pedido" class="form-control" readonly>
                 </div>
-
-                <!-- Checkbox Sin Pedido / Con Pedido -->
                 <div class="col-md-2">
                     <label>Tipo de Pedido</label>
                     <div>
@@ -29,13 +26,10 @@
                         <label for="rb_con_pedido">Con Pedido</label>
                     </div>
                 </div>
-
-                <!-- Número de Solicitud -->
                 <div class="col-md-2">
                     <label>Nro Solicitud</label>
                     <input type="text" id="txt_nro_solicitud" class="form-control" placeholder="Ingrese nro de solicitud" readonly>
                 </div>
-
                 <div class="col-md-2">
                     <label>Solicitante</label>
                     <select id="cbo_funcionario" class="form-control">
@@ -45,7 +39,6 @@
                         {% endfor %}
                     </select>
                 </div>
-
                 <div class="col-md-2">
                     <label>Sucursal</label>
                     <select id="cbo_sucursal" class="form-control">
@@ -55,25 +48,20 @@
                         {% endfor %}
                     </select>
                 </div>
-
                 <div class="col-md-2">
                     <label>Depósito</label>
                     <select id="cbo_deposito" class="form-control">
                         <option value="">Seleccione</option>
                     </select>
                 </div>
-
                 <div class="col-md-2">
                     <label>Fecha Pedido</label>
                     <input type="date" id="txt_fecha_pedido" class="form-control">
                 </div>
-
                 <div class="col-md-2">
                     <label>Fecha Necesaria</label>
                     <input type="date" id="txt_fecha_necesaria" class="form-control">
                 </div>
-
-                <!-- NUEVO: Tipo de Factura -->
                 <div class="col-md-2">
                     <label>Tipo de Factura</label>
                     <select id="cbo_tipo_factura" class="form-control">
@@ -84,8 +72,9 @@
                 </div>
             </div>
 
-            <!-- Selección de producto -->
+            <!-- Selección de proveedor y producto -->
             <div class="row mb-3 align-items-end">
+                
                 <div class="col-md-3">
                     <label>Producto</label>
                     <select id="cbo_producto" class="form-control">
@@ -164,6 +153,10 @@
         </div>
     </div>
 </div>
+
+<!-- Input oculto para proveedor global -->
+<input type="hidden" id="id_proveedor_global" value="">
+
 {% endblock %}
 
 {% block js %}
@@ -225,9 +218,6 @@ $(document).ready(function(){
         }
     });
 
-    // -------------------------
-    // Cargar por nro de solicitud
-    // -------------------------
     $('#txt_nro_solicitud').keypress(function(e){
         if(e.which===13){
             e.preventDefault();
@@ -244,94 +234,80 @@ $(document).ready(function(){
                     $('#cbo_sucursal').val(res.data.id_sucursal).trigger('change');
                     setTimeout(()=> { $('#cbo_deposito').val(res.data.id_deposito); }, 300);
 
-                    let id_proveedor_global = null;
+                    let id_proveedor_global = res.data.detalle.length>0 ? res.data.detalle[0].id_proveedor : null;
 
                     res.data.detalle.forEach(d=>{
-                        let cantidad = parseFloat(d.cant_pedido) || 0;
-                        let precio = parseFloat(d.precio) || 0;
-                        let stock_actual = parseFloat(d.stock_actual) || 0;
-                        let subtotal = cantidad * precio;
+                        let cantidad = parseFloat(d.cant_pedido)||0;
+                        let precio = parseFloat(d.precio)||0;
+                        let stock_actual = parseFloat(d.stock_actual)||0;
+                        let subtotal = cantidad*precio;
+                        let proveedor = d.proveedor || '';
+                        if(!proveedor) proveedor = $('#id_proveedor_global').val() || '';
+                        let id_proveedor = d.id_proveedor || id_proveedor_global;
 
-                        detalle.push({
-                            id_item: d.id_item,
-                            codigo: d.item_code,
-                            producto: d.producto,
-                            proveedor: d.proveedor || '',
-                            id_proveedor: d.id_proveedor,
-                            stock_actual,
-                            cantidad,
-                            precio,
-                            subtotal
-                        });
-
-                        if(!id_proveedor_global) id_proveedor_global = d.id_proveedor;
+                        detalle.push({id_item:d.item_code, codigo:d.item_code, producto:d.producto,
+                            proveedor, id_proveedor, stock_actual, cantidad, precio, subtotal});
 
                         tabla.row.add({
-                            codigo: d.item_code,
-                            producto: d.producto,
-                            proveedor: d.proveedor || '',
+                            codigo:d.item_code,
+                            producto:d.producto,
+                            proveedor,
                             stock_actual,
                             cantidad,
-                            precio: precio.toFixed(2),
-                            subtotal: subtotal.toFixed(2),
+                            precio:precio.toFixed(2),
+                            subtotal:subtotal.toFixed(2),
                             acciones:`<button class="btn btn-sm btn-primary btn-modificar">Modificar</button>
                                      <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
                         }).draw();
                     });
-
-                    actualizarTotal();
                     $('#id_proveedor_global').val(id_proveedor_global);
-
-                } else {
-                    Swal.fire('Error',res.error||'Solicitud no encontrada','error');
-                }
+                    actualizarTotal();
+                } else Swal.fire('Error',res.error||'Solicitud no encontrada','error');
             });
         }
     });
 
-    // -------------------------
-    // Actualizar stock y proveedor al seleccionar producto (sin pedido)
-    // -------------------------
+    // Filtrar productos por proveedor
+    $('#cbo_proveedor_filtro').change(function(){
+        let proveedor_id = $(this).val();
+        $('#cbo_producto option').each(function(){
+            if(!proveedor_id || $(this).data('proveedor-id')==proveedor_id){
+                $(this).show();
+            } else $(this).hide();
+        });
+        $('#cbo_producto').val('');
+        $('#txt_stock_actual,#txt_precio_info,#txt_proveedor').val('');
+        $('#id_proveedor_global').val(proveedor_id || '');
+    });
+
     function actualizarStockYProveedor(){
         let id_deposito = $('#cbo_deposito').val();
         let op = $('#cbo_producto option:selected');
         let id_item = op.val();
-
-        // Traer precio desde option
-        let precio = parseFloat(op.data('precio')) || 0;
+        let precio = parseFloat(op.data('precio'))||0;
         $('#txt_precio_info').val(precio.toFixed(2));
 
-        // Traer stock actual del depósito
         if(id_deposito && id_item){
             $.getJSON(`/api/v1/stock/${id_deposito}/${id_item}`, function(res){
-                $('#txt_stock_actual').val(res.success ? (res.stock || 0) : 0);
+                $('#txt_stock_actual').val(res.success ? (res.stock||0) : 0);
             });
-        } else {
-            $('#txt_stock_actual').val(0);
-        }
+        } else $('#txt_stock_actual').val(0);
 
-        // ----------- TRAER PROVEEDOR AUTOMÁTICAMENTE -----------
-        let id_proveedor_global = $('#id_proveedor_global').val();
-        if(!id_proveedor_global && id_item){
-            $.getJSON(`/api/v1/gestionar-compras/registrar-pedido-compras/item-proveedor/${id_item}`, function(res){
-                if(res.success){
-                    $('#txt_proveedor').val(res.proveedor || '');
-                    $('#id_proveedor_global').val(res.id_proveedor);
-                }
-            });
+        if(!$('#id_proveedor_global').val() && id_item){
+            let proveedor_nombre = op.data('proveedor-nombre')||'';
+            let id_proveedor = op.data('proveedor-id')||'';
+            $('#txt_proveedor').val(proveedor_nombre);
+            $('#id_proveedor_global').val(id_proveedor);
+        } else {
+            $('#txt_proveedor').val(op.data('proveedor-nombre')||'');
         }
     }
-
     $('#cbo_producto,#cbo_deposito').on('change', actualizarStockYProveedor);
 
-    // -------------------------
-    // Agregar producto al detalle
-    // -------------------------
     $('#btn_agregar').click(function(){
         let op = $('#cbo_producto option:selected');
         let id_item = op.val();
         let producto = op.text();
-        let codigo = id_item; 
         let stock_actual = parseFloat($('#txt_stock_actual').val())||0;
         let cantidad = parseFloat($('#txt_cantidad').val());
         let precio = parseFloat($('#txt_precio_info').val());
@@ -343,19 +319,18 @@ $(document).ready(function(){
         }
 
         let subtotal = cantidad*precio;
-        let fila = {id_item,codigo,producto,proveedor,id_proveedor,stock_actual,cantidad,precio,subtotal};
-        detalle.push(fila);
+        detalle.push({id_item, codigo:id_item, producto, proveedor, id_proveedor, stock_actual, cantidad, precio, subtotal});
 
         tabla.row.add({
-            codigo:fila.codigo,
-            producto:fila.producto,
-            proveedor:fila.proveedor,
-            stock_actual:fila.stock_actual,
-            cantidad:fila.cantidad,
-            precio:fila.precio.toFixed(2),
-            subtotal:fila.subtotal.toFixed(2),
+            codigo:id_item,
+            producto,
+            proveedor,
+            stock_actual,
+            cantidad,
+            precio:precio.toFixed(2),
+            subtotal:subtotal.toFixed(2),
             acciones:`<button class="btn btn-sm btn-primary btn-modificar">Modificar</button>
-                      <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+                     <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
         }).draw();
 
         actualizarTotal();
@@ -363,9 +338,6 @@ $(document).ready(function(){
         $('#txt_stock_actual,#txt_cantidad,#txt_precio_info,#txt_proveedor').val('');
     });
 
-    // -------------------------
-    // Modificar cantidad
-    // -------------------------
     $('#tbl_detalle tbody').on('click','.btn-modificar', function(){
         let row = $(this).closest('tr');
         let idx = tabla.row(row).index();
@@ -402,9 +374,6 @@ $(document).ready(function(){
         });
     });
 
-    // -------------------------
-    // Eliminar item
-    // -------------------------
     $('#tbl_detalle tbody').on('click','.btn-eliminar', function(){
         let idx = tabla.row($(this).parents('tr')).index();
         detalle.splice(idx,1);
@@ -412,9 +381,6 @@ $(document).ready(function(){
         actualizarTotal();
     });
 
-    // -------------------------
-    // Grabar pedido
-    // -------------------------
     $('#btn_grabar_pedido').click(function(){
         if(detalle.length===0) return Swal.fire("Error","Debe agregar al menos un producto","error");
         let id_funcionario = $('#cbo_funcionario').val();
@@ -429,16 +395,16 @@ $(document).ready(function(){
 
         let payload={
             nro_pedido: $('#txt_nro_pedido').val(),
-            id_funcionario:id_funcionario,
-            id_proveedor:id_proveedor,
-            id_sucursal:id_sucursal,
-            id_deposito:id_deposito,
+            id_funcionario,
+            id_proveedor,
+            id_sucursal,
+            id_deposito,
             nro_solicitud: $('#txt_nro_solicitud').val() || null,
             fecha_pedido:$('#txt_fecha_pedido').val(),
             fecha_necesaria:$('#txt_fecha_necesaria').val()||null,
-            tipo_factura: tipo_factura,
+            tipo_factura,
             detalle_pedido:detalle.map(d=>({
-                item_code:d.id_item,       
+                item_code:d.id_item,
                 item_descripcion:d.producto,
                 id_proveedor:d.id_proveedor,
                 cant_pedido:d.cantidad,
@@ -467,18 +433,9 @@ $(document).ready(function(){
         });
     });
 
-    // Botones generales
-    $('#btn_agregar_general').click(()=> Swal.fire("Info","Agregar clickeado","info"));
-    $('#btn_anular_general').click(()=> Swal.fire("Info","Anular clickeado","info"));
-    $('#btn_cancelar_general').click(()=> Swal.fire("Info","Cancelar clickeado","info"));
+    $('#btn_cancelar_general').click(()=> location.reload());
     $('#btn_salir_general').click(()=> window.location.href='/');
+
 });
 </script>
-
-<!-- Input oculto para almacenar proveedor de cabecera -->
-<input type="hidden" id="id_proveedor_global" value="">
-
-
-
-
 {% endblock %}
