@@ -51,7 +51,6 @@ class SolicitudCompraDao:
             cur.close()
             con.close()
 
-
     # ================================
     # Obtener productos (opcional filtro por sucursal, depósito y proveedor)
     # ================================
@@ -104,7 +103,6 @@ class SolicitudCompraDao:
         finally:
             cur.close()
             con.close()
-
 
     # ================================
     # Obtener solicitud por ID
@@ -194,7 +192,6 @@ class SolicitudCompraDao:
         finally:
             cur.close()
             con.close()
-
 
     # ================================
     # Modificar solicitud (cabecera + detalles)
@@ -337,6 +334,81 @@ class SolicitudCompraDao:
             con.rollback()
             app.logger.error(f"Error al anular solicitud: {str(e)}")
             return False
+        finally:
+            cur.close()
+            con.close()    
+
+    # ================================
+    # NUEVOS MÉTODOS PARA PRESUPUESTO
+    # ================================
+    def obtener_solicitud_por_nro(self, nro_solicitud):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            # Cabecera con proveedor y funcionario
+            cur.execute("""
+                SELECT sc.id_solicitud, sc.nro_solicitud, sc.fecha_solicitud,
+                       sc.id_proveedor, p.prov_nombre AS proveedor_nombre,
+                       sc.id_solicitante, f.nombres || ' ' || f.apellidos AS funcionario_nombre
+                FROM solicitud_compra_cab sc
+                LEFT JOIN proveedor p ON p.id_proveedor = sc.id_proveedor
+                LEFT JOIN funcionarios f ON f.fun_id = sc.id_solicitante
+                WHERE sc.nro_solicitud = %s
+            """, (nro_solicitud,))
+            cab = cur.fetchone()
+            if not cab:
+                return None
+
+            solicitud = {
+                'id_solicitud': cab[0],
+                'nro_solicitud': cab[1],
+                'fecha_solicitud': cab[2].strftime("%Y-%m-%d") if cab[2] else None,
+                'id_proveedor': cab[3],
+                'proveedor_nombre': cab[4] or '',
+                'id_funcionario': cab[5],
+                'funcionario_nombre': cab[6] or '',
+                'detalles': []
+            }
+
+            # Detalle de la solicitud
+            detalles = self.obtener_detalle_por_numero(cab[0])
+            for d in detalles:
+                d['proveedor'] = solicitud['proveedor_nombre']
+                d['funcionario'] = solicitud['funcionario_nombre']
+            solicitud['detalles'] = detalles
+
+            return solicitud
+        except Exception as e:
+            app.logger.error(f"Error al obtener solicitud {nro_solicitud}: {str(e)}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    def obtener_detalle_por_numero(self, id_solicitud):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("""
+                SELECT d.id_item, i.descripcion AS nombre_producto, d.cantidad, d.unidad_medida
+                FROM solicitud_compra_det d
+                LEFT JOIN item i ON i.id_item = d.id_item
+                WHERE d.id_solicitud = %s
+            """, (id_solicitud,))
+            detalles = []
+            for fila in cur.fetchall():
+                detalles.append({
+                    'id_item': fila[0],
+                    'nombre_producto': fila[1] or '',
+                    'cantidad': float(fila[2]),
+                    'unidad_med': fila[3]
+                })
+            return detalles
+        except Exception as e:
+            app.logger.error(f"Error al obtener detalle de solicitud {id_solicitud}: {str(e)}")
+            return []
         finally:
             cur.close()
             con.close()

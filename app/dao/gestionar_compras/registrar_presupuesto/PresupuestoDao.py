@@ -2,6 +2,7 @@ from flask import current_app as app
 from app.conexion.Conexion import Conexion
 from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_dto import PresupuestoCompraDto
 from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_detalle_dto import PresupuestoCompraDetalleDto
+from app.dao.gestionar_compras.registrar_solicitud_compras.SolicitudCompraDao import SolicitudCompraDao
 
 class PresupuestoCompraDao:
     """
@@ -26,9 +27,6 @@ class PresupuestoCompraDao:
     # Insertar cabecera + detalles
     # ================================
     def insertar(self, dto: PresupuestoCompraDto) -> bool:
-        """
-        Inserta el presupuesto con sus detalles.
-        """
         sql_cab = """
             INSERT INTO presupuesto_compra_cab
             (cod_presupuesto, fun_id, id_proveedor, fecha_emision,
@@ -108,7 +106,7 @@ class PresupuestoCompraDao:
         finally:
             cur.close()
             con.close()
-
+            
     # ================================
     # Buscar mercaderías por código, descripción o código de barras
     # ================================
@@ -149,11 +147,10 @@ class PresupuestoCompraDao:
             resultados = []
             for r in cur.fetchall():
                 resultados.append({
-                    'id_item': r[0],
-                    'item_code': r[1],
+                    'codigo': r[1],
                     'descripcion': r[2],
                     'stock': float(r[3]),
-                    'precio_unitario': float(r[4]),
+                    'precio': float(r[4]),
                     'id_proveedor': r[5],
                     'barras': r[6].split(',') if r[6] else []
                 })
@@ -164,3 +161,24 @@ class PresupuestoCompraDao:
         finally:
             cur.close()
             con.close()
+
+    # ================================
+    # Obtener datos de una solicitud de compra para presupuesto
+    # ================================
+    def obtener_solicitud_para_presupuesto(self, nro_solicitud: int):
+        dao = SolicitudCompraDao()
+        solicitud = dao.obtener_solicitud_por_nro(nro_solicitud)
+        if not solicitud:
+            return {'success': False, 'detalles': []}
+
+        detalles = []
+        for d in solicitud['detalles']:
+            detalles.append({
+                'codigo': d.get('id_item'),
+                'descripcion': d.get('nombre_producto'),
+                'stock': d.get('stock', 0),
+                'cantidad': d.get('cantidad', 0),
+                'precio': d.get('precio', 0)
+            })
+
+        return {'success': True, 'detalles': detalles}

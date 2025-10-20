@@ -19,10 +19,6 @@ def archivo_permitido(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_upload_folder():
-    """
-    Retorna la carpeta absoluta para guardar archivos dentro de static/presupuestos.
-    Crea la carpeta si no existe.
-    """
     folder = os.path.join(current_app.root_path, 'static', 'presupuestos')
     os.makedirs(folder, exist_ok=True)
     return folder
@@ -62,10 +58,6 @@ def presupuesto_agregar():
 # ================================
 @presumod.route('/subir-archivo', methods=['POST'])
 def subir_archivo():
-    # Usar current_app.logger
-    current_app.logger.info(f"Request.files keys: {list(request.files.keys())}")
-    current_app.logger.info(f"Request.form keys: {list(request.form.keys())}")
-
     archivo = request.files.get('archivo')
     if not archivo or archivo.filename == '':
         return jsonify({'success': False, 'error': 'No se recibió archivo o nombre vacío'})
@@ -98,7 +90,6 @@ def guardar_presupuesto():
         estado = request.form.get('estado', 'PENDIENTE')
         detalles_raw = request.form.get('detalles', '[]')
 
-        import json
         try:
             detalles_list = json.loads(detalles_raw)
         except Exception:
@@ -116,7 +107,7 @@ def guardar_presupuesto():
             ) for d in detalles_list
         ]
 
-        # Archivo enviado en el mismo formulario (opcional)
+        # Archivo opcional enviado en el mismo formulario
         archivo = request.files.get('archivo')
         ruta_relativa = None
         if archivo and archivo.filename:
@@ -140,9 +131,8 @@ def guardar_presupuesto():
         )
 
         success = dao.insertar(dto)
-
         return jsonify({'success': success})
+
     except Exception as e:
         current_app.logger.error(f"Error guardando presupuesto: {e}")
         return jsonify({'success': False, 'error': str(e)})
-

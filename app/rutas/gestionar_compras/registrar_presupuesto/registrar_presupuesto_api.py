@@ -2,6 +2,7 @@ from datetime import date
 from flask import Blueprint, jsonify, request, current_app as app
 from app.dao.gestionar_compras.registrar_presupuesto.PresupuestoDao import PresupuestoCompraDao
 from app.dao.referenciales.proveedor.ProveedorDao import ProveedorDao
+from app.dao.gestionar_compras.registrar_solicitud_compras.SolicitudCompraDao import SolicitudCompraDao
 from app import csrf
 
 presuapi = Blueprint('presuapi', __name__)
@@ -33,10 +34,10 @@ def listar_presupuestos():
         return jsonify({'success': False, 'data': [], 'error': str(e)}), 500
 
 # ================================
-# Crear nuevo presupuesto
+# Crear nuevo presupuesto (con CSRF)
 # ================================
 @presuapi.route('/presupuestos', methods=['POST'])
-@csrf.exempt
+@csrf.exempt  # Mantener CSRF si lo necesitas en front-end, o remover si envías token
 def crear_presupuesto():
     try:
         data = request.get_json()
@@ -46,6 +47,7 @@ def crear_presupuesto():
         from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_dto import PresupuestoCompraDto
         from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_detalle_dto import PresupuestoCompraDetalleDto
 
+        # Generar detalles
         detalles_objs = [
             PresupuestoCompraDetalleDto(
                 item_code=d.get('item_code', ''),
@@ -55,8 +57,16 @@ def crear_presupuesto():
             for d in data.get('detalles', [])
         ]
 
+        # Obtener nro_solicitud para usar en cod_presupuesto
+        nro_solicitud = data.get('nro_solicitud')
+        if nro_solicitud:
+            cod_presupuesto = f'PRE-{nro_solicitud}'
+        else:
+            cod_presupuesto = f'PRE-{int(date.today().strftime("%Y%m%d"))}'
+
+        # Crear DTO
         presupuesto_dto = PresupuestoCompraDto(
-            cod_presupuesto=data.get('cod_presupuesto', f'PRE-{int(date.today().strftime("%Y%m%d"))}'),
+            cod_presupuesto=cod_presupuesto,
             fun_id=data.get('fun_id'),
             id_proveedor=data.get('id_proveedor'),
             fecha_emision=data.get('fecha_emision', date.today()),
@@ -69,7 +79,7 @@ def crear_presupuesto():
         dao = PresupuestoCompraDao()
         exito = dao.insertar(presupuesto_dto)
         if exito:
-            return jsonify({'success': True, 'data': None, 'error': None}), 201
+            return jsonify({'success': True, 'data': {'cod_presupuesto': cod_presupuesto}, 'error': None}), 201
         else:
             return jsonify({'success': False, 'error': 'No se pudo registrar el presupuesto'}), 500
 
@@ -120,4 +130,33 @@ def buscar_mercaderia():
         return jsonify(success=True, data=resultados)
     except Exception as e:
         app.logger.error(f"Error al buscar mercaderías: {str(e)}")
+        return jsonify(success=False, error=str(e))
+
+# ================================
+# Obtener detalle de solicitud por número
+# ================================
+@presuapi.route('/detalle-solicitud/<nro_solicitud>', methods=['GET'])
+def detalle_solicitud(nro_solicitud):
+    try:
+        dao = SolicitudCompraDao()
+        solicitud = dao.obtener_solicitud_por_nro(nro_solicitud)
+        if not solicitud:
+            return jsonify(success=False, error="No se encontró la solicitud")
+
+        detalles = solicitud.get('detalles', [])
+        # Formatear datos para DataTable
+        detalles_formateados = [
+            {
+                'codigo': d.get('id_item'),
+                'descripcion': d.get('nombre_producto'),
+                'stock': d.get('stock', 0),
+                'cantidad': d.get('cantidad', 0),
+                'precio': d.get('precio', 0),
+                'subtotal': d.get('cantidad', 0) * d.get('precio', 0)
+            }
+            for d in detalles
+        ]
+        return jsonify(success=True, detalles=detalles_formateados)
+    except Exception as e:
+        app.logger.error(f"Error al obtener detalle de solicitud {nro_solicitud}: {str(e)}")
         return jsonify(success=False, error=str(e))

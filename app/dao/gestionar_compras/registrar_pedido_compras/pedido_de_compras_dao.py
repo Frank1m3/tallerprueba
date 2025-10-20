@@ -5,13 +5,10 @@ from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_det
 
 class PedidoDeComprasDao:
 
-    # ================================
     # Obtener todos los productos (items) con stock real y proveedor
-    # ================================
     def obtener_productos(self, id_sucursal=None, id_deposito=None):
         query = """
         SELECT
-            i.id_item,
             i.item_code,
             i.descripcion,
             COALESCE(s.cantidad,0) AS stock,
@@ -37,13 +34,12 @@ class PedidoDeComprasDao:
             productos = []
             for f in filas:
                 productos.append({
-                    'id_item': f[0],
-                    'item_code': f[1],
-                    'nombre': f[2],
-                    'stock': float(f[3]),
-                    'precio_unitario': float(f[4]),
-                    'id_proveedor': f[5],
-                    'proveedor_nombre': f[6] if f[6] else ''
+                    'item_code': f[0],
+                    'nombre': f[1],
+                    'stock': float(f[2]),
+                    'precio_unitario': float(f[3]),
+                    'id_proveedor': f[4],
+                    'proveedor_nombre': f[5] if f[5] else ''
                 })
             return productos
         except Exception as e:
@@ -53,9 +49,7 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
-    # ================================
     # Obtener todos los pedidos
-    # ================================
     def obtener_pedidos(self):
         query = """
         SELECT
@@ -65,11 +59,15 @@ class PedidoDeComprasDao:
             f.fun_id,
             CONCAT(f.nombres,' ',f.apellidos) AS funcionario,
             s.descripcion AS sucursal,
-            d.descripcion AS deposito
+            d.descripcion AS deposito,
+            pdc.id_proveedor,
+            prov.prov_nombre,
+            pdc.tipo_factura
         FROM pedido_compra_cab pdc
         LEFT JOIN funcionarios f ON f.fun_id = pdc.id_funcionario
         LEFT JOIN sucursal s ON s.id_sucursal = pdc.id_sucursal
         LEFT JOIN deposito d ON d.id_deposito = pdc.id_deposito AND d.activo = TRUE
+        LEFT JOIN proveedor prov ON prov.id_proveedor = pdc.id_proveedor
         ORDER BY pdc.id_pedido_compra_cab DESC
         """
         conexion = Conexion()
@@ -78,14 +76,17 @@ class PedidoDeComprasDao:
         try:
             cur.execute(query)
             filas = cur.fetchall()
-            return [{
+            return [ {
                 'id_pedido_compra_cab': f[0],
                 'nro_pedido': f[1],
                 'fecha_pedido': f[2].strftime("%Y-%m-%d") if f[2] else None,
                 'fun_id': f[3],
                 'funcionario': f[4],
                 'sucursal': f[5],
-                'deposito': f[6] if f[6] else ''
+                'deposito': f[6] if f[6] else '',
+                'id_proveedor': f[7],
+                'proveedor_nombre': f[8] if f[8] else '',
+                'tipo_factura': f[9] if f[9] else ''
             } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al obtener pedidos: {str(e)}")
@@ -94,64 +95,50 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
-    # ================================
     # Agregar nuevo pedido
-    # ================================
     def agregar(self, pedido_dto: PedidoDeComprasDto) -> bool:
-        if pedido_dto.id_proveedor is None:
-            app.logger.error("No se puede insertar pedido: id_proveedor es None")
-            return False
-
         insert_cabecera = """
         INSERT INTO pedido_compra_cab
-        (fecha_pedido, id_funcionario, id_sucursal, id_deposito, id_proveedor)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING id_pedido_compra_cab, nro_pedido
+        (fecha_pedido, id_funcionario, id_sucursal, id_deposito, nro_pedido, id_proveedor, tipo_factura)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        RETURNING id_pedido_compra_cab
         """
-
         insert_detalle = """
         INSERT INTO pedido_compra_det
-        (id_pedido_compra_cab, nro_pedido, id_item, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto, id_proveedor)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        (id_pedido_compra_cab, nro_pedido, item_code, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
-
         conexion = Conexion()
         con = conexion.getConexion()
         con.autocommit = False
         cur = con.cursor()
         try:
-            # Insertar cabecera
+            nro_pedido = pedido_dto.nro_pedido
             parametros_cabecera = (
                 pedido_dto.fecha_pedido,
                 pedido_dto.id_funcionario,
                 pedido_dto.id_sucursal,
                 pedido_dto.id_deposito,
-                pedido_dto.id_proveedor
+                nro_pedido,
+                pedido_dto.id_proveedor,
+                pedido_dto.tipo_factura
             )
-            app.logger.info(f"Inserting pedido_cab: {parametros_cabecera}")
             cur.execute(insert_cabecera, parametros_cabecera)
-            fila = cur.fetchone()
-            id_pedido_cab = fila[0]
-            nro_pedido = fila[1]
+            id_pedido_cab = cur.fetchone()[0]
 
-            # Insertar detalles
             for det in pedido_dto.detalle_pedido:
-                if det.id_item is None:
-                    raise ValueError("id_item no puede ser None")
                 cur.execute(insert_detalle, (
                     id_pedido_cab,
                     nro_pedido,
-                    det.id_item,
+                    det.item_code,
                     det.item_descripcion,
                     det.unidad_med,
                     det.cant_pedido,
                     det.costo_unitario,
-                    det.tipo_impuesto,
-                    det.id_proveedor or pedido_dto.id_proveedor
+                    det.tipo_impuesto
                 ))
 
             con.commit()
-            app.logger.info(f"Pedido {nro_pedido} agregado correctamente con id_proveedor {pedido_dto.id_proveedor}")
             return True
         except Exception as e:
             app.logger.error(f"Error al agregar pedido: {str(e)}")
@@ -162,9 +149,7 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
-    # ================================
     # Anular pedido
-    # ================================
     def anular(self, id_pedido_compra_cab: int) -> bool:
         sql = "UPDATE pedido_compra_cab SET estado='ANULADO' WHERE id_pedido_compra_cab=%s"
         conexion = Conexion()
@@ -182,9 +167,7 @@ class PedidoDeComprasDao:
             cur.close()
             con.close()
 
-    # ================================
     # Obtener siguiente número de pedido
-    # ================================
     def obtener_siguiente_nro_pedido(self):
         query = "SELECT COALESCE(MAX(id_pedido_compra_cab), 0) + 1 FROM pedido_compra_cab"
         conexion = Conexion()
@@ -197,6 +180,83 @@ class PedidoDeComprasDao:
         except Exception as e:
             app.logger.error(f"Error al obtener siguiente nro_pedido: {str(e)}")
             return 1
+        finally:
+            cur.close()
+            con.close()
+
+    # Obtener datos de una solicitud específica por NRO
+    def obtener_solicitud_por_nro(self, nro_solicitud):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            query_cabecera = """
+            SELECT
+                sc.id_solicitud,
+                sc.nro_solicitud,
+                sc.id_solicitante,
+                CONCAT(f.nombres,' ',f.apellidos) AS funcionario,
+                sc.id_sucursal,
+                s.descripcion AS sucursal,
+                sc.id_deposito,
+                d.descripcion AS deposito,
+                sc.fecha_solicitud
+            FROM solicitud_compra_cab sc
+            LEFT JOIN funcionarios f ON f.fun_id = sc.id_solicitante
+            LEFT JOIN sucursal s ON s.id_sucursal = sc.id_sucursal
+            LEFT JOIN deposito d ON d.id_deposito = sc.id_deposito
+            WHERE sc.nro_solicitud = %s
+            """
+            cur.execute(query_cabecera, (nro_solicitud,))
+            fila = cur.fetchone()
+            if not fila:
+                return None
+
+            solicitud = {
+                'id_solicitud': fila[0],
+                'nro_solicitud': fila[1],
+                'id_funcionario': fila[2],
+                'funcionario': fila[3],
+                'id_sucursal': fila[4],
+                'sucursal': fila[5],
+                'id_deposito': fila[6],
+                'deposito': fila[7],
+                'fecha_solicitud': fila[8].strftime("%Y-%m-%d") if fila[8] else None,
+                'detalle': []
+            }
+
+            query_detalle = """
+            SELECT
+                i.item_code,
+                i.descripcion AS item_descripcion,
+                sd.cantidad,
+                COALESCE(i.precio_unitario,0) AS precio_unitario,
+                COALESCE(st.cantidad,0) AS stock,
+                i.id_proveedor,
+                p.prov_nombre
+            FROM solicitud_compra_det sd
+            LEFT JOIN item i ON i.id_item = sd.id_item
+            LEFT JOIN stock st ON st.id_item = i.id_item AND st.id_sucursal = %s AND st.id_deposito = %s
+            LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
+            WHERE sd.id_solicitud = %s
+            """
+            cur.execute(query_detalle, (solicitud['id_sucursal'], solicitud['id_deposito'], solicitud['id_solicitud']))
+            filas_detalle = cur.fetchall()
+            for f in filas_detalle:
+                solicitud['detalle'].append({
+                    'item_code': f[0],
+                    'item_descripcion': f[1],
+                    'cant_pedido': float(f[2]),
+                    'costo_unitario': float(f[3]),
+                    'stock': float(f[4]),
+                    'id_proveedor': f[5],
+                    'proveedor': f[6] if f[6] else ''
+                })
+
+            return solicitud
+        except Exception as e:
+            app.logger.error(f"Error al obtener solicitud nro {nro_solicitud}: {str(e)}")
+            return None
         finally:
             cur.close()
             con.close()
