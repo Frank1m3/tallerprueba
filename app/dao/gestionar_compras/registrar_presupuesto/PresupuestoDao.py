@@ -147,10 +147,13 @@ class PresupuestoCompraDao:
             resultados = []
             for r in cur.fetchall():
                 resultados.append({
-                    'codigo': r[1],
+                    'id_item': r[0],
+                    'item_code': r[1],          # <-- agregado
+                    'codigo': r[1],             # <-- compatibilidad front
                     'descripcion': r[2],
                     'stock': float(r[3]),
-                    'precio': float(r[4]),
+                    'precio_unitario': float(r[4]), # <-- agregado
+                    'precio': float(r[4]),           # <-- compatibilidad front
                     'id_proveedor': r[5],
                     'barras': r[6].split(',') if r[6] else []
                 })
@@ -174,11 +177,14 @@ class PresupuestoCompraDao:
         detalles = []
         for d in solicitud['detalles']:
             detalles.append({
-                'codigo': d.get('id_item'),
+                'id_item': d.get('id_item'),
+                'item_code': d.get('id_item'),        # <-- agregado
+                'codigo': d.get('id_item'),           # <-- compatibilidad front
                 'descripcion': d.get('nombre_producto'),
                 'stock': d.get('stock', 0),
                 'cantidad': d.get('cantidad', 0),
-                'precio': d.get('precio', 0)
+                'precio_unitario': d.get('precio', 0), # <-- agregado
+                'precio': d.get('precio', 0)          # <-- compatibilidad front
             })
 
         return {'success': True, 'detalles': detalles}

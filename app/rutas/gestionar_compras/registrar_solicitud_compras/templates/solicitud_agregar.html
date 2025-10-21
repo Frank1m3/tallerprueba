@@ -156,7 +156,6 @@ $(document).ready(function(){
                 }
             });
         }
-        // Limpiar stock si se cambia sucursal
         $('#txt_stock').val('');
     }
 
@@ -191,7 +190,6 @@ $(document).ready(function(){
 
         $('#txt_precio').val(op.data('precio') || 0);
 
-        // Obtener stock según sucursal y depósito
         if(op.val() && id_sucursal && id_deposito){
             $.getJSON('/api/v1/gestionar-compras/registrar-solicitud-compras/productos', {
                 id_proveedor: $('#cbo_proveedor').val(),
@@ -226,6 +224,12 @@ $(document).ready(function(){
 
         if(!id_item || !cantidad){
             return Swal.fire("Error","Complete todos los campos","error");
+        }
+
+        // ===== Validación: verificar si el código ya fue agregado =====
+        let existe = detalle.some(d => d.codigo === codigo);
+        if(existe){
+            return Swal.fire("Atención","Ya insertaste el código "+codigo,"warning");
         }
 
         detalle.push({id_item,codigo,producto,cantidad,stock,precio,estado:'PENDIENTE'});
@@ -333,4 +337,5 @@ $(document).ready(function(){
 
 });
 </script>
+
 {% endblock %}

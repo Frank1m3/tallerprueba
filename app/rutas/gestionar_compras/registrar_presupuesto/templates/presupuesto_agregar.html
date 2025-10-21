@@ -178,16 +178,20 @@
 
 <script>
 $(function(){
+  // ==============================
+  // Variables y tabla DataTable
+  // ==============================
   let detalle = [];
   let archivoSubido = null; 
+
   let tabla = $('#tbl_detalle').DataTable({
     paging: true,
     info: true,
     searching: true,
     ordering: true,
     columnDefs: [
-      { targets: -1, orderable: false },
-      { targets: [2,3,4,5], className: 'text-right' }
+      { targets: -1, orderable: false },           // La columna de acciones no se ordena
+      { targets: [2,3,4,5], className: 'text-right' } // Alineación derecha para números
     ],
     columns: [
       { data: 'codigo' },
@@ -200,24 +204,32 @@ $(function(){
     ]
   });
 
+  // ==============================
+  // Función para actualizar total
+  // ==============================
   function actualizarTotal(){
     let total = detalle.reduce((acc, item) => acc + item.subtotal, 0);
     $('#total').text(total.toFixed(2));
   }
 
-  // Cargar nro de presupuesto
+  // ==============================
+  // Cargar siguiente código de presupuesto
+  // ==============================
   $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/siguiente-codigo', res => {
     if(res.success) $('#txt_nro_presupuesto').val(res.siguiente_codigo);
   });
 
-  // Obtener token CSRF
+  // ==============================
+  // Token CSRF
+  // ==============================
   const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-  // Subir archivo automáticamente
+  // ==============================
+  // Subida de archivo
+  // ==============================
   $('#file_presupuesto').on('change', function(){
     let file = this.files[0];
     if(!file) return;
-
     let formData = new FormData();
     formData.append('archivo', file);
     formData.append('csrf_token', csrfToken);
@@ -247,7 +259,9 @@ $(function(){
     });
   });
 
-  // Autocompletar por código
+  // ==============================
+  // Autocompletar por código numérico
+  // ==============================
   $('#txt_mercaderia').on('change', function(){
     let valor = $(this).val();
     if(!valor) return;
@@ -256,7 +270,9 @@ $(function(){
       id_sucursal: $('#cbo_sucursal').val()
     }, function(res){
       if(res.success){
-        let prod = res.data.find(p => p.item_code == valor || (p.cod_barras && p.cod_barras.some(c => c.includes(valor))));
+        let prod = res.data.find(p => String(p.item_code) === String(valor) || 
+                                     (p.cod_barras && p.cod_barras.some(c => String(c).includes(String(valor)))) ||
+                                     p.descripcion.toLowerCase().includes(String(valor).toLowerCase()));
         if(prod){
           $('#txt_stock').val(prod.stock);
           $('#txt_precio').val(prod.precio_unitario);
@@ -270,7 +286,9 @@ $(function(){
     });
   });
 
+  // ==============================
   // Búsqueda modal
+  // ==============================
   $('#btn_buscar_mercaderia').click(function(){
     $('#modalMercaderia').modal('show');
     $('#txt_buscar_mercaderia').val('').trigger('input');
@@ -286,7 +304,10 @@ $(function(){
         let tbody = $('#tbl_busqueda_mercaderia tbody');
         tbody.empty();
         res.data.forEach(p => {
-          if(p.descripcion.toLowerCase().includes(filtro) || (p.cod_barras && p.cod_barras.some(c => c.includes(filtro)))){
+          // Se agregó búsqueda por código (item_code)
+          if(p.descripcion.toLowerCase().includes(filtro) || 
+             (p.cod_barras && p.cod_barras.some(c => String(c).includes(filtro))) ||
+             String(p.item_code).toLowerCase().includes(filtro)) {
             let barras = p.cod_barras ? p.cod_barras.join(', ') : '';
             tbody.append(`
               <tr>
@@ -320,7 +341,9 @@ $(function(){
     $('#modalMercaderia').modal('hide');
   });
 
-  // Agregar detalle
+  // ==============================
+  // Agregar detalle al presupuesto
+  // ==============================
   $('#btn_agregar').click(function(){
     let id = $('#txt_mercaderia').data('id_item');
     let cod = $('#txt_mercaderia').val();
@@ -347,11 +370,14 @@ $(function(){
 
     actualizarTotal();
 
+    // Limpiar campos
     $('#txt_mercaderia,#txt_descripcion,#txt_stock,#txt_cantidad,#txt_precio')
       .val('').removeData('id_item').removeData('desc');
   });
 
+  // ==============================
   // Editar / eliminar detalle
+  // ==============================
   $('#tbl_detalle').on('click','.btn-del', function(){
     let idx = tabla.row($(this).parents('tr')).index();
     detalle.splice(idx, 1);
@@ -389,7 +415,9 @@ $(function(){
     });
   });
 
-  // Guardar presupuesto con archivo
+  // ==============================
+  // Guardar presupuesto
+  // ==============================
   $('#btn_guardar').click(function(){
     if(detalle.length === 0) return Swal.fire('Error','Debe agregar mercaderías','error');
 
@@ -402,7 +430,7 @@ $(function(){
     payload.append('fun_id', $('#cbo_funcionario').val());
     payload.append('estado', $('#cbo_estado').val());
     payload.append('detalles', JSON.stringify(detalle.map(d => ({
-      item_code: d.codigo,
+      item_code: String(d.codigo),
       descripcion: d.descripcion,
       cantidad: d.cantidad,
       precio_unitario: d.precio
@@ -432,8 +460,14 @@ $(function(){
     });
   });
 
+  // ==============================
+  // Botón salir
+  // ==============================
   $('#btn_salir').click(()=> window.location.href='/');
 });
 </script>
+
+
+
 
 {% endblock %}
