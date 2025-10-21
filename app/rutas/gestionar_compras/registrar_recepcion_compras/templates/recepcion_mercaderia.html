@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Recepción de Mercaderías{% endblock %}
+
+{% block contenido %}
+<div class="container mt-4" style="max-width:1200px;">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <strong>Recepción de Mercaderías - Compras</strong>
+            <div>
+                <button class="btn btn-sm btn-primary" id="btnNuevo" onclick="nuevo()">Nuevo</button>
+                <button class="btn btn-sm btn-success" id="btnGrabar" onclick="grabar()" disabled>Grabar</button>
+                <button class="btn btn-sm btn-secondary" id="btnCancelar" onclick="cancelar()" disabled>Cancelar</button>
+                <button class="btn btn-sm btn-secondary" id="btnSalir" onclick="location.href='/'">Salir</button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- ENCABEZADO -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label>Número de Pedido</label>
+                    <input type="text" id="txt_nro_pedido" class="form-control" disabled>
+                </div>
+                <div class="col-md-4">
+                    <label>Proveedor</label>
+                    <input type="text" id="txt_proveedor" class="form-control" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label>Fecha de Vencimiento</label>
+                    <input type="text" id="txt_fecha_vencimiento" class="form-control" readonly>
+                </div>
+            </div>
+
+            <!-- CAMPOS DE ITEM -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label>Código</label>
+                    <input type="text" id="txt_codigo" class="form-control" disabled>
+                </div>
+                <div class="col-md-4">
+                    <label>Descripción</label>
+                    <input type="text" id="txt_descripcion" class="form-control" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label>Cantidad Pedido</label>
+                    <input type="text" id="txt_cant_pedida" class="form-control" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label>Cantidad Recibida</label>
+                    <input type="number" id="txt_cant_recibida" class="form-control" disabled>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-success w-100" id="btnAgregar" disabled>+</button>
+                </div>
+            </div>
+
+            <!-- DETALLE -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <table id="tbl_detalle" class="table table-bordered text-center align-middle">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Cantidad Pedido</th>
+                                <th>Cantidad Recibida</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+let detalle = [];
+let pedido = null;
+let pedidoVencido = false;
+
+let tabla = $('#tbl_detalle').DataTable({
+    paging: false,
+    info: false,
+    searching: false,
+    ordering: false,
+    columnDefs: [{ targets: -1, orderable: false }],
+    columns: [
+        { data: 'index' },
+        { data: 'codigo' },
+        { data: 'descripcion' },
+        { data: 'cantidad_pedida' },
+        { data: 'cantidad_recibida' },
+        { data: 'acciones' }
+    ]
+});
+
+function nuevo() {
+    $('#txt_nro_pedido').prop('disabled', false).val('').focus();
+    $('#txt_proveedor, #txt_fecha_vencimiento, #txt_codigo, #txt_descripcion, #txt_cant_pedida, #txt_cant_recibida').val('').removeClass('text-success text-danger');
+    $('#btnGrabar, #btnCancelar').prop('disabled', false);
+    $('#txt_codigo, #txt_cant_recibida, #btnAgregar').prop('disabled', true);
+    detalle = [];
+    tabla.clear().draw();
+    pedido = null;
+    pedidoVencido = false;
+}
+
+function cancelar() {
+    $('#txt_nro_pedido').prop('disabled', true).val('');
+    $('#txt_proveedor, #txt_fecha_vencimiento, #txt_codigo, #txt_descripcion, #txt_cant_pedida, #txt_cant_recibida').val('').removeClass('text-success text-danger');
+    $('#btnGrabar, #btnCancelar').prop('disabled', true);
+    $('#txt_codigo, #txt_cant_recibida, #btnAgregar').prop('disabled', true);
+    detalle = [];
+    tabla.clear().draw();
+    pedido = null;
+    pedidoVencido = false;
+}
+
+$('#txt_nro_pedido').on('change', function() {
+    let nro = $(this).val().trim();
+    if (!nro) return;
+
+    $.getJSON(`/api/v1/gestionar-compras/recepcion-mercaderias/pedido/${nro}`, function(res) {
+        if (res.success) {
+            pedido = res.data;
+            $('#txt_proveedor').val(pedido.proveedor_nombre);
+
+            let fechaVenc = pedido.fecha_vencimiento;
+            $('#txt_fecha_vencimiento').val(fechaVenc);
+
+            let hoy = new Date().toISOString().split('T')[0];
+            if (fechaVenc && fechaVenc < hoy) {
+                $('#txt_fecha_vencimiento').addClass('text-danger');
+                pedidoVencido = true;
+                Swal.fire("Pedido Vencido", "Este pedido ha vencido y no puede ser recepcionado.", "error");
+                $('#txt_codigo, #txt_cant_recibida, #btnAgregar').prop('disabled', true);
+            } else {
+                $('#txt_fecha_vencimiento').addClass('text-success');
+                pedidoVencido = false;
+                $('#txt_codigo').prop('disabled', false).val('').focus();
+            }
+
+        } else {
+            Swal.fire("Error", "Pedido no encontrado", "error");
+            $('#txt_nro_pedido').val('').focus();
+            pedido = null;
+        }
+    });
+});
+
+$('#txt_codigo').on('change', function() {
+    if (pedidoVencido) return;
+
+    let codigo = $(this).val().trim();
+    if (!codigo || !pedido) return;
+
+    let item = pedido.detalles.find(i => i.item_code.trim().toUpperCase() === codigo.toUpperCase());
+    if (!item) {
+        Swal.fire("Error", "Código no pertenece al pedido", "error");
+        $('#txt_descripcion, #txt_cant_pedida').val('');
+        $('#txt_cant_recibida').prop('disabled', true).val('');
+        $('#btnAgregar').prop('disabled', true);
+        return;
+    }
+
+    $('#txt_descripcion').val(item.descripcion);
+    $('#txt_cant_pedida').val(item.cantidad_pedida);
+    $('#txt_cant_recibida').prop('disabled', false).attr('max', item.cantidad_pedida).val('');
+    $('#btnAgregar').prop('disabled', false);
+});
+
+$('#btnAgregar').on('click', function() {
+    if (pedidoVencido) return;
+
+    let codigo = $('#txt_codigo').val().trim();
+    let descripcion = $('#txt_descripcion').val();
+    let cantPed = parseFloat($('#txt_cant_pedida').val());
+    let cantRec = parseFloat($('#txt_cant_recibida').val());
+
+    if (isNaN(cantRec) || cantRec <= 0 || cantRec > cantPed) {
+        Swal.fire("Error", "Cantidad recibida inválida", "error");
+        return;
+    }
+
+    let fila = {
+        index: detalle.length + 1,
+        codigo,
+        descripcion,
+        cantidad_pedida: cantPed,
+        cantidad_recibida: cantRec,
+        acciones: `<button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+    };
+
+    detalle.push(fila);
+    tabla.row.add(fila).draw();
+
+    $('#txt_codigo, #txt_descripcion, #txt_cant_pedida, #txt_cant_recibida').val('');
+    $('#txt_cant_recibida, #btnAgregar').prop('disabled', true);
+    $('#txt_codigo').focus();
+});
+
+$('#tbl_detalle tbody').on('click', '.btn-eliminar', function() {
+    let idx = tabla.row($(this).closest('tr')).index();
+    detalle.splice(idx, 1);
+    tabla.row($(this).closest('tr')).remove().draw();
+});
+
+function grabar() {
+    if (pedidoVencido) {
+        Swal.fire("Error", "No se puede recepcionar un pedido vencido.", "error");
+        return;
+    }
+    if (!pedido || detalle.length === 0) {
+        Swal.fire("Error", "Debe seleccionar un pedido y agregar al menos un item", "error");
+        return;
+    }
+
+    let data = {
+        nro_recepcion: `REC-${Date.now()}`,
+        fecha_recepcion: new Date().toISOString().split('T')[0],
+        id_pedido: pedido.id_pedido,
+        id_proveedor: pedido.id_proveedor,
+        id_funcionario: 1,
+        id_sucursal: pedido.id_sucursal,
+        id_deposito: pedido.id_deposito,
+        detalles: detalle.map(d => ({
+            item_code: d.codigo,
+            descripcion: d.descripcion,
+            cantidad_pedida: d.cantidad_pedida,
+            cantidad_recibida: d.cantidad_recibida
+        }))
+    };
+
+    $.ajax({
+        url: '/api/v1/gestionar-compras/recepcion-mercaderias/recepciones',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(res) {
+            if (res.success) {
+                Swal.fire("Éxito", "Recepción registrada correctamente", "success");
+                cancelar();
+            } else {
+                Swal.fire("Error", res.error || "Ocurrió un error", "error");
+            }
+        },
+        error: function() {
+            Swal.fire("Error", "Ocurrió un error en el servidor", "error");
+        }
+    });
+}
+</script>
+{% endblock %}
