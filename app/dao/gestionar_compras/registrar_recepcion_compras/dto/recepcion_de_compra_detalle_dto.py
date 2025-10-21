@@ -8,6 +8,7 @@ class RecepcionDetalleDto:
 
     def __init__(
         self,
+        id_pedido_det: int,             # NUEVO: id del detalle del pedido
         item_code: str = '',
         descripcion: str = '',
         cantidad_pedida: float = 0.0,
@@ -15,6 +16,7 @@ class RecepcionDetalleDto:
         fecha_vencimiento: Optional[str] = None,
         unidad_med: Optional[int] = None
     ):
+        self.__id_pedido_det = id_pedido_det
         self.__item_code = item_code
         self.__descripcion = descripcion
         self.__cantidad_pedida = float(cantidad_pedida)
@@ -25,6 +27,15 @@ class RecepcionDetalleDto:
     # ---------------------------
     # Propiedades
     # ---------------------------
+    @property
+    def id_pedido_det(self) -> int:
+        return self.__id_pedido_det
+    @id_pedido_det.setter
+    def id_pedido_det(self, valor: int):
+        if valor <= 0:
+            raise ValueError("id_pedido_det debe ser > 0")
+        self.__id_pedido_det = valor
+
     @property
     def item_code(self) -> str:
         return self.__item_code
@@ -76,6 +87,7 @@ class RecepcionDetalleDto:
     # ---------------------------
     def to_dict(self):
         return {
+            'id_pedido_det': self.id_pedido_det,
             'item_code': self.item_code,
             'descripcion': self.descripcion,
             'cantidad_pedida': self.cantidad_pedida,

@@ -45,9 +45,10 @@ class RecepcionDao:
                 'detalles': []
             }
 
-            # Detalles del pedido
+            # Detalles del pedido (incluye id_pedido_det)
             cur.execute("""
                 SELECT
+                    id_pedido_compra_det,
                     item_code,
                     item_descripcion,
                     cant_pedido,
@@ -58,10 +59,11 @@ class RecepcionDao:
             rows = cur.fetchall()
             for r in rows:
                 pedido['detalles'].append({
-                    'item_code': r[0],
-                    'descripcion': r[1],
-                    'cantidad_pedida': float(r[2]),
-                    'costo_unitario': float(r[3])
+                    'id_pedido_det': r[0],
+                    'item_code': r[1],
+                    'descripcion': r[2],
+                    'cantidad_pedida': float(r[3]),
+                    'costo_unitario': float(r[4])
                 })
 
             return pedido
@@ -101,10 +103,11 @@ class RecepcionDao:
                 cant_rec = min(float(det.cantidad_recibida), float(det.cantidad_pedida))
                 cur.execute("""
                     INSERT INTO recepcion_det (
-                        id_recepcion, item_code, descripcion, cantidad_pedida, cantidad_recibida, estado
-                    ) VALUES (%s, %s, %s, %s, %s, 'PENDIENTE')
+                        id_recepcion, id_pedido_det, item_code, descripcion, cantidad_pedida, cantidad_recibida, estado
+                    ) VALUES (%s, %s, %s, %s, %s, %s, 'PENDIENTE')
                 """, (
                     id_recepcion,
+                    det.id_pedido_det,   # <-- agregado
                     det.item_code,
                     det.descripcion,
                     det.cantidad_pedida,

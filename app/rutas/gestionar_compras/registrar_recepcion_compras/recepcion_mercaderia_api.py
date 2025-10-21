@@ -19,7 +19,6 @@ def get_pedido(nro_pedido):
         pedido = dao.obtener_pedido_por_nro(nro_pedido)
         if not pedido:
             return jsonify({'success': False, 'error': 'Pedido no encontrado'}), 404
-
         return jsonify({'success': True, 'data': pedido})
 
     except Exception as e:
@@ -43,7 +42,13 @@ def crear_recepcion():
 
         detalle_objs = []
         for d in data.get('detalles', []):
+            # Aseguramos que se envíe id_pedido_det
+            id_pedido_det = d.get('id_pedido_det')
+            if not id_pedido_det:
+                return jsonify({'success': False, 'error': 'id_pedido_det es obligatorio para cada detalle'}), 400
+
             detalle_objs.append(RecepcionDetalleDto(
+                id_pedido_det=id_pedido_det,
                 item_code=d.get('item_code'),
                 descripcion=d.get('descripcion', ''),
                 cantidad_pedida=float(d.get('cantidad_pedida', 0)),

@@ -130,7 +130,6 @@ $('#txt_nro_pedido').on('change', function() {
         if (res.success) {
             pedido = res.data;
             $('#txt_proveedor').val(pedido.proveedor_nombre);
-
             let fechaVenc = pedido.fecha_vencimiento;
             $('#txt_fecha_vencimiento').val(fechaVenc);
 
@@ -156,7 +155,6 @@ $('#txt_nro_pedido').on('change', function() {
 
 $('#txt_codigo').on('change', function() {
     if (pedidoVencido) return;
-
     let codigo = $(this).val().trim();
     if (!codigo || !pedido) return;
 
@@ -188,8 +186,11 @@ $('#btnAgregar').on('click', function() {
         return;
     }
 
+    let item = pedido.detalles.find(i => i.item_code.trim().toUpperCase() === codigo.toUpperCase());
+
     let fila = {
         index: detalle.length + 1,
+        id_pedido_det: item.id_pedido_det,
         codigo,
         descripcion,
         cantidad_pedida: cantPed,
@@ -230,6 +231,7 @@ function grabar() {
         id_sucursal: pedido.id_sucursal,
         id_deposito: pedido.id_deposito,
         detalles: detalle.map(d => ({
+            id_pedido_det: d.id_pedido_det,
             item_code: d.codigo,
             descripcion: d.descripcion,
             cantidad_pedida: d.cantidad_pedida,
