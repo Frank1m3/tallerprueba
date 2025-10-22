@@ -1,6 +1,85 @@
 from typing import List, Optional
 from datetime import date
-from app.dao.gestionar_compras.registrar_recepcion_compras.dto.recepcion_de_compra_detalle_dto import RecepcionDetalleDto
+
+class RecepcionDetalleDto:
+    """
+    DTO para el detalle de una recepción de mercadería.
+    Incluye referencia al detalle del pedido (id_pedido_det).
+    """
+    def __init__(
+        self,
+        id_pedido_det: Optional[int] = None,
+        item_code: Optional[str] = None,
+        descripcion: Optional[str] = None,
+        cantidad_pedida: float = 0.0,
+        cantidad_recibida: float = 0.0,
+        costo_unitario: float = 0.0
+    ):
+        self.__id_pedido_det = id_pedido_det
+        self.__item_code = item_code
+        self.__descripcion = descripcion
+        self.__cantidad_pedida = cantidad_pedida
+        self.__cantidad_recibida = cantidad_recibida
+        self.__costo_unitario = costo_unitario
+
+    # ---------------------------
+    # Propiedades
+    # ---------------------------
+    @property
+    def id_pedido_det(self) -> Optional[int]:
+        return self.__id_pedido_det
+    @id_pedido_det.setter
+    def id_pedido_det(self, valor: Optional[int]):
+        self.__id_pedido_det = valor
+
+    @property
+    def item_code(self) -> Optional[str]:
+        return self.__item_code
+    @item_code.setter
+    def item_code(self, valor: Optional[str]):
+        self.__item_code = valor
+
+    @property
+    def descripcion(self) -> Optional[str]:
+        return self.__descripcion
+    @descripcion.setter
+    def descripcion(self, valor: Optional[str]):
+        self.__descripcion = valor
+
+    @property
+    def cantidad_pedida(self) -> float:
+        return self.__cantidad_pedida
+    @cantidad_pedida.setter
+    def cantidad_pedida(self, valor: float):
+        self.__cantidad_pedida = valor
+
+    @property
+    def cantidad_recibida(self) -> float:
+        return self.__cantidad_recibida
+    @cantidad_recibida.setter
+    def cantidad_recibida(self, valor: float):
+        self.__cantidad_recibida = valor
+
+    @property
+    def costo_unitario(self) -> float:
+        return self.__costo_unitario
+    @costo_unitario.setter
+    def costo_unitario(self, valor: float):
+        self.__costo_unitario = valor
+
+    # ---------------------------
+    # Serialización a dict
+    # ---------------------------
+    def to_dict(self):
+        return {
+            'id_pedido_det': self.id_pedido_det,
+            'item_code': self.item_code,
+            'descripcion': self.descripcion,
+            'cantidad_pedida': self.cantidad_pedida,
+            'cantidad_recibida': self.cantidad_recibida,
+            'costo_unitario': self.costo_unitario
+        }
+
 
 class RecepcionDto:
     """

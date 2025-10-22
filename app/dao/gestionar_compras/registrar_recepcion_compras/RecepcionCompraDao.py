@@ -45,9 +45,10 @@ class RecepcionDao:
                 'detalles': []
             }
 
-            # Detalles del pedido
+            # Detalles
             cur.execute("""
                 SELECT
+                    id_pedido_compra_det,  
                     item_code,
                     item_descripcion,
                     cant_pedido,
@@ -56,12 +57,14 @@ class RecepcionDao:
                 WHERE id_pedido_compra_cab = %s
             """, (cab[0],))
             rows = cur.fetchall()
+
             for r in rows:
                 pedido['detalles'].append({
-                    'item_code': r[0],
-                    'descripcion': r[1],
-                    'cantidad_pedida': float(r[2]),
-                    'costo_unitario': float(r[3])
+                    'id_pedido_det': r[0],
+                    'item_code': r[1],
+                    'descripcion': r[2],
+                    'cantidad_pedida': float(r[3]),
+                    'costo_unitario': float(r[4])
                 })
 
             return pedido
@@ -81,13 +84,18 @@ class RecepcionDao:
         con = conexion.getConexion()
         cur = con.cursor()
         try:
+            # Generar número correlativo de recepción
+            cur.execute("SELECT COALESCE(MAX(nro_recepcion), 0) + 1 FROM recepcion_cab;")
+            nro_recepcion = cur.fetchone()[0]
+
+            # Insertar cabecera
             cur.execute("""
                 INSERT INTO recepcion_cab (
                     nro_recepcion, fecha_recepcion, id_pedido, id_proveedor, id_funcionario, id_sucursal, id_deposito, estado
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'PENDIENTE')
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'CONFIRMADO')
                 RETURNING id_recepcion
             """, (
-                recepcion_dto.nro_recepcion,
+                nro_recepcion,
                 recepcion_dto.fecha_recepcion or date.today(),
                 recepcion_dto.id_pedido,
                 recepcion_dto.id_proveedor,
@@ -97,14 +105,16 @@ class RecepcionDao:
             ))
             id_recepcion = cur.fetchone()[0]
 
+            # Insertar detalles
             for det in recepcion_dto.detalle_recepcion:
                 cant_rec = min(float(det.cantidad_recibida), float(det.cantidad_pedida))
                 cur.execute("""
                     INSERT INTO recepcion_det (
-                        id_recepcion, item_code, descripcion, cantidad_pedida, cantidad_recibida, estado
-                    ) VALUES (%s, %s, %s, %s, %s, 'PENDIENTE')
+                        id_recepcion, id_pedido_det, item_code, descripcion, cantidad_pedida, cantidad_recibida, estado
+                    ) VALUES (%s, %s, %s, %s, %s, %s, 'CONFIRMADO')
                 """, (
                     id_recepcion,
+                    det.id_pedido_det,
                     det.item_code,
                     det.descripcion,
                     det.cantidad_pedida,
@@ -112,12 +122,14 @@ class RecepcionDao:
                 ))
 
             con.commit()
-            app.logger.info(f"Recepción {id_recepcion} insertada correctamente.")
+            app.logger.info(f"Recepción {id_recepcion} insertada correctamente con número {nro_recepcion}.")
             return True
+
         except Exception as e:
             con.rollback()
             app.logger.error(f"Error al insertar recepción: {str(e)}")
             return False
+
         finally:
             cur.close()
             con.close()

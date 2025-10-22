@@ -1,3 +1,4 @@
+# DTO para el detalle de pedido de compras
 class PedidoDeCompraDetalleDto:
 
     def __init__(

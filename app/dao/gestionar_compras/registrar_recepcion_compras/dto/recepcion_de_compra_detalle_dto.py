@@ -4,10 +4,12 @@ class RecepcionDetalleDto:
     """
     DTO para el detalle de una recepción de mercadería.
     Representa cada ítem recibido junto con cantidad pedida y cantidad recibida.
+    Incluye id_pedido_det para la relación con pedido_compra_det.
     """
 
     def __init__(
         self,
+        id_pedido_det: Optional[int] = None,
         item_code: str = '',
         descripcion: str = '',
         cantidad_pedida: float = 0.0,
@@ -15,6 +17,7 @@ class RecepcionDetalleDto:
         fecha_vencimiento: Optional[str] = None,
         unidad_med: Optional[int] = None
     ):
+        self.__id_pedido_det = id_pedido_det
         self.__item_code = item_code
         self.__descripcion = descripcion
         self.__cantidad_pedida = float(cantidad_pedida)
@@ -25,6 +28,13 @@ class RecepcionDetalleDto:
     # ---------------------------
     # Propiedades
     # ---------------------------
+    @property
+    def id_pedido_det(self) -> Optional[int]:
+        return self.__id_pedido_det
+    @id_pedido_det.setter
+    def id_pedido_det(self, valor: Optional[int]):
+        self.__id_pedido_det = valor
+
     @property
     def item_code(self) -> str:
         return self.__item_code
@@ -76,6 +86,7 @@ class RecepcionDetalleDto:
     # ---------------------------
     def to_dict(self):
         return {
+            'id_pedido_det': self.id_pedido_det,
             'item_code': self.item_code,
             'descripcion': self.descripcion,
             'cantidad_pedida': self.cantidad_pedida,

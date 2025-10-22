@@ -1,4 +1,4 @@
-# ---------------------- DAO ----------------------
+# ---------------------- DAO ---------------------- 
 from flask import current_app as app
 from app.conexion.Conexion import Conexion
 from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compras_dto import PedidoDeComprasDto
@@ -60,7 +60,6 @@ class PedidoDeComprasDao:
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            # Convertimos id_item a string porque item_code es varchar
             cur.execute("""
                 SELECT i.item_code, i.descripcion, i.id_proveedor, p.prov_nombre
                 FROM item i
@@ -82,10 +81,6 @@ class PedidoDeComprasDao:
         finally:
             cur.close()
             con.close()
-
-    # ------------------------------
-    # ... resto del DAO queda igual ...
-
 
     # ------------------------------
     # Obtener todos los pedidos
@@ -141,8 +136,9 @@ class PedidoDeComprasDao:
     def agregar(self, pedido_dto: PedidoDeComprasDto) -> bool:
         insert_cabecera = """
         INSERT INTO pedido_compra_cab
-        (fecha_pedido, id_funcionario, id_sucursal, id_deposito, nro_pedido, id_proveedor, tipo_factura)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        (fecha_pedido, id_funcionario, id_sucursal, id_deposito, nro_pedido, id_proveedor, tipo_factura,
+         id_solicitud, nro_solicitud, fecha_necesaria)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id_pedido_compra_cab
         """
         insert_detalle = """
@@ -163,7 +159,10 @@ class PedidoDeComprasDao:
                 pedido_dto.id_deposito,
                 nro_pedido,
                 pedido_dto.id_proveedor,
-                pedido_dto.tipo_factura
+                pedido_dto.tipo_factura,
+                getattr(pedido_dto, 'id_solicitud', None),
+                getattr(pedido_dto, 'nro_solicitud', None),
+                getattr(pedido_dto, 'fecha_necesaria', None)
             )
             cur.execute(insert_cabecera, parametros_cabecera)
             id_pedido_cab = cur.fetchone()[0]
