@@ -111,7 +111,7 @@ class PedidoDeComprasDao:
         try:
             cur.execute(query)
             filas = cur.fetchall()
-            return [ {
+            return [{
                 'id_pedido_compra_cab': f[0],
                 'nro_pedido': f[1],
                 'fecha_pedido': f[2].strftime("%Y-%m-%d") if f[2] else None,
@@ -126,6 +126,90 @@ class PedidoDeComprasDao:
         except Exception as e:
             app.logger.error(f"Error al obtener pedidos: {str(e)}")
             return []
+        finally:
+            cur.close()
+            con.close()
+
+    # ------------------------------
+    # Obtener un pedido completo por ID (incluye detalle)
+    # ------------------------------
+    def obtener_pedido_por_id(self, id_pedido):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            # Cabecera
+            cur.execute("""
+                SELECT
+                    pdc.id_pedido_compra_cab,
+                    pdc.nro_pedido,
+                    pdc.fecha_pedido,
+                    f.fun_id,
+                    CONCAT(f.nombres,' ',f.apellidos) AS funcionario,
+                    s.descripcion AS sucursal,
+                    d.descripcion AS deposito,
+                    pdc.id_proveedor,
+                    prov.prov_nombre,
+                    pdc.tipo_factura,
+                    COALESCE(pdc.estado,'') AS estado
+                FROM pedido_compra_cab pdc
+                LEFT JOIN funcionarios f ON f.fun_id = pdc.id_funcionario
+                LEFT JOIN sucursal s ON s.id_sucursal = pdc.id_sucursal
+                LEFT JOIN deposito d ON d.id_deposito = pdc.id_deposito
+                LEFT JOIN proveedor prov ON prov.id_proveedor = pdc.id_proveedor
+                WHERE pdc.id_pedido_compra_cab = %s
+            """, (id_pedido,))
+            fila = cur.fetchone()
+
+            if not fila:
+                return None
+
+            pedido = {
+                'id_pedido_compra_cab': fila[0],
+                'nro_pedido': fila[1],
+                'fecha_pedido': fila[2].strftime("%Y-%m-%d") if fila[2] else None,
+                'fun_id': fila[3],
+                'funcionario': fila[4],
+                'sucursal': fila[5],
+                'deposito': fila[6] if fila[6] else '',
+                'id_proveedor': fila[7],
+                'proveedor_nombre': fila[8] if fila[8] else '',
+                'tipo_factura': fila[9] if fila[9] else '',
+                'estado': fila[10],
+                'detalle': []
+            }
+
+            # Detalle
+            cur.execute("""
+                SELECT
+                    d.id_pedido_compra_det,
+                    d.item_code,
+                    d.item_descripcion,
+                    d.unidad_med,
+                    d.cant_pedido,
+                    d.costo_unitario,
+                    d.tipo_impuesto
+                FROM pedido_compra_det d
+                WHERE d.id_pedido_compra_cab = %s
+                ORDER BY d.id_pedido_compra_det
+            """, (pedido['id_pedido_compra_cab'],))
+            filas_detalle = cur.fetchall()
+            for f in filas_detalle:
+                pedido['detalle'].append({
+                    'id_pedido_compra_det': f[0],
+                    'item_code': f[1],
+                    'item_descripcion': f[2],
+                    'unidad_med': f[3],
+                    'cant_pedido': float(f[4]),
+                    'costo_unitario': float(f[5]),
+                    'tipo_impuesto': f[6]
+                })
+
+            return pedido
+
+        except Exception as e:
+            app.logger.error(f"Error al obtener pedido ID {id_pedido}: {str(e)}")
+            return None
         finally:
             cur.close()
             con.close()

@@ -53,11 +53,11 @@ $(document).ready(function(){
     // Inicializar DataTable
     const tabla = $('#tbl_pedidos').DataTable({
         language: {
-            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
+            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}"
         },
         ajax: {
             url: '/api/v1/gestionar-compras/registrar-pedido-compras/pedidos',
-            dataSrc: 'data' // porque tu API devuelve {success:true, data:[...]}
+            dataSrc: 'data'
         },
         columns: [
             { data: 'id_pedido_compra_cab' },
@@ -71,11 +71,9 @@ $(document).ready(function(){
                 orderable: false,
                 className: 'text-center',
                 render: function(row){
-                    return `
-                        <button class="btn btn-info btn-sm ver" data-id="${row.id_pedido_compra_cab}">Ver</button>
-                        <button class="btn btn-warning btn-sm editar" data-id="${row.id_pedido_compra_cab}">Editar</button>
-                        <button class="btn btn-danger btn-sm eliminar" data-id="${row.id_pedido_compra_cab}">Eliminar</button>
-                    `;
+                    return '<button class="btn btn-info btn-sm ver" data-id="' + row.id_pedido_compra_cab + '">Ver</button> ' +
+                           '<button class="btn btn-warning btn-sm editar" data-id="' + row.id_pedido_compra_cab + '">Editar</button> ' +
+                           '<button class="btn btn-danger btn-sm eliminar" data-id="' + row.id_pedido_compra_cab + '">Eliminar</button>';
                 }
             }
         ],
@@ -87,13 +85,14 @@ $(document).ready(function(){
     // Ver detalle
     $('#tbl_pedidos').on('click', '.ver', function(){
         const id = $(this).data('id');
-        window.open(`/gestionar-compras/registrar-pedido-compras/detalle/${id}`, '_blank');
+        // Construir la URL directamente con el ID para evitar ValueError
+        window.open('/gestionar-compras/registrar-pedido-compras/pedidos/detalle/' + id, '_blank');
     });
 
     // Editar pedido
     $('#tbl_pedidos').on('click', '.editar', function(){
         const id = $(this).data('id');
-        window.open(`/gestionar-compras/registrar-pedido-compras/editar/${id}`, '_blank');
+        window.open('/gestionar-compras/registrar-pedido-compras/editar/' + id, '_blank');
     });
 
     // Eliminar pedido
@@ -107,7 +106,7 @@ $(document).ready(function(){
             cancelButtonText: 'Cancelar'
         }).then(result => {
             if(result.isConfirmed){
-                fetch(`/api/v1/gestionar-compras/registrar-pedido-compras/pedidos/${id}`, {
+                fetch('/api/v1/gestionar-compras/registrar-pedido-compras/pedidos/' + id, {
                     method: 'DELETE',
                     headers: {'Content-Type':'application/json'}
                 })
@@ -127,4 +126,6 @@ $(document).ready(function(){
 
 });
 </script>
+
+
 {% endblock %}

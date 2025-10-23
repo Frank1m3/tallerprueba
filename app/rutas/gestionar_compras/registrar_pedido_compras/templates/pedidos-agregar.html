@@ -74,6 +74,15 @@
 
             <!-- Selección de proveedor y producto -->
             <div class="row mb-3 align-items-end">
+                <div class="col-md-3">
+                    <label>Proveedor</label>
+                    <select id="cbo_proveedor_filtro" class="form-control">
+                        <option value="">Seleccione</option>
+                        {% for p in proveedores %}
+                        <option value="{{ p['id_proveedor'] }}">{{ p['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 
                 <div class="col-md-3">
                     <label>Producto</label>
@@ -93,10 +102,6 @@
                 <div class="col-md-2">
                     <label>Stock Actual</label>
                     <input type="number" id="txt_stock_actual" class="form-control" readonly>
-                </div>
-                <div class="col-md-3">
-                    <label>Proveedor</label>
-                    <input type="text" id="txt_proveedor" class="form-control" readonly>
                 </div>
                 <div class="col-md-1">
                     <label>Cantidad</label>
@@ -276,7 +281,7 @@ $(document).ready(function(){
             } else $(this).hide();
         });
         $('#cbo_producto').val('');
-        $('#txt_stock_actual,#txt_precio_info,#txt_proveedor').val('');
+        $('#txt_stock_actual,#txt_precio_info').val('');
         $('#id_proveedor_global').val(proveedor_id || '');
     });
 
@@ -293,13 +298,9 @@ $(document).ready(function(){
             });
         } else $('#txt_stock_actual').val(0);
 
-        if(!$('#id_proveedor_global').val() && id_item){
-            let proveedor_nombre = op.data('proveedor-nombre')||'';
+        if(id_item){
             let id_proveedor = op.data('proveedor-id')||'';
-            $('#txt_proveedor').val(proveedor_nombre);
             $('#id_proveedor_global').val(id_proveedor);
-        } else {
-            $('#txt_proveedor').val(op.data('proveedor-nombre')||'');
         }
     }
     $('#cbo_producto,#cbo_deposito').on('change', actualizarStockYProveedor);
@@ -311,10 +312,10 @@ $(document).ready(function(){
         let stock_actual = parseFloat($('#txt_stock_actual').val())||0;
         let cantidad = parseFloat($('#txt_cantidad').val());
         let precio = parseFloat($('#txt_precio_info').val());
-        let proveedor = $('#txt_proveedor').val();
         let id_proveedor = $('#id_proveedor_global').val();
+        let proveedor = op.data('proveedor-nombre') || '';
 
-        if(!id_item||!cantidad||!precio||!proveedor){
+        if(!id_item || !cantidad || !precio || !id_proveedor){
             return Swal.fire("Error","Complete todos los campos","error");
         }
 
@@ -335,7 +336,7 @@ $(document).ready(function(){
 
         actualizarTotal();
         $('#cbo_producto').val('');
-        $('#txt_stock_actual,#txt_cantidad,#txt_precio_info,#txt_proveedor').val('');
+        $('#txt_stock_actual,#txt_cantidad,#txt_precio_info').val('');
     });
 
     $('#tbl_detalle tbody').on('click','.btn-modificar', function(){
@@ -435,7 +436,8 @@ $(document).ready(function(){
 
     $('#btn_cancelar_general').click(()=> location.reload());
     $('#btn_salir_general').click(()=> window.location.href='/');
-
 });
 </script>
+
+
 {% endblock %}

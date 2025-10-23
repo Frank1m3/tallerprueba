@@ -69,7 +69,6 @@ def get_productos():
         app.logger.error(f"Error al obtener productos: {str(e)}")
         return jsonify(success=False, error='Ocurrió un error interno.'), 500
 
-
 # =================================
 # Obtener depósitos por sucursal
 # =================================
@@ -130,7 +129,7 @@ def crear_pedido():
             fecha_necesaria = data.get('fecha_necesaria'),
             id_proveedor = id_proveedor_cab,
             detalle_pedido = detalle_objs,
-            tipo_factura = data.get('tipo_factura')  # compatible con DAO actualizado
+            tipo_factura = data.get('tipo_factura')
         )
 
         dao = PedidoDeComprasDao()
@@ -139,7 +138,6 @@ def crear_pedido():
     except Exception as e:
         app.logger.error(f"Error al crear pedido: {str(e)}")
         return jsonify(success=False, error=f'Ocurrió un error interno: {str(e)}'), 500
-        
 
 # =================================
 # Obtener solicitud por nro
@@ -162,7 +160,7 @@ def get_solicitud_por_nro(nro_solicitud):
                 'cant_pedido': float(d.get('cant_pedido',0)),
                 'precio': float(d.get('costo_unitario',0)),
                 'stock_actual': float(d.get('stock',0)),
-                'proveedor': d.get('proveedor',''),   # <<-- CORREGIDO
+                'proveedor': d.get('proveedor',''),
                 'id_proveedor': d.get('id_proveedor')
             })
         solicitud['detalle'] = detalle_formateado
@@ -197,3 +195,48 @@ def get_pedidos():
     except Exception as e:
         app.logger.error(f"Error al obtener pedidos: {str(e)}")
         return jsonify(success=False, data=[], error=str(e))
+
+# =================================
+# Obtener pedido completo por ID (con detalle)
+# =================================
+@pdcapi.route('/pedidos/<int:id_pedido>', methods=['GET'])
+def get_pedido_por_id(id_pedido):
+    try:
+        dao = PedidoDeComprasDao()
+        pedido = dao.obtener_pedido_por_id(id_pedido)
+        if not pedido:
+            return jsonify(success=False, error='Pedido no encontrado'), 404
+
+        # Formatear detalle
+        detalle_formateado = []
+        for d in pedido.get('detalle', []):
+            detalle_formateado.append({
+                'item_code': d.get('item_code'),
+                'producto': d.get('item_descripcion'),
+                'unidad_med': d.get('unidad_med'),
+                'cant_pedido': float(d.get('cant_pedido',0)),
+                'costo_unitario': float(d.get('costo_unitario',0)),
+                'tipo_impuesto': d.get('tipo_impuesto')
+            })
+        pedido['detalle'] = detalle_formateado
+
+        return jsonify(success=True, data=pedido)
+    except Exception as e:
+        app.logger.error(f"Error al obtener pedido ID {id_pedido}: {str(e)}")
+        return jsonify(success=False, error='Ocurrió un error interno.'), 500
+# =================================
+# Anular un pedido
+# =================================
+@pdcapi.route('/pedidos/<int:id_pedido>', methods=['DELETE'])
+@csrf.exempt  # Si estás usando CSRF
+def anular_pedido(id_pedido):
+    try:
+        dao = PedidoDeComprasDao()
+        exito = dao.anular(id_pedido)
+        if exito:
+            return jsonify(success=True)
+        else:
+            return jsonify(success=False, error='No se pudo anular el pedido')
+    except Exception as e:
+        app.logger.error(f"Error al anular pedido ID {id_pedido}: {str(e)}")
+        return jsonify(success=False, error='Ocurrió un error interno')
