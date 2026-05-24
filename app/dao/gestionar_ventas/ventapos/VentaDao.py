@@ -57,10 +57,11 @@ class VentaDao:
     # ================================
     def buscarCliente(self, termino):
         sql = """
-        SELECT id_cliente, nombre, apellido, cedula, telefono, direccion
-        FROM clientes
-        WHERE cedula LIKE %s
-           OR LOWER(nombre || ' ' || apellido) LIKE LOWER(%s)
+        SELECT id_clie, clie_nombre, clie_ci, clie_telefono, clie_direccion
+        FROM cliente
+        WHERE LOWER(clie_nombre) LIKE LOWER(%s)
+           OR clie_ci LIKE %s
+        ORDER BY clie_nombre
         LIMIT 10
         """
         like = f"%{termino}%"
@@ -71,13 +72,11 @@ class VentaDao:
             cur.execute(sql, (like, like))
             filas = cur.fetchall()
             return [{
-                "id_cliente":  f[0],
-                "nombre":      f[1] or '',
-                "apellido":    f[2] or '',
-                "cedula":      f[3] or '',
-                "telefono":    f[4] or '',
-                "direccion":   f[5] or '',
-                "nombre_completo": f"{f[1] or ''} {f[2] or ''}".strip()
+                "id_cliente":      f[0],
+                "nombre_completo": f[1] or '',
+                "cedula":          f[2] or '',
+                "telefono":        f[3] or '',
+                "direccion":       f[4] or '',
             } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al buscar cliente: {e}")
@@ -206,12 +205,12 @@ class VentaDao:
             cur.execute("""
                 SELECT v.id_venta_cab, v.codigo_venta, v.fecha_venta,
                        v.total_venta, v.estado,
-                       c.nombre || ' ' || c.apellido AS cliente_nombre,
-                       c.cedula AS cliente_ruc,
-                       c.direccion AS cliente_dir,
+                       c.clie_nombre AS cliente_nombre,
+                       c.clie_ci AS cliente_ruc,
+                       c.clie_direccion AS cliente_dir,
                        f.nombres || ' ' || f.apellidos AS vendedor
                 FROM venta_cab v
-                LEFT JOIN clientes c ON c.id_cliente = v.id_cliente
+                LEFT JOIN cliente c ON c.id_clie = v.id_cliente
                 LEFT JOIN funcionarios f ON f.fun_id = v.fun_id
                 WHERE v.id_venta_cab = %s
             """, (id_venta_cab,))
@@ -289,10 +288,10 @@ class VentaDao:
         sql = """
         SELECT v.id_venta_cab, v.codigo_venta, v.fecha_venta,
                v.total_venta, v.estado,
-               COALESCE(c.nombre || ' ' || c.apellido, 'CONSUMIDOR FINAL') AS cliente,
+               COALESCE(c.clie_nombre, 'CONSUMIDOR FINAL') AS cliente,
                f.nombres || ' ' || f.apellidos AS vendedor
         FROM venta_cab v
-        LEFT JOIN clientes c ON c.id_cliente = v.id_cliente
+        LEFT JOIN cliente c ON c.id_clie = v.id_cliente
         LEFT JOIN funcionarios f ON f.fun_id = v.fun_id
         ORDER BY v.id_venta_cab DESC
         LIMIT 100

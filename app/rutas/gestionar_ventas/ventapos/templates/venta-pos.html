@@ -11,413 +11,624 @@
   --pos-border:  #e5e7eb;
   --pos-bg:      #f9fafb;
   --pos-muted:   #6b7280;
-  --pos-radius:  10px;
   --pos-dark:    #111827;
+  --pos-radius:  8px;
 }
 
-/* Layout POS: izquierda búsqueda+carrito, derecha resumen */
-.pos-layout {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 1.25rem;
-  height: calc(100vh - 130px);
-}
-@media (max-width: 1024px) {
-  .pos-layout { grid-template-columns: 1fr; height: auto; }
+.pos-wrap {
+  display: flex; flex-direction: column;
+  height: calc(100vh - 115px);
+  gap: .6rem;
 }
 
-/* Paneles */
-.pos-panel {
+/* ---- Barra de escaneo ---- */
+.pos-scanner-bar {
   background: #fff;
   border: 1px solid var(--pos-border);
   border-radius: var(--pos-radius);
-  box-shadow: 0 1px 6px rgba(0,0,0,.06);
-  display: flex; flex-direction: column;
-  overflow: hidden;
-}
-.pos-panel-header {
-  padding: .7rem 1rem;
-  background: var(--pos-bg);
-  border-bottom: 1px solid var(--pos-border);
-  font-size: .78rem; font-weight: 700;
-  color: #374151; text-transform: uppercase; letter-spacing: .05em;
-  display: flex; align-items: center; gap: .5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  padding: .65rem 1rem;
+  display: grid;
+  grid-template-columns: 240px auto 1fr 130px 130px 150px auto;
+  gap: .6rem;
+  align-items: end;
   flex-shrink: 0;
 }
-.pos-panel-body {
-  padding: 1rem;
-  flex: 1; overflow-y: auto;
+.scan-field { display: flex; flex-direction: column; gap: .2rem; }
+.scan-label {
+  font-size: .67rem; font-weight: 700; color: var(--pos-muted);
+  text-transform: uppercase; letter-spacing: .06em;
 }
-
-/* Barra de búsqueda */
-.search-bar {
-  display: flex; gap: .5rem; margin-bottom: .85rem;
-}
-.search-input {
-  flex: 1;
-  font-size: .9rem;
+.scan-input {
+  font-size: .88rem; font-weight: 600;
   border: 1.5px solid var(--pos-border);
-  border-radius: 8px;
-  padding: .5rem .85rem;
-  color: var(--pos-dark);
+  border-radius: 6px; padding: .38rem .65rem;
+  color: var(--pos-dark); width: 100%;
   transition: border-color .15s, box-shadow .15s;
 }
-.search-input:focus {
+.scan-input:focus {
   border-color: var(--pos-primary);
   box-shadow: 0 0 0 3px rgba(26,86,219,.1);
   outline: none;
 }
-.search-btn {
-  background: var(--pos-primary); color: #fff;
-  border: none; border-radius: 8px;
-  padding: .5rem .9rem; font-size: .85rem; font-weight: 600;
-  cursor: pointer; transition: background .15s;
-  display: flex; align-items: center; gap: .3rem;
-}
-.search-btn:hover { background: #1040b0; }
+.scan-input.readonly-field { background: #f8faff; color: var(--pos-primary); font-weight: 700; cursor: default; }
+.scan-input.precio-field   { background: #f0fdf4; color: var(--pos-success); font-weight: 800; font-size: 1rem; }
+.scan-input.stock-ok   { border-color: #86efac !important; }
+.scan-input.stock-bajo { border-color: var(--pos-warn) !important; background: #fffbeb; }
+.scan-input.stock-cero { border-color: var(--pos-danger) !important; background: #fff1f2; color: var(--pos-danger); }
 
-/* Resultados búsqueda */
-.search-results {
-  display: none; margin-bottom: .85rem;
-}
-.search-results.open { display: block; }
-.result-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: .55rem .85rem;
-  border: 1px solid var(--pos-border);
-  border-radius: 7px; margin-bottom: .35rem;
-  cursor: pointer; transition: background .12s, border-color .12s;
-  background: #fff;
-}
-.result-item:hover { background: #f0f9ff; border-color: #bfdbfe; }
-.result-info .r-nombre { font-size: .87rem; font-weight: 700; color: var(--pos-dark); }
-.result-info .r-code   { font-size: .73rem; color: var(--pos-muted); }
-.result-precio { font-size: .95rem; font-weight: 800; color: var(--pos-primary); }
-.result-stock  { font-size: .72rem; color: var(--pos-success); font-weight: 600; }
-.result-stock.sin-stock { color: var(--pos-danger); }
-
-/* Carrito */
-.cart-empty {
-  text-align: center; padding: 2.5rem 1rem;
-  color: var(--pos-muted); font-size: .88rem;
-}
-.cart-empty i { font-size: 2.5rem; margin-bottom: .75rem; display: block; opacity: .3; }
-
-.cart-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: center;
-  gap: .5rem;
-  padding: .55rem .6rem;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background .12s;
-}
-.cart-item:hover { background: #f8faff; }
-.cart-item:last-child { border-bottom: none; }
-.ci-nombre { font-size: .84rem; font-weight: 700; color: var(--pos-dark); line-height: 1.2; }
-.ci-precio { font-size: .75rem; color: var(--pos-muted); }
-.ci-qty {
-  display: flex; align-items: center; gap: .25rem;
-}
-.qty-btn {
-  width: 24px; height: 24px; border-radius: 5px;
-  border: 1px solid var(--pos-border);
-  background: var(--pos-bg); color: var(--pos-dark);
-  font-size: .82rem; font-weight: 700;
+/* Botón lupa */
+.btn-lupa {
+  background: #f1f5f9; color: var(--pos-primary);
+  border: 1.5px solid #bfdbfe;
+  border-radius: 6px; width: 36px; height: 36px;
   display: grid; place-items: center;
-  cursor: pointer; transition: background .12s;
+  cursor: pointer; font-size: .9rem; flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+  align-self: end;
 }
-.qty-btn:hover { background: #e0e7ff; border-color: #a5b4fc; }
-.qty-val {
-  min-width: 32px; text-align: center;
-  font-size: .87rem; font-weight: 700;
+.btn-lupa:hover { background: #dbeafe; border-color: var(--pos-primary); }
+
+.btn-agregar-scan {
+  background: var(--pos-primary); color: #fff;
+  border: none; border-radius: 6px;
+  padding: .42rem 1rem; font-size: .88rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: .35rem;
+  transition: background .15s, transform .1s;
+  height: 36px; align-self: end;
+}
+.btn-agregar-scan:hover  { background: #1040b0; }
+.btn-agregar-scan:active { transform: scale(.97); }
+
+/* ---- Área principal ---- */
+.pos-main {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: .6rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- Tabla items ---- */
+.pos-table-wrap {
+  background: #fff;
   border: 1px solid var(--pos-border);
-  border-radius: 5px; padding: .1rem .3rem;
-  color: var(--pos-dark);
+  border-radius: var(--pos-radius);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  display: flex; flex-direction: column;
+  overflow: hidden;
 }
-.ci-subtotal { font-size: .87rem; font-weight: 800; color: var(--pos-primary); text-align: right; }
-.ci-del {
+.pos-table-header {
+  padding: .5rem .85rem;
+  background: var(--pos-bg);
+  border-bottom: 1px solid var(--pos-border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.pos-table-header span {
+  font-size: .75rem; font-weight: 700; color: #374151;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.pos-table-scroll { flex: 1; overflow-y: auto; }
+
+table.items-tbl { width: 100%; border-collapse: collapse; }
+table.items-tbl thead th {
+  background: #f1f5f9; color: #374151;
+  font-size: .71rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: .5rem .75rem;
+  border-bottom: 2px solid var(--pos-border);
+  position: sticky; top: 0; z-index: 1;
+  white-space: nowrap;
+}
+table.items-tbl tbody td {
+  font-size: .845rem; color: var(--pos-dark);
+  padding: .45rem .75rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+table.items-tbl tbody tr:hover td { background: #f8faff; }
+.tbl-empty-row td {
+  text-align: center; color: var(--pos-muted);
+  font-size: .84rem; padding: 2.5rem 0 !important;
+}
+.item-desc { font-weight: 600; }
+.item-code { font-size: .74rem; color: var(--pos-muted); }
+.item-cant { display: flex; align-items: center; gap: .25rem; }
+.cant-btn {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 1px solid var(--pos-border);
+  background: var(--pos-bg); font-size: .78rem; font-weight: 700;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background .1s; flex-shrink: 0;
+}
+.cant-btn:hover { background: #dbeafe; border-color: #93c5fd; }
+.cant-input {
+  width: 44px; text-align: center; font-size: .84rem; font-weight: 700;
+  border: 1px solid var(--pos-border); border-radius: 4px;
+  padding: .1rem .2rem;
+}
+.item-subtotal { font-weight: 800; color: var(--pos-primary); font-variant-numeric: tabular-nums; }
+.btn-del-item {
   background: none; border: none; color: #fca5a5;
-  cursor: pointer; font-size: .85rem; padding: .2rem;
+  cursor: pointer; font-size: .82rem; padding: .15rem .3rem;
   border-radius: 4px; transition: color .12s, background .12s;
 }
-.ci-del:hover { color: var(--pos-danger); background: #fff1f2; }
+.btn-del-item:hover { color: var(--pos-danger); background: #fff1f2; }
 
-/* Panel derecho - resumen */
-.pos-right { display: flex; flex-direction: column; gap: .85rem; }
+/* ---- Panel derecho ---- */
+.pos-right { display: flex; flex-direction: column; gap: .6rem; overflow-y: auto; }
+
+.pos-card {
+  background: #fff; border: 1px solid var(--pos-border);
+  border-radius: var(--pos-radius);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05); overflow: visible;
+}
+.pos-card-header {
+  padding: .5rem .85rem;
+  background: var(--pos-bg); border-bottom: 1px solid var(--pos-border);
+  font-size: .72rem; font-weight: 700; color: #374151;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-radius: var(--pos-radius) var(--pos-radius) 0 0;
+}
+.pos-card-body { padding: .65rem .85rem; overflow: visible; }
 
 /* Cliente */
 .cliente-wrap { position: relative; }
 .cliente-results {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0;
   background: #fff; border: 1px solid var(--pos-border);
-  border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.1);
-  z-index: 100; display: none; max-height: 180px; overflow-y: auto;
+  border-radius: 7px; box-shadow: 0 8px 20px rgba(0,0,0,.1);
+  z-index: 200; display: none; max-height: 160px; overflow-y: auto;
 }
 .cliente-results.open { display: block; }
 .cli-item {
-  padding: .5rem .75rem; cursor: pointer;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: .83rem; transition: background .12s;
+  padding: .45rem .7rem; cursor: pointer;
+  border-bottom: 1px solid #f3f4f6; font-size: .81rem;
+  transition: background .12s;
 }
 .cli-item:hover { background: #f0f9ff; }
 .cli-item:last-child { border-bottom: none; }
 .cli-nombre { font-weight: 700; color: var(--pos-dark); }
-.cli-cedula { font-size: .72rem; color: var(--pos-muted); }
+.cli-ci { font-size: .71rem; color: var(--pos-muted); }
 .cli-selected {
   display: none; background: #f0fdf4;
-  border: 1px solid #bbf7d0; border-radius: 7px;
-  padding: .5rem .75rem; margin-top: .4rem;
+  border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: .45rem .7rem; margin-top: .35rem;
   align-items: center; gap: .5rem;
 }
 .cli-selected.visible { display: flex; }
 .cli-clear {
   margin-left: auto; background: none; border: none;
-  color: var(--pos-muted); cursor: pointer; font-size: .8rem;
-  border-radius: 4px; padding: .15rem .35rem;
+  color: var(--pos-muted); cursor: pointer; font-size: .78rem;
+  padding: .15rem .3rem; border-radius: 4px;
 }
 .cli-clear:hover { color: var(--pos-danger); background: #fee2e2; }
+.pos-input {
+  font-size: .84rem; border: 1px solid var(--pos-border);
+  border-radius: 6px; padding: .38rem .65rem;
+  color: var(--pos-dark); width: 100%;
+  transition: border-color .15s;
+}
+.pos-input:focus { border-color: var(--pos-primary); outline: none; }
 
 /* Totales */
-.totales-box {
-  background: var(--pos-bg); border: 1px solid var(--pos-border);
-  border-radius: 8px; padding: .85rem 1rem;
+.totales-card {
+  background: #fff; border: 1px solid var(--pos-border);
+  border-radius: var(--pos-radius);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  padding: .75rem .9rem;
 }
 .total-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: .83rem; color: #374151; margin-bottom: .35rem;
+  display: flex; justify-content: space-between;
+  font-size: .81rem; color: #374151; margin-bottom: .28rem;
 }
-.total-row:last-child { margin-bottom: 0; }
+.total-row .lbl { color: var(--pos-muted); }
+.total-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
 .total-row.grand {
   border-top: 2px solid var(--pos-border);
-  padding-top: .5rem; margin-top: .4rem;
+  padding-top: .45rem; margin-top: .35rem; margin-bottom: 0;
   font-size: 1.05rem; font-weight: 800; color: var(--pos-dark);
 }
-.total-row .label { font-weight: 500; }
-.total-row .value { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-/* Pagos */
-.pagos-box {
-  background: #fff; border: 1px solid var(--pos-border);
-  border-radius: 8px; overflow: hidden;
-}
-.pagos-header {
-  padding: .6rem .85rem;
-  background: var(--pos-bg); border-bottom: 1px solid var(--pos-border);
-  font-size: .76rem; font-weight: 700; color: #374151;
-  text-transform: uppercase; letter-spacing: .05em;
-}
-.pagos-body { padding: .75rem .85rem; }
-.pago-row {
-  display: flex; gap: .5rem; align-items: center; margin-bottom: .5rem;
-}
-.pago-row:last-child { margin-bottom: 0; }
-.pago-select, .pago-input {
-  font-size: .83rem; border: 1px solid var(--pos-border);
-  border-radius: 6px; padding: .38rem .6rem;
-  color: var(--pos-dark); transition: border-color .15s;
-}
-.pago-select:focus, .pago-input:focus {
-  border-color: var(--pos-primary); outline: none;
-}
-.pago-select { flex: 1; }
-.pago-input  { width: 130px; text-align: right; font-variant-numeric: tabular-nums; }
-.pago-del {
-  background: none; border: none; color: #fca5a5;
-  cursor: pointer; font-size: .85rem;
-  border-radius: 4px; padding: .2rem .35rem;
-}
-.pago-del:hover { color: var(--pos-danger); background: #fff1f2; }
-.btn-add-pago {
-  display: flex; align-items: center; gap: .3rem;
-  background: none; border: 1px dashed var(--pos-border);
-  border-radius: 6px; padding: .38rem .75rem;
-  font-size: .8rem; font-weight: 600; color: var(--pos-muted);
-  cursor: pointer; width: 100%; justify-content: center;
-  margin-top: .5rem; transition: border-color .15s, color .15s;
-}
-.btn-add-pago:hover { border-color: var(--pos-primary); color: var(--pos-primary); }
-
-/* Vuelto */
-.vuelto-box {
-  border-radius: 8px; padding: .65rem .85rem;
-  display: flex; justify-content: space-between; align-items: center;
-  border: 1px solid var(--pos-border); background: var(--pos-bg);
-  font-size: .87rem;
-}
-.vuelto-box.positivo { background: #d1fae5; border-color: #6ee7b7; }
-.vuelto-box.negativo { background: #fee2e2; border-color: #fca5a5; }
-.vuelto-label { font-weight: 600; }
-.vuelto-valor { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-
-/* Botón cobrar */
+/* Botones */
 .btn-cobrar {
-  width: 100%; padding: .85rem;
+  width: 100%; padding: .75rem;
   background: var(--pos-success); color: #fff;
-  border: none; border-radius: 8px;
-  font-size: 1rem; font-weight: 800;
-  cursor: pointer; transition: background .15s, transform .1s;
-  box-shadow: 0 3px 10px rgba(22,163,74,.25);
-  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  border: none; border-radius: 7px;
+  font-size: .95rem; font-weight: 800;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: .4rem;
+  box-shadow: 0 2px 8px rgba(22,163,74,.25);
+  transition: background .15s, transform .1s;
 }
 .btn-cobrar:hover  { background: #15803d; }
 .btn-cobrar:active { transform: scale(.98); }
 .btn-cobrar:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
 
 .btn-limpiar {
-  width: 100%; padding: .5rem;
+  width: 100%; padding: .45rem;
   background: none; color: var(--pos-muted);
-  border: 1px solid var(--pos-border); border-radius: 7px;
-  font-size: .82rem; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--pos-border); border-radius: 6px;
+  font-size: .8rem; font-weight: 600; cursor: pointer;
   transition: background .15s, color .15s;
 }
 .btn-limpiar:hover { background: #fee2e2; color: var(--pos-danger); border-color: #fca5a5; }
 
-/* Label form */
-.pos-label {
-  font-size: .72rem; font-weight: 700; color: #374151;
-  text-transform: uppercase; letter-spacing: .04em;
-  margin-bottom: .3rem; display: block;
+/* ---- Modal Buscador ---- */
+.buscador-modal .modal-content {
+  border: none; border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18); overflow: hidden;
 }
-.pos-input {
-  font-size: .87rem; border: 1px solid var(--pos-border);
-  border-radius: 7px; padding: .42rem .75rem;
-  color: var(--pos-dark); width: 100%;
+.buscador-modal .modal-header {
+  background: var(--pos-primary); padding: .9rem 1.3rem; border: none;
+}
+.buscador-modal .modal-title {
+  color: #fff; font-weight: 800; font-size: 1rem;
+  display: flex; align-items: center; gap: .4rem;
+}
+.buscador-modal .modal-header .close { color: rgba(255,255,255,.8); opacity: 1; }
+.buscador-modal .modal-body { padding: 1rem; background: #fff; }
+
+.busq-input-wrap { position: relative; margin-bottom: .85rem; }
+.busq-input {
+  width: 100%; font-size: .9rem;
+  border: 1.5px solid var(--pos-border);
+  border-radius: 8px; padding: .5rem .85rem .5rem 2.4rem;
+  color: var(--pos-dark);
   transition: border-color .15s, box-shadow .15s;
 }
-.pos-input:focus {
+.busq-input:focus {
   border-color: var(--pos-primary);
   box-shadow: 0 0 0 3px rgba(26,86,219,.1); outline: none;
+}
+.busq-input-icon {
+  position: absolute; left: .75rem; top: 50%;
+  transform: translateY(-50%);
+  color: var(--pos-muted); font-size: .85rem; pointer-events: none;
+}
+.busq-tabla-wrap {
+  border: 1px solid var(--pos-border);
+  border-radius: 8px; overflow: hidden;
+  max-height: 420px; overflow-y: auto;
+}
+table.busq-tbl { width: 100%; border-collapse: collapse; }
+table.busq-tbl thead th {
+  background: #f1f5f9; color: #374151;
+  font-size: .71rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: .5rem .75rem;
+  border-bottom: 2px solid var(--pos-border);
+  position: sticky; top: 0; z-index: 1;
+  white-space: nowrap;
+}
+table.busq-tbl tbody td {
+  font-size: .845rem; color: var(--pos-dark);
+  padding: .45rem .75rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+table.busq-tbl tbody tr { cursor: pointer; transition: background .1s; }
+table.busq-tbl tbody tr:hover td { background: #eff6ff; }
+table.busq-tbl tbody tr.sin-stock { opacity: .5; cursor: not-allowed; }
+table.busq-tbl tbody tr.sin-stock:hover td { background: transparent; }
+.busq-stock-ok   { color: var(--pos-success); font-weight: 700; }
+.busq-stock-bajo { color: var(--pos-warn);    font-weight: 700; }
+.busq-stock-cero { color: var(--pos-danger);  font-weight: 700; }
+.busq-empty {
+  text-align: center; color: var(--pos-muted);
+  font-size: .84rem; padding: 2rem 0;
+}
+.btn-selec {
+  background: #eff6ff; color: var(--pos-primary);
+  border: 1px solid #bfdbfe; border-radius: 5px;
+  padding: .22rem .6rem; font-size: .76rem; font-weight: 700;
+  cursor: pointer; transition: background .12s;
+}
+.btn-selec:hover { background: #dbeafe; }
+
+/* ---- Modal Cobro ---- */
+.cobro-modal .modal-content {
+  border: none; border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18); overflow: hidden;
+}
+.cobro-modal .modal-header {
+  background: var(--pos-success); padding: .9rem 1.3rem; border: none;
+}
+.cobro-modal .modal-title {
+  color: #fff; font-weight: 800; font-size: 1rem;
+  display: flex; align-items: center; gap: .4rem;
+}
+.cobro-modal .modal-header .close { color: rgba(255,255,255,.8); opacity: 1; }
+.cobro-modal .modal-body   { padding: 1.25rem; background: #fff; }
+.cobro-modal .modal-footer {
+  background: var(--pos-bg); border-top: 1px solid var(--pos-border); padding: .75rem 1.25rem;
+}
+
+.cobro-total-box {
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  border-radius: 10px; padding: .85rem 1.1rem;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem;
+}
+.cobro-total-lbl { font-size: .78rem; font-weight: 700; color: #065f46; text-transform: uppercase; letter-spacing: .05em; }
+.cobro-total-val { font-size: 1.5rem; font-weight: 900; color: var(--pos-success); font-variant-numeric: tabular-nums; }
+
+.pagos-section { margin-bottom: .75rem; }
+.pagos-section-title {
+  font-size: .71rem; font-weight: 700; color: var(--pos-muted);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem;
+}
+.pago-row { display: flex; gap: .5rem; align-items: center; margin-bottom: .45rem; }
+.pago-select, .pago-input {
+  font-size: .84rem; border: 1px solid var(--pos-border);
+  border-radius: 6px; padding: .38rem .6rem; color: var(--pos-dark);
+}
+.pago-select { flex: 1; }
+.pago-input  { width: 130px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.pago-select:focus, .pago-input:focus { border-color: var(--pos-primary); outline: none; }
+.pago-del {
+  background: none; border: none; color: #fca5a5;
+  cursor: pointer; padding: .2rem .35rem; border-radius: 4px; font-size: .82rem;
+}
+.pago-del:hover { color: var(--pos-danger); background: #fff1f2; }
+.btn-add-pago {
+  width: 100%; background: none; border: 1px dashed var(--pos-border);
+  border-radius: 6px; padding: .35rem; font-size: .79rem; font-weight: 600;
+  color: var(--pos-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: .3rem;
+  transition: border-color .15s, color .15s;
+}
+.btn-add-pago:hover { border-color: var(--pos-primary); color: var(--pos-primary); }
+
+.vuelto-box {
+  border-radius: 8px; padding: .6rem .85rem;
+  display: flex; justify-content: space-between; align-items: center;
+  border: 1px solid var(--pos-border); background: var(--pos-bg);
+  font-size: .86rem; margin-top: .5rem;
+}
+.vuelto-box.positivo { background: #d1fae5; border-color: #6ee7b7; }
+.vuelto-box.negativo { background: #fee2e2; border-color: #fca5a5; }
+.vuelto-lbl { font-weight: 600; }
+.vuelto-val { font-size: .98rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.btn-confirmar {
+  background: var(--pos-success); color: #fff;
+  border: none; border-radius: 7px;
+  padding: .55rem 1.25rem; font-size: .9rem; font-weight: 800;
+  cursor: pointer; display: flex; align-items: center; gap: .4rem;
+  transition: background .15s;
+}
+.btn-confirmar:hover { background: #15803d; }
+.btn-confirmar:disabled { background: #9ca3af; cursor: not-allowed; }
+.btn-cancel-cobro {
+  background: #f3f4f6; color: #374151;
+  border: 1px solid var(--pos-border); border-radius: 7px;
+  padding: .55rem 1rem; font-size: .84rem; font-weight: 600; cursor: pointer;
 }
 
 .spin { animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.divider { border: none; border-top: 1px solid var(--pos-border); margin: .6rem 0; }
 </style>
 
-<div style="padding: 1rem 0 .5rem">
-  <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
-    <div style="width:36px;height:36px;border-radius:8px;background:var(--pos-success);display:grid;place-items:center;color:#fff;font-size:.9rem">
-      <i class="fas fa-cash-register"></i>
+<!-- Encabezado -->
+<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0 .4rem">
+  <div style="width:32px;height:32px;border-radius:7px;background:var(--pos-success);display:grid;place-items:center;color:#fff;font-size:.85rem;flex-shrink:0">
+    <i class="fas fa-cash-register"></i>
+  </div>
+  <h2 style="font-size:1.2rem;font-weight:800;color:#111827;margin:0">Punto de Venta</h2>
+  <span id="lblCodigo" style="margin-left:.5rem;font-size:.77rem;font-weight:700;color:var(--pos-muted);background:var(--pos-bg);border:1px solid var(--pos-border);padding:.2rem .6rem;border-radius:5px"></span>
+  <span id="lblItems" style="margin-left:auto;font-size:.77rem;font-weight:600;color:var(--pos-muted)">0 ítems</span>
+</div>
+
+<div class="pos-wrap">
+
+  <!-- ===== BARRA DE ESCANEO ===== -->
+  <div class="pos-scanner-bar">
+
+    <div class="scan-field">
+      <span class="scan-label"><i class="fas fa-barcode me-1"></i>Cód. / Código de Barra</span>
+      <input type="text" class="scan-input" id="inputScan"
+             placeholder="Escanear o escribir…" autocomplete="off">
     </div>
-    <h2 style="font-size:1.3rem;font-weight:700;color:#111827;margin:0">Punto de Venta</h2>
-    <span id="lblCodigo" style="margin-left:auto;font-size:.8rem;font-weight:700;color:var(--pos-muted);background:var(--pos-bg);border:1px solid var(--pos-border);padding:.25rem .7rem;border-radius:6px"></span>
+
+    <!-- LUPA -->
+    <button class="btn-lupa" id="btnBuscador" title="Buscar producto por nombre">
+      <i class="fas fa-search"></i>
+    </button>
+
+    <div class="scan-field">
+      <span class="scan-label">Descripción</span>
+      <input type="text" class="scan-input readonly-field" id="scanDesc" readonly placeholder="—">
+    </div>
+
+    <div class="scan-field">
+      <span class="scan-label">Precio Unit.</span>
+      <input type="text" class="scan-input precio-field" id="scanPrecio" readonly placeholder="₲ 0">
+    </div>
+
+    <div class="scan-field">
+      <span class="scan-label">Stock disp.</span>
+      <input type="text" class="scan-input" id="scanStock" readonly placeholder="—">
+    </div>
+
+    <div class="scan-field">
+      <span class="scan-label">Cantidad</span>
+      <input type="number" class="scan-input" id="scanCantidad" value="1" min="1" placeholder="1">
+    </div>
+
+    <button class="btn-agregar-scan" id="btnAgregar">
+      <i class="fas fa-plus"></i> Agregar
+    </button>
+
+  </div>
+
+  <!-- Dropdown búsqueda rápida -->
+  <div id="searchDropdown" style="display:none;position:relative;z-index:150;margin-top:-.45rem">
+    <div id="searchResults" style="background:#fff;border:1px solid var(--pos-border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-height:200px;overflow-y:auto"></div>
+  </div>
+
+  <!-- ===== ÁREA PRINCIPAL ===== -->
+  <div class="pos-main">
+
+    <!-- Tabla items -->
+    <div class="pos-table-wrap">
+      <div class="pos-table-header">
+        <span><i class="fas fa-shopping-basket me-1"></i>Items de la venta</span>
+        <span id="lblTotalHeader" style="font-size:.78rem;font-weight:800;color:var(--pos-primary)">₲ 0</span>
+      </div>
+      <div class="pos-table-scroll">
+        <table class="items-tbl">
+          <thead>
+            <tr>
+              <th style="width:35px">#</th>
+              <th>Descripción</th>
+              <th class="text-center" style="width:110px">Cantidad</th>
+              <th class="text-right" style="width:110px">Precio</th>
+              <th class="text-right" style="width:120px">Subtotal</th>
+              <th class="text-center" style="width:60px">IVA</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsTbody">
+            <tr class="tbl-empty-row">
+              <td colspan="7"><i class="fas fa-shopping-cart me-2" style="opacity:.3"></i>Escaneá o usá la lupa para buscar un producto</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel derecho -->
+    <div class="pos-right">
+
+      <!-- Cliente -->
+      <div class="pos-card">
+        <div class="pos-card-header"><i class="fas fa-user me-1"></i> Cliente</div>
+        <div class="pos-card-body">
+          <div class="cliente-wrap">
+            <input type="text" class="pos-input" id="inputCliente"
+                   placeholder="Buscar por nombre o CI…" autocomplete="off">
+            <div class="cliente-results" id="clienteResults"></div>
+          </div>
+          <div class="cli-selected" id="clienteSelected">
+            <div>
+              <div class="cli-nombre" id="clienteNombre">—</div>
+              <div class="cli-ci">CI: <span id="clienteCI">—</span></div>
+            </div>
+            <button class="cli-clear" id="clienteClear"><i class="fas fa-times"></i></button>
+          </div>
+          <input type="hidden" id="clienteId">
+          <p style="font-size:.69rem;color:var(--pos-muted);margin:.3rem 0 0">
+            <i class="fas fa-info-circle me-1"></i>Vacío = Consumidor Final
+          </p>
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div class="totales-card">
+        <div class="total-row">
+          <span class="lbl">Subtotal</span>
+          <span class="val" id="lblSubtotal">₲ 0</span>
+        </div>
+        <div class="total-row">
+          <span class="lbl">IVA 10%</span>
+          <span class="val" id="lblIva10">₲ 0</span>
+        </div>
+        <div class="total-row">
+          <span class="lbl">IVA 5%</span>
+          <span class="val" id="lblIva5">₲ 0</span>
+        </div>
+        <div class="total-row grand">
+          <span>TOTAL</span>
+          <span id="lblTotal">₲ 0</span>
+        </div>
+      </div>
+
+      <button class="btn-cobrar" id="btnCobrar" disabled>
+        <i class="fas fa-check-circle"></i> COBRAR
+      </button>
+      <button class="btn-limpiar" id="btnLimpiar">
+        <i class="fas fa-trash"></i> Cancelar venta
+      </button>
+
+    </div>
   </div>
 </div>
 
-<div class="pos-layout">
-
-  <!-- ===== IZQUIERDA: búsqueda + carrito ===== -->
-  <div style="display:flex;flex-direction:column;gap:.85rem;overflow:hidden">
-
-    <!-- Búsqueda -->
-    <div class="pos-panel" style="flex-shrink:0">
-      <div class="pos-panel-header">
-        <i class="fas fa-search"></i> Buscar producto
+<!-- ===== MODAL BUSCADOR ===== -->
+<div class="modal fade buscador-modal" id="modalBuscador" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-search"></i> Buscar Producto</h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
       </div>
-      <div class="pos-panel-body" style="overflow:visible">
-        <div class="search-bar">
-          <input type="text" class="search-input" id="inputBuscar"
-                 placeholder="Nombre, código interno o código de barra…">
-          <button class="search-btn" id="btnBuscar">
-            <i class="fas fa-barcode"></i> Buscar
+      <div class="modal-body">
+        <div class="busq-input-wrap">
+          <i class="fas fa-search busq-input-icon"></i>
+          <input type="text" class="busq-input" id="busqInput"
+                 placeholder="Escribí nombre, código interno o código de barra…" autocomplete="off">
+        </div>
+        <div class="busq-tabla-wrap">
+          <table class="busq-tbl">
+            <thead>
+              <tr>
+                <th style="width:90px">Código</th>
+                <th>Descripción</th>
+                <th class="text-right" style="width:110px">Precio</th>
+                <th class="text-center" style="width:90px">Stock</th>
+                <th class="text-center" style="width:80px">IVA</th>
+                <th class="text-center" style="width:80px"></th>
+              </tr>
+            </thead>
+            <tbody id="busqTbody">
+              <tr><td colspan="6" class="busq-empty">
+                <i class="fas fa-search me-2" style="opacity:.3"></i>Escribí para buscar productos
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL COBRO ===== -->
+<div class="modal fade cobro-modal" id="modalCobro" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-coins"></i> Cobro de Venta</h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="cobro-total-box">
+          <span class="cobro-total-lbl">Total a cobrar</span>
+          <span class="cobro-total-val" id="cobroTotal">₲ 0</span>
+        </div>
+        <div class="pagos-section">
+          <div class="pagos-section-title">Formas de pago</div>
+          <div id="pagosBody"></div>
+          <button class="btn-add-pago mt-1" id="btnAddPago">
+            <i class="fas fa-plus"></i> Agregar forma de pago
           </button>
         </div>
-        <div class="search-results" id="searchResults"></div>
-      </div>
-    </div>
-
-    <!-- Carrito -->
-    <div class="pos-panel" style="flex:1;min-height:0">
-      <div class="pos-panel-header">
-        <i class="fas fa-shopping-basket"></i> Carrito
-        <span id="lblItems" style="margin-left:auto;font-weight:500;font-size:.75rem;color:var(--pos-muted);text-transform:none;letter-spacing:0">
-          0 ítems
-        </span>
-      </div>
-      <div class="pos-panel-body" id="carritoBody">
-        <div class="cart-empty" id="carritoVacio">
-          <i class="fas fa-shopping-cart"></i>
-          Agregá productos buscando arriba
+        <div class="vuelto-box" id="vueltoBox">
+          <span class="vuelto-lbl">Vuelto / Pendiente</span>
+          <span class="vuelto-val" id="lblVuelto">₲ 0</span>
         </div>
       </div>
-    </div>
-
-  </div>
-
-  <!-- ===== DERECHA: cliente + totales + cobro ===== -->
-  <div class="pos-right" style="overflow-y:auto">
-
-    <!-- Cliente -->
-    <div class="pos-panel" style="flex-shrink:0">
-      <div class="pos-panel-header"><i class="fas fa-user"></i> Cliente</div>
-      <div class="pos-panel-body" style="overflow:visible">
-        <div class="cliente-wrap">
-          <input type="text" class="pos-input" id="inputCliente"
-                 placeholder="Buscar por nombre o cédula…" autocomplete="off">
-          <div class="cliente-results" id="clienteResults"></div>
-        </div>
-        <div class="cli-selected" id="clienteSelected">
-          <div>
-            <div class="cli-nombre" id="clienteNombre">—</div>
-            <div class="cli-cedula">CI/RUC: <span id="clienteCedula">—</span></div>
-          </div>
-          <button class="cli-clear" id="clienteClear"><i class="fas fa-times"></i></button>
-        </div>
-        <input type="hidden" id="clienteId">
-        <p style="font-size:.71rem;color:var(--pos-muted);margin:.3rem 0 0;display:flex;align-items:center;gap:.3rem">
-          <i class="fas fa-info-circle"></i> Dejá vacío para CONSUMIDOR FINAL
-        </p>
-      </div>
-    </div>
-
-    <!-- Totales IVA -->
-    <div class="totales-box">
-      <div class="total-row">
-        <span class="label">Subtotal</span>
-        <span class="value" id="lblSubtotal">₲ 0</span>
-      </div>
-      <div class="total-row">
-        <span class="label">IVA 10%</span>
-        <span class="value" id="lblIva10">₲ 0</span>
-      </div>
-      <div class="total-row">
-        <span class="label">IVA 5%</span>
-        <span class="value" id="lblIva5">₲ 0</span>
-      </div>
-      <div class="total-row grand">
-        <span>TOTAL</span>
-        <span id="lblTotal">₲ 0</span>
-      </div>
-    </div>
-
-    <!-- Formas de pago -->
-    <div class="pagos-box">
-      <div class="pagos-header"><i class="fas fa-coins me-1"></i> Formas de pago</div>
-      <div class="pagos-body" id="pagosBody">
-        <!-- filas dinámicas -->
-      </div>
-      <div style="padding:0 .85rem .75rem">
-        <button class="btn-add-pago" id="btnAddPago">
-          <i class="fas fa-plus"></i> Agregar forma de pago
+      <div class="modal-footer" style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn-cancel-cobro" data-dismiss="modal">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="button" class="btn-confirmar" id="btnConfirmarCobro" disabled>
+          <i class="fas fa-check"></i> Confirmar Cobro
         </button>
       </div>
     </div>
-
-    <!-- Vuelto -->
-    <div class="vuelto-box" id="vueltoBox">
-      <span class="vuelto-label">Vuelto / Pendiente</span>
-      <span class="vuelto-valor" id="lblVuelto">₲ 0</span>
-    </div>
-
-    <!-- Botones -->
-    <button class="btn-cobrar" id="btnCobrar" disabled>
-      <i class="fas fa-check-circle"></i> COBRAR
-    </button>
-    <button class="btn-limpiar" id="btnLimpiar">
-      <i class="fas fa-trash"></i> Limpiar todo
-    </button>
-
   </div>
 </div>
 
@@ -425,19 +636,15 @@
 <div class="modal fade" id="modalFactura" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content" style="border:none;border-radius:14px;overflow:hidden">
-      <div class="modal-header" style="background:#1a56db;border:none;padding:1rem 1.4rem">
-        <h5 class="modal-title" style="color:#fff;font-weight:700;display:flex;align-items:center;gap:.5rem">
+      <div class="modal-header" style="background:#1a56db;border:none;padding:.9rem 1.3rem">
+        <h5 class="modal-title" style="color:#fff;font-weight:700;display:flex;align-items:center;gap:.4rem">
           <i class="fas fa-file-invoice"></i> Factura de Venta
         </h5>
-        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.75);opacity:1">
-          <span>&times;</span>
-        </button>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
       </div>
-      <div class="modal-body" id="facturaContenido" style="padding:1.5rem;background:#fff">
-        <!-- Generado dinámicamente -->
-      </div>
-      <div class="modal-footer" style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:.85rem 1.4rem">
-        <button type="button" class="btn-cobrar" style="width:auto;padding:.5rem 1.25rem;font-size:.87rem"
+      <div class="modal-body" id="facturaContenido" style="padding:1.5rem;background:#fff"></div>
+      <div class="modal-footer" style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:.75rem 1.25rem;gap:.5rem">
+        <button type="button" style="background:#1a56db;color:#fff;border:none;border-radius:7px;padding:.5rem 1.1rem;font-size:.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.35rem"
                 onclick="imprimirFactura()">
           <i class="fas fa-print"></i> Imprimir
         </button>
@@ -457,13 +664,11 @@
 <script>
 const CSRFToken = "{{ csrf_token() }}";
 
-// ============================================================
-// Estado global
-// ============================================================
-let carrito       = [];   // [{id_item, item_code, descripcion, precio_unitario, cantidad, tipo_impuesto, id_tipo_impuesto}]
-let clienteSel    = null; // {id_cliente, nombre_completo, cedula}
-let formasPago    = [];   // [{id, descripcion}]
-let filasPago     = [];   // [{id_forma_cobro, monto}]
+let carrito        = [];
+let productoActual = null;
+let clienteSel     = null;
+let formasPago     = [];
+let filasPago      = [];
 
 // ============================================================
 // Helpers
@@ -471,202 +676,277 @@ let filasPago     = [];   // [{id_forma_cobro, monto}]
 function fmt(n){
   return '₲ ' + parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:0});
 }
-function iniciales(n){
-  return (n||'').split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase();
-}
-
-// Calcular IVA por tipo
 function calcularIVA(items){
   let sub=0, iva10=0, iva5=0;
   items.forEach(i=>{
-    const total = i.precio_unitario * i.cantidad;
-    sub += total;
+    const t = i.precio_unitario * i.cantidad;
+    sub += t;
     const tipo = String(i.id_tipo_impuesto||'');
-    if(tipo==='2')      iva10 += total - (total / 1.10);   // IVA 10%
-    else if(tipo==='3') iva5  += total - (total / 1.05);   // IVA 5%
+    if(tipo==='2')      iva10 += t - (t/1.10);
+    else if(tipo==='3') iva5  += t - (t/1.05);
   });
-  return { sub, iva10, iva5, total: sub };
+  return {sub, iva10, iva5, total:sub};
 }
-
 function actualizarTotales(){
-  const { sub, iva10, iva5, total } = calcularIVA(carrito);
+  const {sub, iva10, iva5, total} = calcularIVA(carrito);
   $('#lblSubtotal').text(fmt(sub));
   $('#lblIva10').text(fmt(iva10));
   $('#lblIva5').text(fmt(iva5));
   $('#lblTotal').text(fmt(total));
+  $('#lblTotalHeader').text(fmt(total));
   $('#lblItems').text(carrito.length + ' ítem' + (carrito.length!==1?'s':''));
-  actualizarVuelto();
-}
-
-function actualizarVuelto(){
-  const total = calcularIVA(carrito).total;
-  const pagado = filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
-  const diff   = pagado - total;
-  const box    = $('#vueltoBox');
-  box.removeClass('positivo negativo');
-  if(diff > 0){
-    $('#lblVuelto').text(fmt(diff));
-    box.addClass('positivo');
-    $('#lblVuelto').closest('.vuelto-box').find('.vuelto-label').text('Vuelto');
-  } else if(diff < 0){
-    $('#lblVuelto').text(fmt(Math.abs(diff)) + ' pendiente');
-    box.addClass('negativo');
-    $('#lblVuelto').closest('.vuelto-box').find('.vuelto-label').text('Falta');
-  } else {
-    $('#lblVuelto').text(fmt(0));
-    $('.vuelto-label').text('Vuelto / Pendiente');
-  }
-
-  // Habilitar cobrar
-  const ok = carrito.length > 0 && total > 0 && pagado >= total && filasPago.length > 0;
-  $('#btnCobrar').prop('disabled', !ok);
+  $('#btnCobrar').prop('disabled', carrito.length===0 || total===0);
 }
 
 // ============================================================
-// Renderizar carrito
+// Renderizar tabla de items
 // ============================================================
-function renderCarrito(){
-  const body = $('#carritoBody');
-  body.empty();
-  if(carrito.length === 0){
-    body.html('<div class="cart-empty" id="carritoVacio"><i class="fas fa-shopping-cart"></i>Agregá productos buscando arriba</div>');
+function renderTabla(){
+  const tbody = $('#itemsTbody');
+  tbody.empty();
+  if(!carrito.length){
+    tbody.html('<tr class="tbl-empty-row"><td colspan="7"><i class="fas fa-shopping-cart me-2" style="opacity:.3"></i>Escaneá o usá la lupa para buscar un producto</td></tr>');
     actualizarTotales();
     return;
   }
   carrito.forEach((item, idx)=>{
-    const subtotal = item.precio_unitario * item.cantidad;
-    body.append(`
-      <div class="cart-item" data-idx="${idx}">
-        <div>
-          <div class="ci-nombre">${item.descripcion}</div>
-          <div class="ci-precio">${fmt(item.precio_unitario)} c/u · ${item.id_tipo_impuesto ? item.tipo_impuesto : 'Sin IVA'}</div>
-        </div>
-        <div class="ci-qty">
-          <button class="qty-btn btn-qty-menos" data-idx="${idx}">−</button>
-          <input class="qty-val" type="number" value="${item.cantidad}" min="1" data-idx="${idx}">
-          <button class="qty-btn btn-qty-mas" data-idx="${idx}">+</button>
-        </div>
-        <div class="ci-subtotal">${fmt(subtotal)}</div>
-        <button class="ci-del btn-del-item" data-idx="${idx}"><i class="fas fa-times"></i></button>
-      </div>`);
+    const sub = item.precio_unitario * item.cantidad;
+    const tipoCorto = item.tipo_impuesto ? item.tipo_impuesto.replace('IVA ','') : '—';
+    tbody.append(`
+      <tr>
+        <td style="color:var(--pos-muted);font-weight:700;font-size:.78rem">${idx+1}</td>
+        <td>
+          <div class="item-desc">${item.descripcion}</div>
+          <div class="item-code">${item.item_code}</div>
+        </td>
+        <td class="text-center">
+          <div class="item-cant">
+            <button class="cant-btn btn-menos" data-idx="${idx}">−</button>
+            <input class="cant-input" type="number" value="${item.cantidad}" min="1" max="${item.stock_original}" data-idx="${idx}">
+            <button class="cant-btn btn-mas" data-idx="${idx}">+</button>
+          </div>
+        </td>
+        <td class="text-right" style="font-variant-numeric:tabular-nums">${fmt(item.precio_unitario)}</td>
+        <td class="text-right item-subtotal">${fmt(sub)}</td>
+        <td class="text-center" style="font-size:.72rem;color:var(--pos-muted)">${tipoCorto}</td>
+        <td class="text-center">
+          <button class="btn-del-item" data-idx="${idx}"><i class="fas fa-times"></i></button>
+        </td>
+      </tr>`);
   });
   actualizarTotales();
 }
 
-// Eventos carrito
-$(document).on('click', '.btn-qty-menos', function(){
-  const idx = parseInt($(this).data('idx'));
-  if(carrito[idx].cantidad > 1) carrito[idx].cantidad--;
-  renderCarrito();
+$(document).on('click','.btn-menos',function(){
+  const idx=parseInt($(this).data('idx'));
+  if(carrito[idx].cantidad>1){ carrito[idx].cantidad--; renderTabla(); }
 });
-$(document).on('click', '.btn-qty-mas', function(){
-  const idx = parseInt($(this).data('idx'));
-  carrito[idx].cantidad++;
-  renderCarrito();
+$(document).on('click','.btn-mas',function(){
+  const idx=parseInt($(this).data('idx'));
+  const max=carrito[idx].stock_original;
+  if(carrito[idx].cantidad < max){ carrito[idx].cantidad++; renderTabla(); }
+  else Swal.fire({title:'Sin stock suficiente', text:'Stock disponible: '+max, icon:'warning', timer:1400, showConfirmButton:false});
 });
-$(document).on('change', '.qty-val', function(){
-  const idx = parseInt($(this).data('idx'));
-  const v   = parseFloat($(this).val()) || 1;
-  carrito[idx].cantidad = Math.max(1, v);
-  renderCarrito();
+$(document).on('change','.cant-input',function(){
+  const idx=parseInt($(this).data('idx'));
+  const max=carrito[idx].stock_original;
+  let v=parseInt($(this).val())||1;
+  if(v>max){ v=max; Swal.fire({title:'Stock insuficiente', text:'Máximo: '+max, icon:'warning', timer:1400, showConfirmButton:false}); }
+  carrito[idx].cantidad=Math.max(1,v);
+  renderTabla();
 });
-$(document).on('click', '.btn-del-item', function(){
-  const idx = parseInt($(this).data('idx'));
-  carrito.splice(idx, 1);
-  renderCarrito();
+$(document).on('click','.btn-del-item',function(){
+  carrito.splice(parseInt($(this).data('idx')),1);
+  renderTabla();
 });
 
 // ============================================================
-// Búsqueda de productos
+// Barra de escaneo rápido
 // ============================================================
-let buscarTimer = null;
+let scanTimer = null;
 
-function buscarProducto(q){
-  if(!q.trim()){ $('#searchResults').empty().removeClass('open'); return; }
-  $('#searchResults').html(
-    '<div style="padding:.6rem;font-size:.82rem;color:var(--pos-muted)"><i class="fas fa-circle-notch spin me-1"></i>Buscando...</div>'
-  ).addClass('open');
+function limpiarScan(){
+  productoActual=null;
+  $('#scanDesc').val('');
+  $('#scanPrecio').val('');
+  $('#scanStock').val('').removeClass('stock-ok stock-bajo stock-cero');
+  $('#scanCantidad').val(1);
+}
 
+function cargarProductoEnScan(p){
+  productoActual = p;
+  $('#scanDesc').val(p.descripcion);
+  $('#scanPrecio').val(fmt(p.precio_unitario));
+  const enCarrito = carrito.find(c=>c.id_item===p.id_item);
+  const stockDisp = p.stock - (enCarrito ? enCarrito.cantidad : 0);
+  const el = $('#scanStock').removeClass('stock-ok stock-bajo stock-cero');
+  if(stockDisp<=0)     el.addClass('stock-cero').val('SIN STOCK');
+  else if(stockDisp<=5) el.addClass('stock-bajo').val(stockDisp+' (bajo)');
+  else                  el.addClass('stock-ok').val(stockDisp);
+  $('#scanCantidad').val(1).focus();
+}
+
+function buscarRapido(q){
+  if(!q.trim()){ $('#searchDropdown').hide(); limpiarScan(); return; }
   fetch('/api/v1/ventas/productos/buscar?q='+encodeURIComponent(q))
     .then(r=>r.json())
     .then(data=>{
-      $('#searchResults').empty();
       if(!data.success||!data.data.length){
-        $('#searchResults').html('<div style="padding:.6rem;font-size:.82rem;color:var(--pos-muted)"><i class="fas fa-inbox me-1"></i>Sin resultados</div>');
-        return;
+        $('#searchResults').html('<div style="padding:.6rem .85rem;font-size:.82rem;color:var(--pos-muted)"><i class="fas fa-inbox me-1"></i>Sin resultados</div>');
+        $('#searchDropdown').show(); limpiarScan(); return;
       }
+      // Coincidencia exacta → carga directo
+      const exacto = data.data.find(p=>p.item_code===q) || (data.data.length===1 ? data.data[0] : null);
+      if(exacto){ cargarProductoEnScan(exacto); $('#searchDropdown').hide(); return; }
+
+      // Múltiples → dropdown
+      $('#searchResults').empty();
       data.data.forEach(p=>{
-        const sinStock = p.stock <= 0;
-        const item = $(`
-          <div class="result-item ${sinStock?'opacity-50':''}">
-            <div class="result-info">
-              <div class="r-nombre">${p.descripcion}</div>
-              <div class="r-code">Cód: ${p.item_code} · ${p.tipo_impuesto||'Sin IVA'}</div>
-            </div>
-            <div style="text-align:right">
-              <div class="result-precio">${fmt(p.precio_unitario)}</div>
-              <div class="result-stock ${sinStock?'sin-stock':''}">
-                ${sinStock ? 'Sin stock' : 'Stock: '+p.stock}
-              </div>
-            </div>
-          </div>`);
+        const sinStock=p.stock<=0;
+        const item=$(`<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .85rem;border-bottom:1px solid #f3f4f6;${sinStock?'opacity:.5;cursor:not-allowed':'cursor:pointer'}">
+          <div>
+            <div style="font-size:.84rem;font-weight:700">${p.descripcion}</div>
+            <div style="font-size:.72rem;color:#6b7280">${p.item_code}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.9rem;font-weight:800;color:#1a56db">${fmt(p.precio_unitario)}</div>
+            <div style="font-size:.71rem;color:${sinStock?'#dc2626':'#16a34a'}">${sinStock?'Sin stock':'Stock: '+p.stock}</div>
+          </div>
+        </div>`);
         if(!sinStock){
-          item.on('click', ()=>{ agregarAlCarrito(p); $('#inputBuscar').val(''); $('#searchResults').empty().removeClass('open'); });
+          item.hover(function(){ $(this).css('background','#f0f9ff'); }, function(){ $(this).css('background',''); });
+          item.on('click',()=>{ cargarProductoEnScan(p); $('#searchDropdown').hide(); $('#inputScan').val(p.item_code); });
         }
         $('#searchResults').append(item);
       });
-      $('#searchResults').addClass('open');
-    })
-    .catch(()=>{
-      $('#searchResults').html('<div style="padding:.6rem;font-size:.82rem;color:var(--pos-danger)">Error al buscar</div>');
+      $('#searchDropdown').show();
     });
 }
 
-$('#inputBuscar').on('input', function(){
-  clearTimeout(buscarTimer);
-  buscarTimer = setTimeout(()=>buscarProducto($(this).val().trim()), 300);
+$('#inputScan').on('input',function(){
+  clearTimeout(scanTimer); limpiarScan();
+  const q=$(this).val().trim();
+  if(!q){ $('#searchDropdown').hide(); return; }
+  scanTimer=setTimeout(()=>buscarRapido(q), 280);
 });
-
-$('#btnBuscar').on('click', ()=>buscarProducto($('#inputBuscar').val().trim()));
-
-$('#inputBuscar').on('keydown', function(e){
-  if(e.key==='Enter'){ clearTimeout(buscarTimer); buscarProducto($(this).val().trim()); }
-});
-
-$(document).on('click', function(e){
-  if(!$(e.target).closest('#inputBuscar, #searchResults, #btnBuscar').length)
-    $('#searchResults').removeClass('open');
-});
-
-function agregarAlCarrito(p){
-  const existe = carrito.findIndex(c=>c.id_item===p.id_item);
-  if(existe>=0){
-    carrito[existe].cantidad++;
-  } else {
-    carrito.push({
-      id_item:         p.id_item,
-      item_code:       p.item_code,
-      descripcion:     p.descripcion,
-      precio_unitario: p.precio_unitario,
-      cantidad:        1,
-      id_tipo_impuesto:p.id_tipo_impuesto,
-      tipo_impuesto:   p.tipo_impuesto
-    });
+$('#inputScan').on('keydown',function(e){
+  if(e.key==='Enter'){ clearTimeout(scanTimer);
+    if(productoActual) agregarAlCarrito();
+    else buscarRapido($(this).val().trim());
   }
-  renderCarrito();
+});
+$(document).on('click',function(e){
+  if(!$(e.target).closest('#inputScan,#searchDropdown').length) $('#searchDropdown').hide();
+});
+
+// ============================================================
+// Agregar al carrito
+// ============================================================
+$('#btnAgregar').on('click', agregarAlCarrito);
+$('#scanCantidad').on('keydown',function(e){ if(e.key==='Enter') agregarAlCarrito(); });
+
+function agregarAlCarrito(){
+  if(!productoActual) return Swal.fire({title:'Sin producto', text:'Buscá o escaneá un producto primero.', icon:'warning', timer:1500, showConfirmButton:false});
+  const cant=parseInt($('#scanCantidad').val())||1;
+  const enCarrito=carrito.find(c=>c.id_item===productoActual.id_item);
+  const cantEnCarrito=enCarrito?enCarrito.cantidad:0;
+  const stockDisp=productoActual.stock - cantEnCarrito;
+
+  if(productoActual.stock<=0)
+    return Swal.fire({title:'Sin stock', text:'"'+productoActual.descripcion+'" no tiene stock disponible.', icon:'error'});
+  if(cant>stockDisp)
+    return Swal.fire({title:'Stock insuficiente', html:'Disponible: <strong>'+stockDisp+'</strong><br>Ya en carrito: <strong>'+cantEnCarrito+'</strong>', icon:'warning'});
+
+  if(enCarrito) enCarrito.cantidad+=cant;
+  else carrito.push({
+    id_item:productoActual.id_item, item_code:productoActual.item_code,
+    descripcion:productoActual.descripcion, precio_unitario:productoActual.precio_unitario,
+    cantidad:cant, stock_original:productoActual.stock,
+    id_tipo_impuesto:productoActual.id_tipo_impuesto, tipo_impuesto:productoActual.tipo_impuesto
+  });
+
+  renderTabla();
+  $('#inputScan').val('').focus();
+  limpiarScan();
+}
+
+// ============================================================
+// Modal Buscador de Productos
+// ============================================================
+let busqTimer = null;
+
+$('#btnBuscador').on('click', function(){
+  $('#busqInput').val('');
+  $('#busqTbody').html('<tr><td colspan="6" class="busq-empty"><i class="fas fa-circle-notch spin me-2"></i>Cargando productos...</td></tr>');
+  $('#modalBuscador').modal('show');
+  fetch('/api/v1/ventas/productos/buscar?q=a')
+    .then(r=>r.json())
+    .then(data=>{ renderBusqTabla(data.success?data.data:[]); setTimeout(()=>$('#busqInput').focus(),400); });
+});
+
+$('#busqInput').on('input', function(){
+  clearTimeout(busqTimer);
+  const q=$(this).val().trim();
+  busqTimer=setTimeout(()=>{
+    if(!q){
+      fetch('/api/v1/ventas/productos/buscar?q=a').then(r=>r.json()).then(d=>renderBusqTabla(d.success?d.data:[]));
+      return;
+    }
+    fetch('/api/v1/ventas/productos/buscar?q='+encodeURIComponent(q))
+      .then(r=>r.json()).then(d=>renderBusqTabla(d.success?d.data:[]));
+  }, 250);
+});
+
+function renderBusqTabla(productos){
+  const tbody=$('#busqTbody');
+  tbody.empty();
+  if(!productos.length){
+    tbody.html('<tr><td colspan="6" class="busq-empty"><i class="fas fa-inbox me-2" style="opacity:.3"></i>Sin resultados</td></tr>');
+    return;
+  }
+  productos.forEach(p=>{
+    const sinStock=p.stock<=0;
+    let stockHtml, stockClass;
+    if(sinStock)        { stockHtml='Sin stock'; stockClass='busq-stock-cero'; }
+    else if(p.stock<=5) { stockHtml=p.stock+' (bajo)'; stockClass='busq-stock-bajo'; }
+    else                { stockHtml=p.stock; stockClass='busq-stock-ok'; }
+
+    const fila=$('<tr class="'+(sinStock?'sin-stock':'')+'">'+
+      '<td><code style="font-size:.75rem;background:#f3f4f6;padding:.1rem .35rem;border-radius:4px">'+p.item_code+'</code></td>'+
+      '<td><div style="font-weight:600">'+p.descripcion+'</div>'+
+          '<div style="font-size:.72rem;color:var(--pos-muted)">'+(p.tipo_impuesto||'Sin IVA')+'</div></td>'+
+      '<td class="text-right" style="font-weight:800;color:var(--pos-primary)">'+fmt(p.precio_unitario)+'</td>'+
+      '<td class="text-center '+stockClass+'">'+stockHtml+'</td>'+
+      '<td class="text-center" style="font-size:.75rem;color:var(--pos-muted)">'+(p.tipo_impuesto?p.tipo_impuesto.replace('IVA ',''):'—')+'</td>'+
+      '<td class="text-center">'+
+        (!sinStock?'<button class="btn-selec">Seleccionar</button>':'<span style="font-size:.74rem;color:var(--pos-danger)">Sin stock</span>')+
+      '</td></tr>');
+
+    if(!sinStock){
+      fila.find('.btn-selec').on('click',function(e){ e.stopPropagation(); seleccionarDesdeBuscador(p); });
+      fila.on('click',function(){ seleccionarDesdeBuscador(p); });
+    }
+    tbody.append(fila);
+  });
+}
+
+function seleccionarDesdeBuscador(p){
+  cargarProductoEnScan(p);
+  $('#inputScan').val(p.item_code);
+  $('#modalBuscador').modal('hide');
+  setTimeout(()=>$('#scanCantidad').focus(), 350);
 }
 
 // ============================================================
 // Búsqueda de clientes
 // ============================================================
-let cliTimer = null;
-
-$('#inputCliente').on('input', function(){
-  const q = $(this).val().trim();
+let cliTimer=null;
+$('#inputCliente').on('input',function(){
+  const q=$(this).val().trim();
   $('#clienteResults').empty().removeClass('open');
   clearTimeout(cliTimer);
-  if(q.length < 2) return;
-  cliTimer = setTimeout(()=>{
+  if(q.length<2) return;
+  cliTimer=setTimeout(()=>{
     fetch('/api/v1/ventas/clientes/buscar?q='+encodeURIComponent(q))
       .then(r=>r.json())
       .then(data=>{
@@ -676,309 +956,195 @@ $('#inputCliente').on('input', function(){
           return;
         }
         data.data.forEach(c=>{
-          const item = $(`<div class="cli-item">
-            <div class="cli-nombre">${c.nombre_completo.toUpperCase()}</div>
-            <div class="cli-cedula">CI/RUC: ${c.cedula}</div>
-          </div>`);
-          item.on('click', ()=>seleccionarCliente(c));
+          const item=$('<div class="cli-item"><div class="cli-nombre">'+c.nombre_completo.toUpperCase()+'</div><div class="cli-ci">CI: '+c.cedula+'</div></div>');
+          item.on('click',()=>{
+            clienteSel=c; $('#clienteId').val(c.id_cliente);
+            $('#clienteNombre').text(c.nombre_completo.toUpperCase());
+            $('#clienteCI').text(c.cedula);
+            $('#clienteSelected').addClass('visible');
+            $('#inputCliente').val('');
+            $('#clienteResults').empty().removeClass('open');
+          });
           $('#clienteResults').append(item);
         });
         $('#clienteResults').addClass('open');
       });
-  }, 350);
+  },350);
 });
-
-function seleccionarCliente(c){
-  clienteSel = c;
-  $('#clienteId').val(c.id_cliente);
-  $('#clienteNombre').text(c.nombre_completo.toUpperCase());
-  $('#clienteCedula').text(c.cedula);
-  $('#clienteSelected').addClass('visible');
-  $('#inputCliente').val('');
-  $('#clienteResults').empty().removeClass('open');
-}
-
 $('#clienteClear').on('click',()=>{
   clienteSel=null; $('#clienteId').val('');
   $('#clienteSelected').removeClass('visible');
   $('#inputCliente').val('').focus();
 });
-
 $(document).on('click',function(e){
-  if(!$(e.target).closest('#inputCliente,#clienteResults').length)
-    $('#clienteResults').removeClass('open');
+  if(!$(e.target).closest('#inputCliente,#clienteResults').length) $('#clienteResults').removeClass('open');
+});
+
+// ============================================================
+// Limpiar venta
+// ============================================================
+$('#btnLimpiar').on('click',()=>{
+  if(!carrito.length) return;
+  Swal.fire({title:'¿Cancelar venta?',icon:'warning',showCancelButton:true,
+    confirmButtonText:'Sí, cancelar',cancelButtonText:'No',confirmButtonColor:'#dc2626'
+  }).then(r=>{ if(r.isConfirmed) limpiarTodo(); });
+});
+function limpiarTodo(){
+  carrito=[]; filasPago=[]; clienteSel=null;
+  $('#clienteId').val(''); $('#clienteSelected').removeClass('visible'); $('#inputCliente').val('');
+  $('#inputScan').val('').focus();
+  limpiarScan(); renderTabla(); cargarCodigoVenta();
+}
+
+// ============================================================
+// Abrir modal cobro
+// ============================================================
+$('#btnCobrar').on('click',()=>{
+  const {total}=calcularIVA(carrito);
+  $('#cobroTotal').text(fmt(total));
+  filasPago=formasPago.length?[{id_forma_cobro:formasPago[0].id,monto:total}]:[];
+  renderPagos();
+  $('#modalCobro').modal('show');
 });
 
 // ============================================================
 // Formas de pago
 // ============================================================
 function renderPagos(){
-  const body = $('#pagosBody');
+  const body=$('#pagosBody');
   body.empty();
   filasPago.forEach((p,idx)=>{
-    const opciones = formasPago.map(f=>
-      `<option value="${f.id}" ${f.id==p.id_forma_cobro?'selected':''}>${f.descripcion}</option>`
-    ).join('');
-    body.append(`
-      <div class="pago-row" data-idx="${idx}">
-        <select class="pago-select pago-forma" data-idx="${idx}">${opciones}</select>
-        <input type="number" class="pago-input pago-monto" data-idx="${idx}"
-               value="${p.monto||''}" placeholder="0" min="0">
-        <button class="pago-del pago-del-btn" data-idx="${idx}"><i class="fas fa-times"></i></button>
-      </div>`);
+    const opts=formasPago.map(f=>'<option value="'+f.id+'" '+(f.id==p.id_forma_cobro?'selected':'')+'>'+f.descripcion+'</option>').join('');
+    body.append('<div class="pago-row" data-idx="'+idx+'">'+
+      '<select class="pago-select pago-forma" data-idx="'+idx+'">'+opts+'</select>'+
+      '<input type="number" class="pago-input pago-monto" data-idx="'+idx+'" value="'+(p.monto||'')+'" placeholder="0" min="0">'+
+      '<button class="pago-del pago-del-btn" data-idx="'+idx+'"><i class="fas fa-times"></i></button>'+
+    '</div>');
   });
   actualizarVuelto();
 }
+$(document).on('change','.pago-forma',function(){ filasPago[parseInt($(this).data('idx'))].id_forma_cobro=parseInt($(this).val()); actualizarVuelto(); });
+$(document).on('input','.pago-monto',function(){ filasPago[parseInt($(this).data('idx'))].monto=parseFloat($(this).val())||0; actualizarVuelto(); });
+$(document).on('click','.pago-del-btn',function(){ filasPago.splice(parseInt($(this).data('idx')),1); renderPagos(); });
+$('#btnAddPago').on('click',()=>{ if(formasPago.length){ filasPago.push({id_forma_cobro:formasPago[0].id,monto:0}); renderPagos(); }});
 
-$(document).on('change','.pago-forma',function(){
-  filasPago[parseInt($(this).data('idx'))].id_forma_cobro = parseInt($(this).val());
-  actualizarVuelto();
-});
-$(document).on('input','.pago-monto',function(){
-  filasPago[parseInt($(this).data('idx'))].monto = parseFloat($(this).val())||0;
-  actualizarVuelto();
-});
-$(document).on('click','.pago-del-btn',function(){
-  filasPago.splice(parseInt($(this).data('idx')),1);
-  renderPagos();
-});
-
-$('#btnAddPago').on('click',()=>{
-  if(!formasPago.length) return;
-  filasPago.push({id_forma_cobro: formasPago[0].id, monto: 0});
-  renderPagos();
-});
-
-// ============================================================
-// Limpiar
-// ============================================================
-$('#btnLimpiar').on('click',()=>{
-  Swal.fire({
-    title:'¿Limpiar carrito?', icon:'warning',
-    showCancelButton:true, confirmButtonText:'Sí',
-    cancelButtonText:'No', confirmButtonColor:'#dc2626'
-  }).then(r=>{ if(r.isConfirmed) limpiarTodo(); });
-});
-
-function limpiarTodo(){
-  carrito=[]; filasPago=[]; clienteSel=null;
-  $('#clienteId').val('');
-  $('#clienteSelected').removeClass('visible');
-  $('#inputCliente').val('');
-  renderCarrito();
-  renderPagos();
-  cargarCodigoVenta();
+function actualizarVuelto(){
+  const {total}=calcularIVA(carrito);
+  const pagado=filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
+  const diff=pagado-total;
+  const box=$('#vueltoBox').removeClass('positivo negativo');
+  if(diff>0){       $('#lblVuelto').text(fmt(diff)); box.addClass('positivo'); box.find('.vuelto-lbl').text('Vuelto'); }
+  else if(diff<0){  $('#lblVuelto').text(fmt(Math.abs(diff))+' pendiente'); box.addClass('negativo'); box.find('.vuelto-lbl').text('Falta'); }
+  else {            $('#lblVuelto').text(fmt(0)); box.find('.vuelto-lbl').text('Vuelto'); }
+  $('#btnConfirmarCobro').prop('disabled', pagado<total||filasPago.length===0);
 }
 
 // ============================================================
-// COBRAR
+// Confirmar cobro
 // ============================================================
-$('#btnCobrar').on('click', function(){
-  const total  = calcularIVA(carrito).total;
-  const pagado = filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
-
-  if(pagado < total){
-    return Swal.fire({title:'Monto insuficiente', text:'El total pagado no cubre el monto de la venta.', icon:'warning', confirmButtonColor:'#1a56db'});
-  }
-
-  const btn = $(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i> Procesando...');
-
-  const payload = {
-    fun_id:       1,   // idealmente de session
-    id_sucursal:  1,
-    id_cliente:   clienteSel ? clienteSel.id_cliente : null,
-    total_venta:  total,
-    detalle: carrito.map(c=>({
-      id_item:       c.id_item,
-      item_code:     c.item_code,
-      cantidad:      c.cantidad,
-      precio_unitario: c.precio_unitario
-    })),
-    pagos: filasPago.map(p=>({
-      id_forma_cobro: p.id_forma_cobro,
-      monto: p.monto,
-      es_tarjeta: [3,4].includes(p.id_forma_cobro),  // IDs tarjeta crédito/débito
-      nro_tarjeta: p.nro_tarjeta || null
-    }))
-  };
-
+$('#btnConfirmarCobro').on('click',function(){
+  const {total}=calcularIVA(carrito);
+  const pagado=filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
+  const btn=$(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i> Procesando...');
   fetch('/api/v1/ventas',{
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken},
-    body: JSON.stringify(payload)
+    body:JSON.stringify({
+      fun_id:1, id_sucursal:1,
+      id_cliente:clienteSel?clienteSel.id_cliente:null,
+      total_venta:total,
+      detalle:carrito.map(c=>({id_item:c.id_item,item_code:c.item_code,cantidad:c.cantidad,precio_unitario:c.precio_unitario})),
+      pagos:filasPago.map(p=>({id_forma_cobro:p.id_forma_cobro,monto:p.monto,es_tarjeta:[3,4].includes(p.id_forma_cobro),nro_tarjeta:p.nro_tarjeta||null}))
+    })
   })
   .then(r=>r.json())
   .then(data=>{
-    if(data.success){
-      mostrarFactura(data.id_venta_cab, pagado - total);
-    } else {
-      Swal.fire('Error', data.error||'No se pudo registrar la venta.', 'error');
-    }
+    if(data.success){ $('#modalCobro').modal('hide'); mostrarFactura(data.id_venta_cab, pagado-total); }
+    else Swal.fire('Error',data.error||'No se pudo registrar la venta.','error');
   })
-  .catch(()=>Swal.fire('Error','Error al procesar la venta.','error'))
-  .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-check-circle"></i> COBRAR'));
+  .catch(()=>Swal.fire('Error','Error al procesar.','error'))
+  .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-check"></i> Confirmar Cobro'));
 });
 
 // ============================================================
-// FACTURA
+// Factura
 // ============================================================
 function mostrarFactura(id_venta, vuelto){
   fetch('/api/v1/ventas/'+id_venta)
     .then(r=>r.json())
     .then(data=>{
       if(!data.success) return;
-      const v  = data.data;
-      const nroTimbrado = '001-001-' + String(id_venta).padStart(7,'0');
-
-      let detalleHTML = v.detalle.map(d=>`
-        <tr>
-          <td style="padding:.4rem .6rem;font-size:.83rem">${d.descripcion}</td>
-          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:center">${d.cantidad}</td>
-          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:right">${fmt(d.precio_unitario)}</td>
-          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:right;font-weight:700">${fmt(d.subtotal)}</td>
-          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:center">${d.tipo_impuesto||'—'}</td>
-        </tr>`).join('');
-
-      const { iva10, iva5, total } = calcularIVA(carrito);
-      const pagado = filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
-
-      $('#facturaContenido').html(`
-        <div style="font-family:'Plus Jakarta Sans',sans-serif;max-width:680px;margin:0 auto">
-
-          <!-- Header factura -->
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
-            <div>
-              <div style="font-size:1.3rem;font-weight:800;color:#111827">GRANVIA SYS</div>
-              <div style="font-size:.78rem;color:#6b7280">RUC: 80000000-0</div>
-              <div style="font-size:.78rem;color:#6b7280">Asunción, Paraguay</div>
-            </div>
-            <div style="text-align:right">
-              <div style="background:#1a56db;color:#fff;padding:.3rem .85rem;border-radius:6px;font-size:.78rem;font-weight:700;margin-bottom:.35rem">
-                FACTURA
-              </div>
-              <div style="font-size:.82rem;font-weight:700;color:#111827">${nroTimbrado}</div>
-              <div style="font-size:.74rem;color:#6b7280">Timbrado: 12345678</div>
-              <div style="font-size:.74rem;color:#6b7280">Fecha: ${v.fecha_venta}</div>
-            </div>
-          </div>
-
-          <!-- Datos cliente -->
-          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-              <div>
-                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Cliente</div>
-                <div style="font-size:.87rem;font-weight:700;color:#111827">${v.cliente_nombre}</div>
-              </div>
-              <div>
-                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">RUC / CI</div>
-                <div style="font-size:.87rem;font-weight:700;color:#111827">${v.cliente_ruc}</div>
-              </div>
-              <div>
-                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Dirección</div>
-                <div style="font-size:.83rem;color:#374151">${v.cliente_dir}</div>
-              </div>
-              <div>
-                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Vendedor</div>
-                <div style="font-size:.83rem;color:#374151">${v.vendedor}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tabla detalle -->
-          <table style="width:100%;border-collapse:collapse;margin-bottom:1rem">
-            <thead>
-              <tr style="background:#f1f5f9">
-                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;border-bottom:2px solid #e5e7eb">Descripción</th>
-                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;border-bottom:2px solid #e5e7eb">Cant.</th>
-                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">P. Unit.</th>
-                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Subtotal</th>
-                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;border-bottom:2px solid #e5e7eb">IVA</th>
-              </tr>
-            </thead>
-            <tbody>${detalleHTML}</tbody>
-          </table>
-
-          <!-- Totales -->
-          <div style="display:flex;justify-content:flex-end">
-            <div style="min-width:260px">
-              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:.3rem">
-                <span style="color:#6b7280">Subtotal</span>
-                <span style="font-weight:600">${fmt(total)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:.3rem">
-                <span style="color:#6b7280">IVA 10%</span>
-                <span style="font-weight:600">${fmt(iva10)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:.5rem">
-                <span style="color:#6b7280">IVA 5%</span>
-                <span style="font-weight:600">${fmt(iva5)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:800;border-top:2px solid #e5e7eb;padding-top:.4rem">
-                <span>TOTAL</span>
-                <span style="color:#1a56db">${fmt(total)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-top:.4rem;color:#6b7280">
-                <span>Pagado</span><span>${fmt(pagado)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:.83rem;color:#16a34a;font-weight:700">
-                <span>Vuelto</span><span>${fmt(vuelto)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top:1.25rem;border-top:1px dashed #e5e7eb;padding-top:.75rem;text-align:center;font-size:.73rem;color:#9ca3af">
-            Gracias por su compra · GranViaSys © 2024
-          </div>
-        </div>
-      `);
-
+      const v=data.data;
+      const nroTimbrado='001-001-'+String(id_venta).padStart(7,'0');
+      const {iva10,iva5,total}=calcularIVA(carrito);
+      const pagado=filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
+      const detalleHTML=v.detalle.map(d=>'<tr>'+
+        '<td style="padding:.4rem .6rem;font-size:.82rem">'+d.descripcion+'</td>'+
+        '<td style="padding:.4rem .6rem;font-size:.82rem;text-align:center">'+d.cantidad+'</td>'+
+        '<td style="padding:.4rem .6rem;font-size:.82rem;text-align:right">'+fmt(d.precio_unitario)+'</td>'+
+        '<td style="padding:.4rem .6rem;font-size:.82rem;text-align:right;font-weight:700">'+fmt(d.subtotal)+'</td>'+
+        '<td style="padding:.4rem .6rem;font-size:.82rem;text-align:center">'+(d.tipo_impuesto||'—')+'</td>'+
+      '</tr>').join('');
+      $('#facturaContenido').html(
+        '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;max-width:680px;margin:0 auto">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">'+
+          '<div><div style="font-size:1.3rem;font-weight:800;color:#111827">GRANVIA SYS</div>'+
+          '<div style="font-size:.77rem;color:#6b7280">RUC: 80000000-0 · Asunción, Paraguay</div></div>'+
+          '<div style="text-align:right">'+
+            '<div style="background:#1a56db;color:#fff;padding:.3rem .85rem;border-radius:6px;font-size:.77rem;font-weight:700;margin-bottom:.3rem">FACTURA</div>'+
+            '<div style="font-size:.82rem;font-weight:700">'+nroTimbrado+'</div>'+
+            '<div style="font-size:.73rem;color:#6b7280">Timbrado: 12345678 · '+v.fecha_venta+'</div>'+
+          '</div></div>'+
+        '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;display:grid;grid-template-columns:1fr 1fr;gap:.5rem">'+
+          '<div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">Cliente</div><div style="font-size:.87rem;font-weight:700">'+v.cliente_nombre+'</div></div>'+
+          '<div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">RUC/CI</div><div style="font-size:.87rem;font-weight:700">'+v.cliente_ruc+'</div></div>'+
+          '<div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">Dirección</div><div style="font-size:.83rem">'+v.cliente_dir+'</div></div>'+
+          '<div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">Vendedor</div><div style="font-size:.83rem">'+v.vendedor+'</div></div>'+
+        '</div>'+
+        '<table style="width:100%;border-collapse:collapse;margin-bottom:1rem">'+
+          '<thead><tr style="background:#f1f5f9">'+
+            '<th style="padding:.4rem .6rem;font-size:.72rem;font-weight:700;text-transform:uppercase;text-align:left;border-bottom:2px solid #e5e7eb">Descripción</th>'+
+            '<th style="padding:.4rem .6rem;font-size:.72rem;font-weight:700;text-transform:uppercase;text-align:center;border-bottom:2px solid #e5e7eb">Cant.</th>'+
+            '<th style="padding:.4rem .6rem;font-size:.72rem;font-weight:700;text-transform:uppercase;text-align:right;border-bottom:2px solid #e5e7eb">P.Unit.</th>'+
+            '<th style="padding:.4rem .6rem;font-size:.72rem;font-weight:700;text-transform:uppercase;text-align:right;border-bottom:2px solid #e5e7eb">Subtotal</th>'+
+            '<th style="padding:.4rem .6rem;font-size:.72rem;font-weight:700;text-transform:uppercase;text-align:center;border-bottom:2px solid #e5e7eb">IVA</th>'+
+          '</tr></thead><tbody>'+detalleHTML+'</tbody></table>'+
+        '<div style="display:flex;justify-content:flex-end"><div style="min-width:250px">'+
+          '<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.25rem"><span style="color:#6b7280">IVA 10%</span><span style="font-weight:600">'+fmt(iva10)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.4rem"><span style="color:#6b7280">IVA 5%</span><span style="font-weight:600">'+fmt(iva5)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:800;border-top:2px solid #e5e7eb;padding-top:.4rem"><span>TOTAL</span><span style="color:#1a56db">'+fmt(total)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-top:.35rem;color:#6b7280"><span>Pagado</span><span>'+fmt(pagado)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between;font-size:.82rem;color:#16a34a;font-weight:700"><span>Vuelto</span><span>'+fmt(vuelto)+'</span></div>'+
+        '</div></div>'+
+        '<div style="margin-top:1rem;border-top:1px dashed #e5e7eb;padding-top:.65rem;text-align:center;font-size:.72rem;color:#9ca3af">Gracias por su compra · GranViaSys © 2024</div>'+
+        '</div>');
       $('#modalFactura').modal('show');
     });
 }
-
 function imprimirFactura(){
-  const contenido = document.getElementById('facturaContenido').innerHTML;
-  const win = window.open('','_blank');
-  win.document.write(`
-    <html><head>
-      <title>Factura</title>
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-      <style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:2rem;}</style>
-    </head><body>${contenido}</body></html>`);
+  const win=window.open('','_blank');
+  win.document.write('<html><head><title>Factura</title><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"><style>body{font-family:\'Plus Jakarta Sans\',sans-serif;padding:2rem;}</style></head><body>'+document.getElementById('facturaContenido').innerHTML+'</body></html>');
   win.document.close();
-  win.focus();
   setTimeout(()=>{ win.print(); win.close(); }, 600);
 }
-
-function nuevaVenta(){
-  $('#modalFactura').modal('hide');
-  limpiarTodo();
-}
+function nuevaVenta(){ $('#modalFactura').modal('hide'); limpiarTodo(); }
 
 // ============================================================
 // Init
 // ============================================================
 function cargarCodigoVenta(){
-  fetch('/api/v1/ventas/siguiente-codigo')
-    .then(r=>r.json())
-    .then(d=>{ if(d.success) $('#lblCodigo').text(d.codigo); });
+  fetch('/api/v1/ventas/siguiente-codigo').then(r=>r.json()).then(d=>{ if(d.success) $('#lblCodigo').text(d.codigo); });
 }
-
 async function cargarFormasPago(){
-  const r    = await fetch('/api/v1/ventas/formas-pago');
-  const data = await r.json();
-  if(data.success) formasPago = data.data;
-  // Agregar primera fila de pago por defecto
-  if(formasPago.length){
-    filasPago.push({id_forma_cobro: formasPago[0].id, monto: 0});
-    renderPagos();
-  }
+  const r=await fetch('/api/v1/ventas/formas-pago');
+  const data=await r.json();
+  if(data.success) formasPago=data.data;
 }
-
 $(document).ready(async function(){
   cargarCodigoVenta();
   await cargarFormasPago();
-  renderCarrito();
+  renderTabla();
+  $('#inputScan').focus();
 });
 </script>
 {% endblock %}
