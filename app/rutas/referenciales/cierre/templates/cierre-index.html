@@ -1,110 +1,461 @@
 {% extends 'base.html' %}
 
-{% block titulo %}
-  Cerrar Caja
-{% endblock %}
+{% block titulo %}Cierre de Caja{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4">
-    <h3>Realizar Cierre de Caja</h3>
+<style>
+  :root {
+    --ci-primary: #1a56db;
+    --ci-success: #16a34a;
+    --ci-danger:  #dc2626;
+    --ci-warn:    #d97706;
+    --ci-indigo:  #4338ca;
+    --ci-border:  #e5e7eb;
+    --ci-bg:      #f9fafb;
+    --ci-muted:   #6b7280;
+    --ci-radius:  10px;
+  }
 
-    <div class="card">
-      <div class="card-header bg-primary">
-        <button type="button" class="btn btn-outline-light" id="btnBuscar">Buscar Cierre</button>
-      </div>
-      <div class="card-body">
-        <table class="table table-striped" id="tbl">
+  /* ---- Encabezado ---- */
+  .ci-page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.4rem 0 1.2rem;
+    border-bottom: 2px solid var(--ci-border);
+    margin-bottom: 1.5rem;
+  }
+  .ci-page-header h2 {
+    font-size: 1.3rem; font-weight: 700; color: #111827;
+    margin: 0; display: flex; align-items: center; gap: .5rem;
+  }
+  .icon-box {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center;
+    color: #fff; font-size: .9rem; flex-shrink: 0;
+    background: var(--ci-indigo);
+  }
+
+  /* ---- Card ---- */
+  .ci-card {
+    background: #fff;
+    border: 1px solid var(--ci-border);
+    border-radius: var(--ci-radius);
+    box-shadow: 0 1px 6px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+  .ci-card-header {
+    padding: .8rem 1.25rem;
+    background: var(--ci-bg);
+    border-bottom: 1px solid var(--ci-border);
+    font-size: .8rem; font-weight: 700; color: #374151;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .ci-card-body { padding: 1.25rem; }
+
+  /* ---- Tabla ---- */
+  #tbl thead th {
+    background: #f1f5f9; color: #374151;
+    font-size: .75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 2px solid var(--ci-border);
+    padding: .65rem .8rem; white-space: nowrap;
+  }
+  #tbl tbody td {
+    font-size: .855rem; color: #1f2937;
+    vertical-align: middle;
+    padding: .58rem .8rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  #tbl tbody tr:hover td { background: #f8faff; }
+
+  /* ---- Badges ---- */
+  .badge-estado {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .25rem .65rem; border-radius: 999px;
+    font-size: .71rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  .badge-estado::before {
+    content:''; width:6px; height:6px;
+    border-radius:50%; background:currentColor;
+  }
+  .badge-abierto  { background: #d1fae5; color: #065f46; }
+  .badge-cerrado  { background: #e0e7ff; color: #3730a3; }
+  .badge-anulado  { background: #fee2e2; color: #991b1b; }
+
+  /* ---- Diferencia ---- */
+  .dif-pos { color: var(--ci-success); font-weight: 700; }
+  .dif-neg { color: var(--ci-danger);  font-weight: 700; }
+  .dif-neu { color: var(--ci-muted);   font-weight: 600; }
+
+  .nro-turno  { font-weight: 800; color: var(--ci-indigo); font-variant-numeric: tabular-nums; }
+  .monto-cell { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---- Botones ---- */
+  .btn-ci {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .44rem 1rem; border-radius: 7px;
+    font-size: .84rem; font-weight: 600;
+    border: none; cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn-ci:hover  { opacity: .87; transform: translateY(-1px); }
+  .btn-ci:active { transform: scale(.97); }
+  .btn-cerrar-sm {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: #eff6ff; color: var(--ci-primary);
+    border: 1px solid #bfdbfe;
+    padding: .28rem .65rem; font-size: .77rem;
+    border-radius: 5px; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-cerrar-sm:hover    { background: #dbeafe; }
+  .btn-cerrar-sm:disabled { opacity: .35; cursor: not-allowed; }
+
+  /* ---- Modal detalle ---- */
+  .ci-modal .modal-content {
+    border: none; border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.16); overflow: hidden;
+  }
+  .ci-modal .modal-header {
+    background: var(--ci-indigo); padding: 1rem 1.4rem; border-bottom: none;
+  }
+  .ci-modal .modal-title {
+    font-size: 1rem; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .ci-modal .modal-header .close { color: rgba(255,255,255,.75); opacity: 1; font-size: 1.3rem; }
+  .ci-modal .modal-header .close:hover { color: #fff; }
+  .ci-modal .modal-body   { padding: 1.5rem; background: #fff; }
+  .ci-modal .modal-footer {
+    background: var(--ci-bg); border-top: 1px solid var(--ci-border); padding: .85rem 1.4rem;
+  }
+
+  /* Grilla de datos del modal */
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
+    margin-bottom: 1rem;
+  }
+  .detail-item {
+    background: var(--ci-bg); border: 1px solid var(--ci-border);
+    border-radius: 8px; padding: .65rem .9rem;
+  }
+  .detail-item.full { grid-column: 1 / -1; }
+  .detail-label {
+    font-size: .68rem; font-weight: 700; color: var(--ci-muted);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: .2rem;
+  }
+  .detail-value {
+    font-size: .9rem; font-weight: 700; color: #111827;
+  }
+  .detail-value.accent  { color: var(--ci-indigo); }
+  .detail-value.success { color: var(--ci-success); }
+  .detail-value.danger  { color: var(--ci-danger); }
+
+  /* Monto resumen en modal */
+  .monto-resumen {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;
+    margin: .75rem 0;
+  }
+  .monto-box {
+    border-radius: 8px; padding: .75rem .9rem; text-align: center;
+    border: 1px solid var(--ci-border);
+  }
+  .monto-box .mb-label {
+    font-size: .67rem; font-weight: 700; color: var(--ci-muted);
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem;
+  }
+  .monto-box .mb-value {
+    font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  }
+  .box-apertura  { background: #f0fdf4; border-color: #bbf7d0; }
+  .box-apertura  .mb-value { color: var(--ci-success); }
+  .box-cierre    { background: #eff6ff; border-color: #bfdbfe; }
+  .box-cierre    .mb-value { color: var(--ci-primary); }
+  .box-diferencia { background: #fefce8; border-color: #fde68a; }
+  .box-diferencia .mb-value { color: var(--ci-warn); }
+  .box-diferencia.negativa { background: #fff1f2; border-color: #fca5a5; }
+  .box-diferencia.negativa .mb-value { color: var(--ci-danger); }
+
+  /* Observación */
+  .obs-box {
+    background: var(--ci-bg); border: 1px solid var(--ci-border);
+    border-radius: 8px; padding: .65rem .9rem;
+    font-size: .85rem; color: #374151;
+    min-height: 48px;
+  }
+  .ap-divider { border: none; border-top: 1px solid var(--ci-border); margin: .85rem 0; }
+
+  /* DataTables */
+  div.dataTables_wrapper div.dataTables_filter input,
+  div.dataTables_wrapper div.dataTables_length select {
+    border-radius: 6px; border: 1px solid var(--ci-border); padding: .3rem .6rem; font-size: .82rem;
+  }
+  .dataTables_paginate .paginate_button { border-radius: 6px !important; font-size: .8rem !important; }
+  .dataTables_paginate .paginate_button.current,
+  .dataTables_paginate .paginate_button.current:hover {
+    background: var(--ci-indigo) !important; color: #fff !important;
+    border-color: var(--ci-indigo) !important;
+  }
+</style>
+
+<div class="container-fluid px-4">
+
+  <!-- Encabezado -->
+  <div class="ci-page-header">
+    <h2>
+      <span class="icon-box"><i class="fas fa-store-slash"></i></span>
+      Cierre de Caja
+    </h2>
+  </div>
+
+  <!-- Tabla -->
+  <div class="ci-card">
+    <div class="ci-card-header">
+      <i class="fas fa-list me-1"></i> Cierres registrados
+    </div>
+    <div class="ci-card-body">
+      <div class="table-responsive">
+        <table id="tbl" class="table table-hover w-100">
           <thead>
             <tr>
-              <th>ID de Cierre</th>
               <th>Turno</th>
-              <th>Fecha de Cierre</th>
-              <th>Estado</th>
               <th>Cajero</th>
               <th>Fiscal</th>
-              <th>Monto de Apertura</th> <!-- Aquí se debe cambiar el título -->
-              <th>Hora de Apertura</th>
-              <th>Acciones</th>
+              <th class="text-end">Monto Apertura</th>
+              <th class="text-end">Monto Cierre</th>
+              <th class="text-end">Diferencia</th>
+              <th>Hora Apertura</th>
+              <th>Fecha Cierre</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
+  </div>
+
 </div>
+
+<!-- ===== MODAL DETALLE ===== -->
+<div class="modal fade ci-modal" id="modalDetalle" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-store-slash"></i>
+          Detalle — Turno <span id="detTurno">—</span>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label"><i class="fas fa-user me-1"></i>Cajero</div>
+            <div class="detail-value" id="detCajero">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label"><i class="fas fa-user-shield me-1"></i>Fiscal</div>
+            <div class="detail-value" id="detFiscal">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label"><i class="fas fa-clock me-1"></i>Hora Apertura</div>
+            <div class="detail-value accent" id="detHoraApertura">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label"><i class="fas fa-calendar me-1"></i>Fecha Cierre</div>
+            <div class="detail-value accent" id="detRegistro">—</div>
+          </div>
+        </div>
+
+        <hr class="ap-divider">
+
+        <!-- Resumen montos -->
+        <div class="monto-resumen">
+          <div class="monto-box box-apertura">
+            <div class="mb-label">Monto Apertura</div>
+            <div class="mb-value" id="detMontoApertura">—</div>
+          </div>
+          <div class="monto-box box-cierre">
+            <div class="mb-label">Monto Cierre</div>
+            <div class="mb-value" id="detMontoCierre">—</div>
+          </div>
+          <div class="monto-box box-diferencia" id="boxDiferencia">
+            <div class="mb-label">Diferencia</div>
+            <div class="mb-value" id="detDiferencia">—</div>
+          </div>
+        </div>
+
+        <hr class="ap-divider">
+
+        <div class="detail-label mb-1"><i class="fas fa-comment me-1"></i>Observación</div>
+        <div class="obs-box" id="detObservacion">Sin observaciones.</div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-ci" style="background:#f3f4f6;color:#374151;border:1px solid var(--ci-border)"
+                data-dismiss="modal">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button type="button" class="btn-ci" id="btnCerrarDesdeModal"
+                style="background:var(--ci-indigo);color:#fff;box-shadow:0 2px 8px rgba(67,56,202,.22)">
+          <i class="fas fa-lock"></i> Confirmar Cierre
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block js %}
 <script>
-const CSRFToken = "{{ csrf_token() }}" || null;
+const CSRFToken = "{{ csrf_token() }}";
 
-const initDatatable = () => {
-  $('#tbl').DataTable({
-    language: {
-      url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}"
-    },
-    ajax: {
-      url: '/api/v1/cierres',
-      dataSrc: 'data'
-    },
-    columns: [
-      { data: 'id_cierre' },
-      { data: 'nro_turno' },
-      { data: 'registro' },
-      { data: 'estado' },
-      { data: 'cajero' },
-      { data: 'fiscal' },
-      { data: 'monto_inicial' }, <!-- Aquí se debe cambiar 'monto_apertura' por 'monto_inicial' -->
-      { data: 'hora_apertura' },
+function fmtMonto(n){
+  return '\u20b2 ' + parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function estadoBadge(e){
+  const v = (e||'').toLowerCase();
+  if(v==='abierto')  return '<span class="badge-estado badge-abierto">Abierto</span>';
+  if(v==='cerrado')  return '<span class="badge-estado badge-cerrado">Cerrado</span>';
+  if(v==='anulado')  return '<span class="badge-estado badge-anulado">Anulado</span>';
+  return '<span class="badge-estado" style="background:#f3f4f6;color:#374151">'+e+'</span>';
+}
+
+function fmtDiferencia(n){
+  const v = parseFloat(n||0);
+  const fmt = '\u20b2 ' + Math.abs(v).toLocaleString('es-PY', {minimumFractionDigits:2});
+  if(v > 0)  return '<span class="dif-pos">+'+fmt+'</span>';
+  if(v < 0)  return '<span class="dif-neg">-'+fmt+'</span>';
+  return '<span class="dif-neu">' + fmt + '</span>';
+}
+
+/* ---- Tabla ---- */
+let tabla;
+function initDatatable(){
+  tabla = $('#tbl').DataTable({
+    language: { url:"{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax: { url:'/api/v1/cierres', dataSrc:'data' },
+    order: [[0,'desc']],
+    pageLength: 15,
+    columns:[
+      { data:'nro_turno',    render: v=>'<span class="nro-turno">#'+v+'</span>' },
+      { data:'cajero' },
+      { data:'fiscal' },
+      { data:'monto_inicial', className:'text-end', render: v=>'<span class="monto-cell">'+fmtMonto(v)+'</span>' },
+      { data:'monto_final',   className:'text-end', render: v=>'<span class="monto-cell">'+fmtMonto(v)+'</span>' },
+      { data:'diferencia',    className:'text-end', render: v=>fmtDiferencia(v) },
+      { data:'hora_apertura' },
+      { data:'registro' },
+      { data:'estado', className:'text-center', render: v=>estadoBadge(v) },
       {
-        data: function(row) {
-          return `<button type="button" name="btn_cerrar" class="btn btn-success" data-id="${row.id_cierre}">Cerrar</button>`;
+        data: null, orderable:false, className:'text-center',
+        render: function(row){
+          const abierto = (row.estado||'').toLowerCase() === 'abierto';
+          return '<button class="btn-cerrar-sm btn-ver-detalle" data-id="'+row.id_cierre+'">'
+               + '<i class="fas fa-eye"></i> Ver</button> '
+               + '<button class="btn-cerrar-sm btn-cerrar" data-id="'+row.id_cierre+'" '+(abierto?'':'disabled')+'>'
+               + '<i class="fas fa-lock"></i> Cerrar</button>';
         }
       }
     ]
   });
-};
+}
 
-const cerrar = () => {
-  $('#tbl').on('click', 'button[name="btn_cerrar"]', function() {
-    const idCierre = $(this).data('id');
-    Swal.fire({
-      title: "¿Deseas cerrar este cierre?",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: "Sí",
-      cancelButtonText: "No"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        fetch(`/api/v1/cierres/cerrar/${idCierre}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': CSRFToken
-          },
-        })
-        .then(resp => resp.json())
-        .then(data => {
-          if (data.success) {
-            const tabla = $('#tbl').DataTable();
-            tabla.ajax.reload();
-            Swal.fire("Cerrado", "El cierre ha sido cerrado correctamente.", "success");
-          } else {
-            Swal.fire("Error", data.message || "No se pudo cerrar.");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          Swal.fire("Error", "Ocurrió un error al cerrar el cierre.", "error");
-        });
-      }
-    });
-  });
-};
+/* ---- Ver detalle en modal ---- */
+let idCierreActual = null;
 
-$(document).ready(function() {
-  initDatatable();
-  cerrar();
+$('#tbl tbody').on('click', '.btn-ver-detalle', function(){
+  const id = $(this).data('id');
+  idCierreActual = id;
+
+  fetch('/api/v1/cierres/'+id)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.success) return Swal.fire('Error', data.error||'No se pudo cargar.', 'error');
+      const c = data.data;
+
+      $('#detTurno').text('#'+c.nro_turno);
+      $('#detCajero').text(c.cajero||'—');
+      $('#detFiscal').text(c.fiscal||'—');
+      $('#detHoraApertura').text(c.hora_apertura||'—');
+      $('#detRegistro').text(c.registro||'—');
+      $('#detMontoApertura').text(fmtMonto(c.monto_inicial));
+      $('#detMontoCierre').text(fmtMonto(c.monto_final));
+
+      // Diferencia con color
+      const dif = parseFloat(c.diferencia||0);
+      $('#detDiferencia').text(
+        (dif>=0?'+':'-') + '\u20b2 ' + Math.abs(dif).toLocaleString('es-PY',{minimumFractionDigits:2})
+      );
+      const boxDif = $('#boxDiferencia');
+      boxDif.toggleClass('negativa', dif < 0);
+
+      $('#detObservacion').text(c.observacion || 'Sin observaciones.');
+
+      // Botón confirmar cierre: solo si está abierto
+      const abierto = (c.estado||'').toLowerCase() === 'abierto';
+      $('#btnCerrarDesdeModal').toggle(abierto);
+
+      $('#modalDetalle').modal('show');
+    })
+    .catch(()=>Swal.fire('Error','Error al cargar el detalle.','error'));
 });
+
+/* ---- Cerrar desde la tabla ---- */
+$('#tbl tbody').on('click', '.btn-cerrar', function(){
+  const id = $(this).data('id');
+  confirmarCierre(id);
+});
+
+/* ---- Cerrar desde el modal ---- */
+$('#btnCerrarDesdeModal').on('click', function(){
+  if(idCierreActual) confirmarCierre(idCierreActual, true);
+});
+
+function confirmarCierre(id, desdeModal=false){
+  Swal.fire({
+    title: '¿Confirmar cierre de turno?',
+    text: 'El turno pasará a estado CERRADO y no podrá reabrirse.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, cerrar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#4338ca'
+  }).then(r=>{
+    if(!r.isConfirmed) return;
+    fetch('/api/v1/cierres/cerrar/'+id,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken}
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.success){
+        if(desdeModal) $('#modalDetalle').modal('hide');
+        tabla.ajax.reload(null, false);
+        Swal.fire({
+          title:'Turno cerrado',
+          text:'El cierre fue registrado correctamente.',
+          icon:'success', timer:1800, showConfirmButton:false
+        });
+      } else {
+        Swal.fire('Error', data.error||'No se pudo cerrar.', 'error');
+      }
+    })
+    .catch(()=>Swal.fire('Error','Error al cerrar el turno.','error'));
+  });
+}
+
+$(document).ready(function(){ initDatatable(); });
 </script>
 {% endblock %}

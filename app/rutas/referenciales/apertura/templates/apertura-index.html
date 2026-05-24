@@ -1,261 +1,675 @@
 {% extends 'base.html' %}
 
-{% block titulo %}
-Nuevo turno
-{% endblock %}
+{% block titulo %}Apertura de Caja{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4">
-    <h3>Habilitación turno</h3>
+<style>
+  :root {
+    --ap-primary:  #1a56db;
+    --ap-success:  #16a34a;
+    --ap-danger:   #dc2626;
+    --ap-warn:     #d97706;
+    --ap-border:   #e5e7eb;
+    --ap-bg:       #f9fafb;
+    --ap-muted:    #6b7280;
+    --ap-radius:   10px;
+  }
 
-    <!-- Tarjeta -->
-    <div class="card">
-      <div class="card-header bg-primary">
-        <button type="button" class="btn btn-outline-light" id="btnAgregar">Aperturar caja</button>
-      </div>
-      <div class="card-body">
-        <table class="table table-striped" id="tbl">
+  .ap-page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.4rem 0 1.2rem;
+    border-bottom: 2px solid var(--ap-border);
+    margin-bottom: 1.5rem;
+  }
+  .ap-page-header h2 {
+    font-size: 1.3rem; font-weight: 700; color: #111827;
+    margin: 0; display: flex; align-items: center; gap: .5rem;
+  }
+  .icon-box {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center;
+    color: #fff; font-size: .9rem; flex-shrink: 0;
+    background: var(--ap-primary);
+  }
+
+  .ap-card {
+    background: #fff;
+    border: 1px solid var(--ap-border);
+    border-radius: var(--ap-radius);
+    box-shadow: 0 1px 6px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+  .ap-card-header {
+    padding: .8rem 1.25rem;
+    background: var(--ap-bg);
+    border-bottom: 1px solid var(--ap-border);
+    font-size: .8rem; font-weight: 700; color: #374151;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .ap-card-body { padding: 1.25rem; }
+
+  #tbl thead th {
+    background: #f1f5f9; color: #374151;
+    font-size: .76rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 2px solid var(--ap-border);
+    padding: .65rem .85rem; white-space: nowrap;
+  }
+  #tbl tbody td {
+    font-size: .865rem; color: #1f2937;
+    vertical-align: middle;
+    padding: .6rem .85rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  #tbl tbody tr:hover td { background: #f8faff; }
+
+  .badge-estado {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .25rem .65rem; border-radius: 999px;
+    font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  .badge-estado::before {
+    content:''; width:6px; height:6px;
+    border-radius:50%; background:currentColor;
+  }
+  .badge-activo  { background:#d1fae5; color:#065f46; }
+  .badge-anulado { background:#fee2e2; color:#991b1b; }
+  .badge-cerrado { background:#e0e7ff; color:#3730a3; }
+
+  .nro-turno  { font-weight:800; color:var(--ap-primary); font-variant-numeric:tabular-nums; }
+  .monto-cell { font-weight:700; font-variant-numeric:tabular-nums; }
+
+  .btn-ap {
+    display:inline-flex; align-items:center; gap:.35rem;
+    padding:.44rem 1rem; border-radius:7px;
+    font-size:.84rem; font-weight:600;
+    border:none; cursor:pointer;
+    transition:opacity .15s,transform .1s,box-shadow .15s;
+  }
+  .btn-ap:hover  { opacity:.87; transform:translateY(-1px); }
+  .btn-ap:active { transform:scale(.97); }
+  .btn-primary-ap { background:var(--ap-primary); color:#fff; box-shadow:0 2px 8px rgba(26,86,219,.22); }
+  .btn-cancel-ap  { background:#f3f4f6; color:#374151; border:1px solid var(--ap-border); }
+  .btn-danger-sm  {
+    display:inline-flex; align-items:center; gap:.3rem;
+    background:#fff1f2; color:var(--ap-danger);
+    border:1px solid #fca5a5;
+    padding:.28rem .65rem; font-size:.77rem;
+    border-radius:5px; font-weight:600; cursor:pointer;
+  }
+  .btn-danger-sm:hover    { background:#fee2e2; }
+  .btn-danger-sm:disabled { opacity:.35; cursor:not-allowed; }
+
+  /* Modal */
+  .ap-modal .modal-content {
+    border:none; border-radius:14px;
+    box-shadow:0 20px 60px rgba(0,0,0,.18); overflow:hidden;
+  }
+  .ap-modal .modal-header {
+    background:var(--ap-primary); padding:1rem 1.4rem; border-bottom:none;
+  }
+  .ap-modal .modal-title {
+    font-size:1rem; font-weight:700; color:#fff;
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .ap-modal .modal-header .close { color:rgba(255,255,255,.75); opacity:1; font-size:1.3rem; }
+  .ap-modal .modal-header .close:hover { color:#fff; }
+  .ap-modal .modal-body   { padding:1.5rem; background:#fff; }
+  .ap-modal .modal-footer {
+    background:var(--ap-bg); border-top:1px solid var(--ap-border); padding:.85rem 1.4rem;
+  }
+
+  /* Chips */
+  .info-chip {
+    background:#f1f5f9; border:1px solid var(--ap-border);
+    border-radius:8px; padding:.6rem .9rem;
+    display:flex; flex-direction:column; gap:.15rem;
+  }
+  .info-chip .chip-label {
+    font-size:.68rem; font-weight:700;
+    color:var(--ap-muted); text-transform:uppercase; letter-spacing:.06em;
+  }
+  .info-chip .chip-value {
+    font-size:.9rem; font-weight:700; color:var(--ap-primary); font-variant-numeric:tabular-nums;
+  }
+
+  /* Card fiscal */
+  .fiscal-card {
+    display:none; background:#f0fdf4; border:1px solid #bbf7d0;
+    border-radius:8px; padding:.75rem 1rem; margin-top:.5rem;
+  }
+  .fiscal-card.visible { display:flex; align-items:center; gap:.75rem; }
+  .fiscal-avatar {
+    width:38px; height:38px; border-radius:50%;
+    background:var(--ap-success); display:grid; place-items:center;
+    color:#fff; font-size:.95rem; flex-shrink:0;
+  }
+  .fiscal-nombre { font-weight:700; font-size:.9rem; color:#065f46; line-height:1.2; }
+  .fiscal-ci     { font-size:.75rem; color:#16a34a; font-weight:500; }
+
+  .fiscal-error {
+    display:none; background:#fff1f2; border:1px solid #fca5a5;
+    border-radius:8px; padding:.6rem .9rem; margin-top:.5rem;
+    font-size:.8rem; font-weight:600; color:var(--ap-danger);
+  }
+  .fiscal-error.visible { display:flex; align-items:center; gap:.4rem; }
+
+  /* Buscador cajero */
+  .cajero-search-wrap { position:relative; }
+  .cajero-results {
+    position:absolute; top:calc(100% + 4px); left:0; right:0;
+    background:#fff; border:1px solid var(--ap-border);
+    border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.1);
+    z-index:1055; max-height:220px; overflow-y:auto; display:none;
+  }
+  .cajero-results.open { display:block; }
+  .cajero-result-item {
+    display:flex; align-items:center; gap:.65rem;
+    padding:.6rem .85rem; cursor:pointer;
+    transition:background .12s;
+    border-bottom:1px solid #f3f4f6;
+  }
+  .cajero-result-item:last-child { border-bottom:none; }
+  .cajero-result-item:hover { background:#f0f9ff; }
+  .caj-avatar {
+    width:32px; height:32px; border-radius:50%;
+    background:#dbeafe; color:var(--ap-primary);
+    display:grid; place-items:center;
+    font-size:.8rem; font-weight:700; flex-shrink:0;
+  }
+  .caj-nombre { font-size:.86rem; font-weight:700; color:#1f2937; line-height:1.2; }
+  .caj-ci     { font-size:.74rem; color:var(--ap-muted); }
+  .cajero-result-empty {
+    padding:.85rem; text-align:center;
+    font-size:.82rem; color:var(--ap-muted);
+  }
+
+  /* Cajero seleccionado */
+  .cajero-selected {
+    display:none; background:#eff6ff; border:1px solid #bfdbfe;
+    border-radius:8px; padding:.65rem .9rem; margin-top:.5rem;
+    align-items:center; gap:.65rem;
+  }
+  .cajero-selected.visible { display:flex; }
+  .caj-nombre-sel { font-weight:700; font-size:.88rem; color:#1e40af; }
+  .caj-ci-sel     { font-size:.74rem; color:#3b82f6; }
+  .cajero-clear {
+    margin-left:auto; background:none; border:none;
+    color:var(--ap-muted); cursor:pointer; font-size:.85rem;
+    padding:.2rem .4rem; border-radius:4px;
+    transition:color .15s,background .15s;
+  }
+  .cajero-clear:hover { color:var(--ap-danger); background:#fee2e2; }
+
+  /* Form */
+  .ap-label {
+    font-size:.76rem; font-weight:700; color:#374151;
+    text-transform:uppercase; letter-spacing:.04em;
+    margin-bottom:.3rem; display:block;
+  }
+  .ap-input {
+    font-size:.875rem; border:1px solid var(--ap-border);
+    border-radius:7px; padding:.44rem .75rem;
+    color:#1f2937; width:100%;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .ap-input:focus {
+    border-color:var(--ap-primary);
+    box-shadow:0 0 0 3px rgba(26,86,219,.12); outline:none;
+  }
+  .ap-input.is-invalid { border-color:var(--ap-danger)!important; }
+  .field-hint {
+    font-size:.72rem; color:var(--ap-muted); margin-top:.25rem;
+    display:flex; align-items:center; gap:.3rem;
+  }
+  .ap-divider { border:none; border-top:1px solid var(--ap-border); margin:.9rem 0; }
+
+  .spin { animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  div.dataTables_wrapper div.dataTables_filter input,
+  div.dataTables_wrapper div.dataTables_length select {
+    border-radius:6px; border:1px solid var(--ap-border); padding:.3rem .6rem; font-size:.82rem;
+  }
+  .dataTables_paginate .paginate_button { border-radius:6px!important; font-size:.8rem!important; }
+  .dataTables_paginate .paginate_button.current,
+  .dataTables_paginate .paginate_button.current:hover {
+    background:var(--ap-primary)!important; color:#fff!important; border-color:var(--ap-primary)!important;
+  }
+</style>
+
+<div class="container-fluid px-4">
+
+  <div class="ap-page-header">
+    <h2>
+      <span class="icon-box"><i class="fas fa-cash-register"></i></span>
+      Apertura de Caja
+    </h2>
+    <button class="btn-ap btn-primary-ap" id="btnAgregar">
+      <i class="fas fa-plus"></i> Aperturar Turno
+    </button>
+  </div>
+
+  <div class="ap-card">
+    <div class="ap-card-header">
+      <i class="fas fa-list me-1"></i> Turnos registrados
+    </div>
+    <div class="ap-card-body">
+      <div class="table-responsive">
+        <table id="tbl" class="table table-hover w-100">
           <thead>
             <tr>
-              <th>Nro_turno</th>
+              <th>Nro Turno</th>
               <th>Fiscal</th>
               <th>Cajero</th>
-              <th>Monto inicial</th>
-              <th>Fecha de registro</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+              <th class="text-end">Monto Inicial</th>
+              <th>Fecha Registro</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acción</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-    <!-- /tarjeta -->
+  </div>
 
-    <!-- El formulario -->
-    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
+</div>
 
-          <!-- Modal Header -->
-          <div class="modal-header bg-primary">
-            <h4 class="modal-title text-white mx-auto" id="modalTitle">Agregar apertura</h4>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-              <span aria-hidden="true">&times;</span>
+<!-- MODAL -->
+<div class="modal fade ap-modal" id="modalApertura" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-cash-register"></i> Apertura de Turno
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Chips turno y fecha -->
+        <div class="row g-2 mb-3">
+          <div class="col-5">
+            <div class="info-chip">
+              <span class="chip-label"><i class="fas fa-hashtag me-1"></i>Nro. Turno</span>
+              <span class="chip-value" id="chipNroTurno">—</span>
+            </div>
+          </div>
+          <div class="col-7">
+            <div class="info-chip">
+              <span class="chip-label"><i class="fas fa-clock me-1"></i>Fecha y hora</span>
+              <span class="chip-value" id="chipFecha" style="font-size:.78rem">—</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="ap-divider">
+
+        <!-- FISCAL -->
+        <div class="mb-3">
+          <label class="ap-label">
+            <i class="fas fa-user-shield me-1"></i> Clave Fiscal
+          </label>
+          <div style="position:relative">
+            <input type="password" class="ap-input" id="inputClaveFiscal"
+                   placeholder="Ingrese el ID del fiscal" autocomplete="off">
+            <span id="fiscalSpinner"
+                  style="display:none;position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:var(--ap-muted)">
+              <i class="fas fa-circle-notch spin"></i>
+            </span>
+          </div>
+
+          <div class="fiscal-card" id="fiscalCard">
+            <div class="fiscal-avatar"><i class="fas fa-user-tie"></i></div>
+            <div>
+              <div class="fiscal-nombre" id="fiscalNombre">—</div>
+              <div class="fiscal-ci">CI: <span id="fiscalCI">—</span></div>
+            </div>
+          </div>
+
+          <div class="fiscal-error" id="fiscalError">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="fiscalErrorMsg">No se encontró un fiscal con esa clave.</span>
+          </div>
+
+          <p class="field-hint"><i class="fas fa-info-circle"></i> Se valida automáticamente al escribir</p>
+        </div>
+
+        <hr class="ap-divider">
+
+        <!-- CAJERO -->
+        <div class="mb-3">
+          <label class="ap-label">
+            <i class="fas fa-user me-1"></i> Cajero
+          </label>
+
+          <div class="cajero-search-wrap" id="cajeroSearchWrap">
+            <input type="text" class="ap-input" id="inputBuscarCajero"
+                   placeholder="Buscar por nombre o CI…" autocomplete="off">
+            <div class="cajero-results" id="cajeroResults"></div>
+          </div>
+
+          <div class="cajero-selected" id="cajeroSelected">
+            <div class="caj-avatar" id="cajeroAvatar">—</div>
+            <div>
+              <div class="caj-nombre-sel" id="cajeroNombreSel">—</div>
+              <div class="caj-ci-sel">CI: <span id="cajeroCISel">—</span></div>
+            </div>
+            <button class="cajero-clear" id="cajeroClear" title="Cambiar cajero">
+              <i class="fas fa-times"></i>
             </button>
           </div>
 
-          <!-- Modal body -->
-          <div class="modal-body">
-            <input type="hidden" id="txtIdApertura" value="">
-            <div class="row">
-              <div class="form-group text-center col-md-3">
-                <label for="txtNro_turno">NRO DE TURNO</label>
-                <input type="text" class="form-control bg-primary text-white" id="txtNro_turno" readonly>
-              </div>
-              <div class="form-group text-center col-md-6">
-                <label for="txtRegistro">FECHA DE REGISTRO</label>
-                <input type="text" class="form-control bg-primary text-white" id="txtRegistro" readonly>
-              </div>
-            </div>
-
-            <div class="row">
-              <!-- Fiscal -->
-              <div class="form-group text-center col-md-6">
-                <label for="txtClaveFiscal">FISCAL:</label>
-                <input type="password" class="form-control" placeholder="INGRESE CLAVE FISCAL" id="txtClaveFiscal">
-              </div>
-
-              <!-- Cajero -->
-              <div class="form-group text-center col-md-6">
-                <label for="txtCajero">CAJERO:</label>
-                <input type="text" class="form-control" placeholder="INGRESE ID DEL CAJERO" id="txtCajero">
-              </div>
-            </div>
-
-            <div class="form-group text-center">
-              <label for="txtMontoInicial">MONTO INICIAL:</label>
-              <input type="number" class="form-control" placeholder="Ingrese el monto inicial" id="txtMontoInicial">
-            </div>
-          </div>
-
-          <!-- Modal footer -->
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
-            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
-          </div>
-
+          <input type="hidden" id="cajeroIdSeleccionado">
+          <p class="field-hint"><i class="fas fa-info-circle"></i> Escribí al menos 2 caracteres para buscar</p>
         </div>
+
+        <hr class="ap-divider">
+
+        <!-- MONTO -->
+        <div class="mb-1">
+          <label class="ap-label">
+            <i class="fas fa-coins me-1"></i> Monto Inicial (&#8370;)
+          </label>
+          <input type="number" class="ap-input" id="inputMonto"
+                 placeholder="0" min="0" step="1000">
+        </div>
+
+      </div><!-- /modal-body -->
+
+      <div class="modal-footer">
+        <button type="button" class="btn-ap btn-cancel-ap" data-dismiss="modal">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="button" class="btn-ap btn-primary-ap" id="btnGuardar">
+          <i class="fas fa-save"></i> Confirmar Apertura
+        </button>
       </div>
-    </div>
 
-    <div class="row mt-4 d-none" id="rowAlerta">
-        <div class="col col-md-12">
-            <div class="alert alert-success">
-                <strong>Apertura realizada</strong>
-                <div class="row" id="mostrarAlerta"></div>
-            </div>
-        </div>
     </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block js %}
 <script>
-const CSRFToken = "{{ csrf_token() }}" || null;
+const CSRFToken = "{{ csrf_token() }}";
 
-// Obtener siguiente turno + fecha actual desde backend
-async function obtenerDatosIniciales() {
-  try {
-    const response = await fetch('/api/v1/aperturas');
-    const data = await response.json();
-    if (!data.success) throw new Error('No se pudo obtener el siguiente turno');
-
-    // Además, obtener fecha actual del servidor
-    const respFecha = await fetch('/api/v1/aperturas/fecha_actual');
-    const dataFecha = await respFecha.json();
-    if (!dataFecha.success) throw new Error('No se pudo obtener la fecha actual');
-
-    return {
-      siguiente_turno: data.siguiente_turno,
-      fecha_actual: dataFecha.fecha_actual
-    };
-  } catch (error) {
-    Swal.fire("Error", error.message, "error");
-    return null;
-  }
+function fmtMonto(n){
+  return '\u20b2 ' + parseFloat(n||0).toLocaleString('es-PY');
+}
+function fmtFechaAhora(){
+  return new Date().toLocaleString('es-PY',{
+    day:'2-digit',month:'2-digit',year:'numeric',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
+  });
+}
+function estadoBadge(e){
+  const v=(e||'').toLowerCase();
+  if(v==='activo')  return '<span class="badge-estado badge-activo">Activo</span>';
+  if(v==='anulado') return '<span class="badge-estado badge-anulado">Anulado</span>';
+  if(v==='cerrado') return '<span class="badge-estado badge-cerrado">Cerrado</span>';
+  return '<span class="badge-estado" style="background:#f3f4f6;color:#374151">'+e+'</span>';
+}
+function iniciales(n){
+  return (n||'').split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase();
 }
 
-// Inicializar tabla DataTables
-function initDatatable() {
-  $('#tbl').DataTable({
-    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
-    ajax: '/api/v1/aperturas',
-    columns: [
-      { data: 'nro_turno' },
-      { data: 'clave_fiscal' },
-      { data: 'cajero' },
-      { data: 'monto_inicial' },
-      { data: 'registro' },
-      { data: 'estado' },
-      { data: row => `<button type="button" name="btn_anular" class="btn btn-warning" data-id="${row.id_apertura}">Anular</button>` }
+let fiscalValidado    = false;
+let cajeroSeleccionado = null;
+
+function resetModal(){
+  fiscalValidado    = false;
+  cajeroSeleccionado = null;
+  $('#inputClaveFiscal').val('').removeClass('is-invalid');
+  $('#fiscalCard').removeClass('visible');
+  $('#fiscalError').removeClass('visible');
+  $('#fiscalSpinner').hide();
+  $('#inputBuscarCajero').val('').removeClass('is-invalid');
+  $('#cajeroResults').empty().removeClass('open');
+  $('#cajeroSearchWrap').show();
+  $('#cajeroSelected').removeClass('visible');
+  $('#cajeroIdSeleccionado').val('');
+  $('#inputMonto').val('').removeClass('is-invalid');
+}
+
+/* ---- TABLA ---- */
+let tabla;
+function initDatatable(){
+  tabla = $('#tbl').DataTable({
+    language:{ url:"{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax:{ url:'/api/v1/aperturas', dataSrc:'data' },
+    order:[[0,'desc']], pageLength:15,
+    columns:[
+      { data:'nro_turno',    render:v=>'<span class="nro-turno">#'+v+'</span>' },
+      { data:'clave_fiscal' },
+      { data:'cajero' },
+      { data:'monto_inicial', className:'text-end', render:v=>'<span class="monto-cell">'+fmtMonto(v)+'</span>' },
+      { data:'registro' },
+      { data:'estado', className:'text-center', render:v=>estadoBadge(v) },
+      { data:null, orderable:false, className:'text-center',
+        render:function(row){
+          const ok=(row.estado||'').toLowerCase()==='activo';
+          return '<button class="btn-danger-sm btn-anular" data-id="'+row.id_apertura+'" '+(ok?'':'disabled')+'>'+
+                 '<i class="fas fa-ban"></i> Anular</button>';
+        }
+      }
     ]
   });
 }
 
-// Abrir modal para agregar nueva apertura y cargar datos iniciales
-function agregar() {
-  $('#btnAgregar').on('click', async () => {
-    const datos = await obtenerDatosIniciales();
-    if (!datos) return;
-
-    $('#modalTitle').text("REALIZAR APERTURA");
-    $('#txtIdApertura').val('');
-    $('#txtNro_turno').val(datos.siguiente_turno);
-    $('#txtRegistro').val(datos.fecha_actual);
-    $('#txtClaveFiscal').val('');
-    $('#txtCajero').val('');
-    $('#txtMontoInicial').val('');
-    $('#modalFormulario').modal('show');
-  });
-}
-
-// Guardar o actualizar apertura
-function guardar() {
-  $('#btnGuardar').on('click', () => {
-    const clave_fiscal = $('#txtClaveFiscal').val().trim();
-    const cajero = $('#txtCajero').val().trim();
-    const monto_inicial = $('#txtMontoInicial').val().trim();
-    const idApertura = $('#txtIdApertura').val();
-    const tabla = $('#tbl').DataTable();
-
-    if (!clave_fiscal || !cajero || !monto_inicial) {
-      Swal.fire("Atención", "Todos los campos son obligatorios.", "warning");
-      return;
-    }
-
-    if (idApertura) {
-      // Actualizar (no detallado aquí)
-      fetch(`/api/v1/aperturas/${idApertura}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken },
-        body: JSON.stringify({ clave_fiscal, cajero, monto_inicial })
-      })
-      .then(resp => resp.json())
-      .then(data => {
-        if (data.success) {
-          tabla.ajax.reload();
-          Swal.fire("Actualizado", "La apertura ha sido actualizada correctamente.", "success");
-        } else {
-          Swal.fire("Error", data.error || "Error al actualizar");
-        }
-      })
-      .catch(() => Swal.fire("Error", "Error en la actualización.", "error"));
-    } else {
-      // Insertar nueva apertura
-      fetch('/api/v1/aperturas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken },
-        body: JSON.stringify({ clave_fiscal, cajero, monto_inicial })
-      })
-      .then(resp => resp.json())
-      .then(data => {
-        if (data.success) {
-          // Mostrar valores devueltos, incluido el registro
-          $('#txtIdApertura').val(data.data.id_apertura);
-          $('#txtNro_turno').val(data.data.nro_turno || '');
-          $('#txtRegistro').val(data.data.registro || '');
-
-          tabla.ajax.reload();
-          Swal.fire("Agregado", "La apertura ha sido agregada correctamente.", "success");
-          $('#modalFormulario').modal('hide');
-        } else {
-          Swal.fire("Error", data.error || "Error al agregar apertura");
-        }
-      })
-      .catch(() => Swal.fire("Error", "Error al guardar la apertura.", "error"));
-    }
-  });
-}
-
-// Anular apertura
-function anular() {
-  $('#tbl').on('click', 'button[name="btn_anular"]', function() {
-    const idApertura = $(this).data('id');
-    Swal.fire({
-      title: "¿Deseas anular este registro de apertura?",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: "Sí",
-      cancelButtonText: "No"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        fetch(`/api/v1/aperturas/anular/${idApertura}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken }
-        })
-        .then(resp => resp.json())
-        .then(data => {
-          if (data.success) {
-            const fila = $(this).closest('tr');
-            const tabla = $('#tbl').DataTable();
-            tabla.row(fila).remove().draw();
-            Swal.fire("Anulado", "El turno ha sido anulado correctamente.", "success");
-          } else {
-            Swal.fire("Error", data.error || "No se pudo anular la apertura.");
-          }
-        })
-        .catch(() => Swal.fire("Error", "Error al anular el turno.", "error"));
-      }
-    });
-  });
-}
-
-$(document).ready(() => {
-  initDatatable();
-  agregar();
-  guardar();
-  anular();
+/* ---- Abrir modal ---- */
+$('#btnAgregar').on('click', async function(){
+  resetModal();
+  try{
+    const r=await fetch('/api/v1/aperturas');
+    const d=await r.json();
+    $('#chipNroTurno').text(d.success ? '#'+d.siguiente_turno : '—');
+  }catch{ $('#chipNroTurno').text('—'); }
+  $('#chipFecha').text(fmtFechaAhora());
+  $('#modalApertura').modal('show');
+  setTimeout(()=>$('#inputClaveFiscal').focus(), 400);
 });
+
+/* ---- Lookup Fiscal ---- */
+let fiscalTimer=null;
+
+function validarFiscal(){
+  const clave=$('#inputClaveFiscal').val().trim();
+  fiscalValidado=false;
+  $('#fiscalCard').removeClass('visible');
+  $('#fiscalError').removeClass('visible');
+  $('#inputClaveFiscal').removeClass('is-invalid');
+  if(!clave||isNaN(clave)) return;
+  $('#fiscalSpinner').show();
+  fetch('/api/v1/aperturas/fiscal/'+clave)
+    .then(r=>r.json())
+    .then(data=>{
+      $('#fiscalSpinner').hide();
+      if(data.success){
+        $('#fiscalNombre').text(data.data.nombre_completo.toUpperCase());
+        $('#fiscalCI').text(data.data.ci);
+        $('#fiscalCard').addClass('visible');
+        $('#fiscalError').removeClass('visible');
+        fiscalValidado=true;
+      } else {
+        $('#fiscalError').addClass('visible');
+        $('#fiscalErrorMsg').text(data.error||'Clave fiscal no válida.');
+        $('#inputClaveFiscal').addClass('is-invalid');
+      }
+    })
+    .catch(()=>{
+      $('#fiscalSpinner').hide();
+      $('#fiscalError').addClass('visible');
+      $('#fiscalErrorMsg').text('Error al validar la clave.');
+    });
+}
+
+$('#inputClaveFiscal').on('input',function(){
+  $('#fiscalCard').removeClass('visible');
+  $('#fiscalError').removeClass('visible');
+  $('#inputClaveFiscal').removeClass('is-invalid');
+  fiscalValidado=false;
+  clearTimeout(fiscalTimer);
+  if(!$(this).val().trim()) return;
+  fiscalTimer=setTimeout(validarFiscal, 600);
+});
+$('#inputClaveFiscal').on('keydown',function(e){
+  if(e.key==='Enter'){ clearTimeout(fiscalTimer); validarFiscal(); }
+});
+
+/* ---- Buscador Cajero ---- */
+let cajeroTimer=null;
+
+$('#inputBuscarCajero').on('input',function(){
+  const q=$(this).val().trim();
+  $('#cajeroResults').empty().removeClass('open');
+  clearTimeout(cajeroTimer);
+  if(q.length<2) return;
+  cajeroTimer=setTimeout(()=>{
+    $('#cajeroResults').html(
+      '<div class="cajero-result-empty"><i class="fas fa-circle-notch spin me-1"></i>Buscando...</div>'
+    ).addClass('open');
+    fetch('/api/v1/aperturas/cajeros/buscar?q='+encodeURIComponent(q))
+      .then(r=>r.json())
+      .then(data=>{
+        $('#cajeroResults').empty();
+        if(!data.success||!data.data.length){
+          $('#cajeroResults').html('<div class="cajero-result-empty"><i class="fas fa-inbox me-1"></i>Sin resultados</div>');
+          return;
+        }
+        data.data.forEach(c=>{
+          const ini=iniciales(c.nombre_completo);
+          const item=$('<div class="cajero-result-item">'+
+            '<div class="caj-avatar">'+ini+'</div>'+
+            '<div>'+
+              '<div class="caj-nombre">'+c.nombre_completo.toUpperCase()+'</div>'+
+              '<div class="caj-ci">CI: '+c.ci+'</div>'+
+            '</div>'+
+          '</div>');
+          item.on('click',function(){
+            seleccionarCajero(c.fun_id, c.nombre_completo, c.ci);
+          });
+          $('#cajeroResults').append(item);
+        });
+        $('#cajeroResults').addClass('open');
+      })
+      .catch(()=>{
+        $('#cajeroResults').html(
+          '<div class="cajero-result-empty" style="color:var(--ap-danger)">Error al buscar</div>'
+        );
+      });
+  }, 350);
+});
+
+function seleccionarCajero(id, nombre, ci){
+  cajeroSeleccionado={fun_id:id, nombre_completo:nombre, ci:ci};
+  $('#cajeroIdSeleccionado').val(id);
+  $('#cajeroAvatar').text(iniciales(nombre));
+  $('#cajeroNombreSel').text(nombre.toUpperCase());
+  $('#cajeroCISel').text(ci);
+  $('#cajeroSelected').addClass('visible');
+  $('#cajeroSearchWrap').hide();
+  $('#cajeroResults').removeClass('open').empty();
+  $('#inputBuscarCajero').removeClass('is-invalid');
+}
+
+$('#cajeroClear').on('click',function(){
+  cajeroSeleccionado=null;
+  $('#cajeroIdSeleccionado').val('');
+  $('#cajeroSelected').removeClass('visible');
+  $('#cajeroSearchWrap').show();
+  $('#inputBuscarCajero').val('').focus();
+});
+
+$(document).on('click',function(e){
+  if(!$(e.target).closest('#cajeroSearchWrap').length)
+    $('#cajeroResults').removeClass('open');
+});
+
+/* ---- Guardar ---- */
+$('#btnGuardar').on('click',function(){
+  let valido=true;
+  if(!fiscalValidado){ $('#inputClaveFiscal').addClass('is-invalid'); valido=false; }
+  if(!cajeroSeleccionado){ $('#inputBuscarCajero').addClass('is-invalid'); valido=false; }
+  const monto=$('#inputMonto').val().trim();
+  if(!monto||parseFloat(monto)<0){ $('#inputMonto').addClass('is-invalid'); valido=false; }
+
+  if(!valido) return Swal.fire({
+    title:'Campos incompletos',
+    text:'Complete y valide todos los campos.',
+    icon:'warning', confirmButtonColor:'#1a56db'
+  });
+
+  const clave_fiscal=parseInt($('#inputClaveFiscal').val().trim());
+  const cajero=cajeroSeleccionado.fun_id;
+
+  if(clave_fiscal===cajero) return Swal.fire({
+    title:'Error de asignación',
+    text:'El fiscal y cajero no pueden ser la misma persona.',
+    icon:'error', confirmButtonColor:'#1a56db'
+  });
+
+  const btn=$(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i> Procesando...');
+
+  fetch('/api/v1/aperturas',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken},
+    body:JSON.stringify({clave_fiscal, cajero, monto_inicial:monto})
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.success){
+      $('#modalApertura').modal('hide');
+      tabla.ajax.reload(null,false);
+      Swal.fire({
+        title:'Turno aperturado!',
+        html:'<p style="margin:0;font-size:.9rem">Turno <strong>#'+data.data.nro_turno+'</strong> iniciado.</p>',
+        icon:'success', timer:2200, showConfirmButton:false
+      });
+    } else {
+      Swal.fire('Error',data.error||'No se pudo realizar la apertura.','error');
+    }
+  })
+  .catch(()=>Swal.fire('Error','Error al guardar.','error'))
+  .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-save"></i> Confirmar Apertura'));
+});
+
+/* ---- Anular ---- */
+$('#tbl').on('click','.btn-anular',function(){
+  const id=$(this).data('id');
+  Swal.fire({
+    title:'Anular este turno?',
+    text:'Pasará a estado ANULADO y no podrá revertirse.',
+    icon:'warning', showCancelButton:true,
+    confirmButtonText:'Si, anular', cancelButtonText:'Cancelar',
+    confirmButtonColor:'#dc2626'
+  }).then(r=>{
+    if(!r.isConfirmed) return;
+    fetch('/api/v1/aperturas/anular/'+id,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken}
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.success){
+        tabla.ajax.reload(null,false);
+        Swal.fire({title:'Anulado',text:'Turno anulado.',icon:'success',timer:1800,showConfirmButton:false});
+      } else {
+        Swal.fire('Error',data.error||'No se pudo anular.','error');
+      }
+    })
+    .catch(()=>Swal.fire('Error','Error al anular.','error'));
+  });
+});
+
+$(document).ready(function(){ initDatatable(); });
 </script>
 {% endblock %}

@@ -1,120 +1,115 @@
 from flask import current_app as app
 from app.conexion.Conexion import Conexion
 
-class CierreDao:
-    def getCierres(self):
-        cierreSQL = """
-        SELECT c.id_cierre, c.id_apertura, 
-               to_char(c.registro, 'DD/MM/YYYY HH24:MI:SS') as registro, 
-               c.monto_final, c.diferencia, c.observacion, c.estado, c.nro_turno,
-               cajero.nombres || ' ' || cajero.apellidos AS cajero,  -- Nombre completo del cajero
-               fiscal.nombres || ' ' || fiscal.apellidos AS fiscal,  -- Nombre completo del fiscal
-               a.monto_inicial AS monto_inicial,  -- Corregido aquí
-               to_char(c.registro, 'DD/MM/YYYY HH24:MI:SS') as hora_apertura
-        FROM cierres c
-        JOIN aperturas a ON c.id_apertura = a.id_apertura
-        JOIN personas cajero ON a.cajero = cajero.id_persona
-        JOIN personas fiscal ON a.clave_fiscal = fiscal.id_persona
-        ORDER BY c.registro DESC
-        """
 
+class CierreDao:
+
+    # ================================
+    # Obtener todos los cierres
+    # ================================
+    def getCierres(self):
+        sql = """
+        SELECT id_cierre, id_apertura,
+               to_char(registro,      'DD/MM/YYYY HH24:MI:SS') AS registro,
+               monto_final, diferencia, observacion, estado, nro_turno,
+               UPPER(cajero)  AS cajero,
+               UPPER(fiscal)  AS fiscal,
+               monto_inicial,
+               to_char(hora_apertura, 'DD/MM/YYYY HH24:MI:SS') AS hora_apertura
+        FROM cierres
+        ORDER BY registro DESC
+        """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
-
         try:
-            cur.execute(cierreSQL)
-            datos = cur.fetchall()
-
-            cierres = []
-            for c in datos:
-                cierres.append({
-                    "id_cierre": c[0],
-                    "id_apertura": c[1],
-                    "registro": c[2],
-                    "monto_final": float(c[3]),
-                    "diferencia": float(c[4]) if c[4] is not None else None,
-                    "observacion": c[5],
-                    "estado": c[6],
-                    "nro_turno": c[7],
-                    "cajero": c[8],  # Nombre completo del cajero
-                    "fiscal": c[9],  # Nombre completo del fiscal
-                    "monto_inicial": float(c[10]) if c[10] is not None else None,  # Ahora es "a.monto_inicial"
-                    "hora_apertura": c[11]
-                })
-
-            return cierres
-
-        except con.Error as e:
+            cur.execute(sql)
+            filas = cur.fetchall()
+            return [{
+                "id_cierre":     f[0],
+                "id_apertura":   f[1],
+                "registro":      f[2],
+                "monto_final":   float(f[3]) if f[3] is not None else 0.0,
+                "diferencia":    float(f[4]) if f[4] is not None else 0.0,
+                "observacion":   f[5] or '',
+                "estado":        f[6],
+                "nro_turno":     f[7],
+                "cajero":        f[8] or '',
+                "fiscal":        f[9] or '',
+                "monto_inicial": float(f[10]) if f[10] is not None else 0.0,
+                "hora_apertura": f[11] or '',
+            } for f in filas]
+        except Exception as e:
             app.logger.error(f"Error al obtener cierres: {e}")
             return []
-
         finally:
             cur.close()
             con.close()
 
+    # ================================
+    # Obtener cierre por ID
+    # ================================
     def getCierreById(self, id_cierre):
-        cierreSQL = """
-        SELECT c.id_cierre, c.id_apertura, c.registro, c.monto_final, c.diferencia, 
-               c.observacion, c.estado, c.nro_turno,
-               c.cajero, c.fiscal, c.monto_inicial, c.hora_apertura
-        FROM cierres c
-        WHERE c.id_cierre = %s
+        sql = """
+        SELECT id_cierre, id_apertura,
+               to_char(registro,      'DD/MM/YYYY HH24:MI:SS') AS registro,
+               monto_final, diferencia, observacion, estado, nro_turno,
+               UPPER(cajero)  AS cajero,
+               UPPER(fiscal)  AS fiscal,
+               monto_inicial,
+               to_char(hora_apertura, 'DD/MM/YYYY HH24:MI:SS') AS hora_apertura
+        FROM cierres
+        WHERE id_cierre = %s
         """
-
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
-
         try:
-            cur.execute(cierreSQL, (id_cierre,))
-            c = cur.fetchone()
-
-            if c:
-                return {
-                    "id_cierre": c[0],
-                    "id_apertura": c[1],
-                    "registro": c[2],
-                    "monto_final": float(c[3]),
-                    "diferencia": float(c[4]) if c[4] is not None else None,
-                    "observacion": c[5],
-                    "estado": c[6],
-                    "nro_turno": c[7],
-                    "cajero": c[8],
-                    "fiscal": c[9],
-                    "monto_inicial": float(c[10]) if c[10] is not None else None,  # Ahora es "c.monto_inicial"
-                    "hora_apertura": c[11]
-                }
-            return None
-
-        except con.Error as e:
+            cur.execute(sql, (id_cierre,))
+            f = cur.fetchone()
+            if not f:
+                return None
+            return {
+                "id_cierre":     f[0],
+                "id_apertura":   f[1],
+                "registro":      f[2],
+                "monto_final":   float(f[3]) if f[3] is not None else 0.0,
+                "diferencia":    float(f[4]) if f[4] is not None else 0.0,
+                "observacion":   f[5] or '',
+                "estado":        f[6],
+                "nro_turno":     f[7],
+                "cajero":        f[8] or '',
+                "fiscal":        f[9] or '',
+                "monto_inicial": float(f[10]) if f[10] is not None else 0.0,
+                "hora_apertura": f[11] or '',
+            }
+        except Exception as e:
             app.logger.error(f"Error al obtener cierre por ID: {e}")
             return None
-
         finally:
             cur.close()
             con.close()
 
+    # ================================
+    # Cerrar cierre (estado → 'cerrado')
+    # ================================
     def cerrarCierre(self, id_cierre):
-        updateSQL = """
+        sql = """
         UPDATE cierres
         SET estado = 'cerrado'
         WHERE id_cierre = %s AND estado = 'abierto'
         """
-
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
-
         try:
-            cur.execute(updateSQL, (id_cierre,))
+            cur.execute(sql, (id_cierre,))
             con.commit()
-            return cur.rowcount > 0  
-
-        except con.Error as e:
-            app.logger.error(f"Error al cerrar el cierre: {e}")
+            return cur.rowcount > 0
+        except Exception as e:
+            app.logger.error(f"Error al cerrar cierre: {e}")
+            con.rollback()
             return False
-
         finally:
             cur.close()
             con.close()

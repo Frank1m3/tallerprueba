@@ -4,150 +4,129 @@ from datetime import datetime
 
 aperapi = Blueprint('aperapi', __name__)
 
+
+# ================================
+# GET todas las aperturas
+# ================================
 @aperapi.route('/aperturas', methods=['GET'])
 def getAperturas():
-    aperturadao = AperturaDao()
-
+    dao = AperturaDao()
     try:
-        aperturas, ultimo_turno = aperturadao.getAperturas()  # Obtener aperturas y último turno
-        siguiente_turno = ultimo_turno + 1 if ultimo_turno is not None else 1  # Calcular el siguiente turno
-
+        aperturas, ultimo_turno = dao.getAperturas()
+        siguiente_turno = (ultimo_turno + 1) if ultimo_turno is not None else 1
         return jsonify({
             'success': True,
             'data': aperturas,
-            'siguiente_turno': siguiente_turno,  # Incluir el siguiente turno en la respuesta
+            'siguiente_turno': siguiente_turno,
             'error': None
         }), 200
-
     except Exception as e:
-        app.logger.error(f"Error al obtener todas las aperturas: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno. Consulte con el administrador.'
-        }), 500
+        app.logger.error(f"Error al obtener aperturas: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
 
+# ================================
+# GET apertura por ID
+# ================================
 @aperapi.route('/aperturas/<int:id_apertura>', methods=['GET'])
 def getApertura(id_apertura):
-    aperturadao = AperturaDao()
-
+    dao = AperturaDao()
     try:
-        apertura = aperturadao.getAperturaById(id_apertura)
-
+        apertura = dao.getAperturaById(id_apertura)
         if apertura:
-            return jsonify({
-                'success': True,
-                'data': apertura,
-                'error': None
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No se encontró la apertura con el ID proporcionado.'
-            }), 404
-
+            return jsonify({'success': True, 'data': apertura, 'error': None}), 200
+        return jsonify({'success': False, 'error': 'No encontrado.'}), 404
     except Exception as e:
-        app.logger.error(f"Error al obtener apertura: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno. Consulte con el administrador.'
-        }), 500
-   
+        app.logger.error(f"Error al obtener apertura: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
+
+# ================================
+# NUEVO: GET validar fiscal por fun_id (clave ingresada)
+# GET /api/v1/aperturas/fiscal/<fun_id>
+# ================================
+@aperapi.route('/aperturas/fiscal/<int:fun_id>', methods=['GET'])
+def getFiscal(fun_id):
+    dao = AperturaDao()
+    try:
+        fiscal = dao.getFiscalByClave(fun_id)
+        if fiscal:
+            return jsonify({'success': True, 'data': fiscal}), 200
+        return jsonify({'success': False, 'error': 'No se encontró un fiscal activo con esa clave.'}), 404
+    except Exception as e:
+        app.logger.error(f"Error al validar fiscal: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
+
+
+# ================================
+# NUEVO: GET buscar cajeros por nombre/CI
+# GET /api/v1/aperturas/cajeros/buscar?q=pedro
+# ================================
+@aperapi.route('/aperturas/cajeros/buscar', methods=['GET'])
+def buscarCajeros():
+    termino = request.args.get('q', '').strip()
+    if len(termino) < 2:
+        return jsonify({'success': True, 'data': []}), 200
+    dao = AperturaDao()
+    try:
+        cajeros = dao.buscarCajeros(termino)
+        return jsonify({'success': True, 'data': cajeros}), 200
+    except Exception as e:
+        app.logger.error(f"Error al buscar cajeros: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
+
+
+# ================================
+# POST crear apertura
+# ================================
 @aperapi.route('/aperturas', methods=['POST'])
 def addApertura():
     data = request.get_json()
-    aperturadao = AperturaDao()
+    dao = AperturaDao()
 
-    # Aseguramos que los campos requeridos estén presentes y no vacíos
-    campos_requeridos = ['clave_fiscal', 'cajero', 'monto_inicial']
-
-    for campo in campos_requeridos:
-        if campo not in data or data[campo] is None or len(str(data[campo]).strip()) == 0:
-            return jsonify({
-                'success': False,
-                'error': f'El campo {campo} es obligatorio y no puede estar vacío.'
-            }), 400  # Devuelve error 400 si algún campo está vacío o no presente
+    for campo in ['clave_fiscal', 'cajero', 'monto_inicial']:
+        if campo not in data or str(data[campo]).strip() == '':
+            return jsonify({'success': False, 'error': f'El campo {campo} es obligatorio.'}), 400
 
     try:
-        # Guardamos la apertura, la base de datos generará automáticamente el nro_turno
-        result = aperturadao.guardarApertura(
-            data['clave_fiscal'].strip().upper(),
-            data['cajero'].strip(),
+        result = dao.guardarApertura(
+            int(data['clave_fiscal']),
+            int(data['cajero']),
             data['monto_inicial']
         )
-
         if result is None:
             return jsonify({
                 'success': False,
-                'error': 'No se pudo realizar la apertura, verifique los datos ingresados.'
-            }), 400  # Si no se pudo insertar, error 400
+                'error': 'No se pudo realizar la apertura. Verifique que el fiscal y cajero sean válidos y distintos.'
+            }), 400
 
-        # Obtener apertura guardada para traer el nro_turno y fecha registro actualizada
-        apertura = aperturadao.getAperturaById(result['id_apertura'])
-
-        # Si la apertura se guarda exitosamente, devolver el id generado + datos útiles
+        apertura = dao.getAperturaById(result['id_apertura'])
         return jsonify({
             'success': True,
             'data': {
-                'id_apertura': result['id_apertura'],  # ID generado por la base de datos
-                'clave_fiscal': data['clave_fiscal'].upper(),
-                'cajero': data['cajero'].upper(),
-                'monto_inicial': data['monto_inicial'],
-                'nro_turno': apertura.get('nro_turno') if apertura else None,
-                'registro': apertura.get('registro') if apertura else None
+                'id_apertura':  result['id_apertura'],
+                'nro_turno':    apertura.get('nro_turno') if apertura else None,
+                'registro':     apertura.get('registro')  if apertura else None,
+                'monto_inicial':data['monto_inicial']
             },
             'error': None
-        }), 201  # Código 201 para creación exitosa
+        }), 201
 
     except Exception as e:
-        # Si ocurre un error, verificar si es por funcionario dual
-        if 'funcionario' in str(e).lower():
-            return jsonify({
-                'success': False,
-                'error': 'Un funcionario no puede ser fiscal y cajero a la vez.'
-            }), 400
-
-        app.logger.error(f"Error al realizar apertura: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno. Consulte con el administrador.'
-        }), 500  # Código 500 para errores internos del servidor
+        app.logger.error(f"Error al realizar apertura: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
 
-
+# ================================
+# PATCH anular apertura
+# ================================
 @aperapi.route('/aperturas/anular/<int:id_apertura>', methods=['PATCH'])
 def anularApertura(id_apertura):
-    aperturadao = AperturaDao()
-
+    dao = AperturaDao()
     try:
-        if aperturadao.anularApertura(id_apertura):
-            return jsonify({
-                'success': True,
-                'mensaje': f'Apertura con ID {id_apertura} anulada correctamente.',
-                'error': None
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No se pudo anular la apertura o no se encontró el ID proporcionado.'
-            }), 404
-
+        if dao.anularApertura(id_apertura):
+            return jsonify({'success': True, 'mensaje': f'Apertura {id_apertura} anulada.', 'error': None}), 200
+        return jsonify({'success': False, 'error': 'No se pudo anular o no se encontró.'}), 404
     except Exception as e:
-        app.logger.error(f"Error al anular la apertura: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno. Consulte con el administrador.'
-        }), 500
-
-
-# NUEVO ENDPOINT PARA OBTENER FECHA ACTUAL DEL SERVIDOR
-@aperapi.route('/aperturas/fecha_actual', methods=['GET'])
-def obtener_fecha_actual():
-    try:
-        now = datetime.now()
-        fecha_str = now.strftime('%d/%m/%Y %H:%M:%S')
-        return jsonify({'success': True, 'fecha_actual': fecha_str}), 200
-    except Exception as e:
-        app.logger.error(f"Error obteniendo fecha actual: {e}")
-        return jsonify({'success': False, 'error': 'Error al obtener la fecha actual'}), 500
+        app.logger.error(f"Error al anular apertura: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500

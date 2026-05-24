@@ -1,0 +1,984 @@
+{% extends 'base.html' %}
+{% block titulo %}Punto de Venta{% endblock %}
+
+{% block contenido %}
+<style>
+:root {
+  --pos-primary: #1a56db;
+  --pos-success: #16a34a;
+  --pos-danger:  #dc2626;
+  --pos-warn:    #d97706;
+  --pos-border:  #e5e7eb;
+  --pos-bg:      #f9fafb;
+  --pos-muted:   #6b7280;
+  --pos-radius:  10px;
+  --pos-dark:    #111827;
+}
+
+/* Layout POS: izquierda búsqueda+carrito, derecha resumen */
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.25rem;
+  height: calc(100vh - 130px);
+}
+@media (max-width: 1024px) {
+  .pos-layout { grid-template-columns: 1fr; height: auto; }
+}
+
+/* Paneles */
+.pos-panel {
+  background: #fff;
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-radius);
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.pos-panel-header {
+  padding: .7rem 1rem;
+  background: var(--pos-bg);
+  border-bottom: 1px solid var(--pos-border);
+  font-size: .78rem; font-weight: 700;
+  color: #374151; text-transform: uppercase; letter-spacing: .05em;
+  display: flex; align-items: center; gap: .5rem;
+  flex-shrink: 0;
+}
+.pos-panel-body {
+  padding: 1rem;
+  flex: 1; overflow-y: auto;
+}
+
+/* Barra de búsqueda */
+.search-bar {
+  display: flex; gap: .5rem; margin-bottom: .85rem;
+}
+.search-input {
+  flex: 1;
+  font-size: .9rem;
+  border: 1.5px solid var(--pos-border);
+  border-radius: 8px;
+  padding: .5rem .85rem;
+  color: var(--pos-dark);
+  transition: border-color .15s, box-shadow .15s;
+}
+.search-input:focus {
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.1);
+  outline: none;
+}
+.search-btn {
+  background: var(--pos-primary); color: #fff;
+  border: none; border-radius: 8px;
+  padding: .5rem .9rem; font-size: .85rem; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; gap: .3rem;
+}
+.search-btn:hover { background: #1040b0; }
+
+/* Resultados búsqueda */
+.search-results {
+  display: none; margin-bottom: .85rem;
+}
+.search-results.open { display: block; }
+.result-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .55rem .85rem;
+  border: 1px solid var(--pos-border);
+  border-radius: 7px; margin-bottom: .35rem;
+  cursor: pointer; transition: background .12s, border-color .12s;
+  background: #fff;
+}
+.result-item:hover { background: #f0f9ff; border-color: #bfdbfe; }
+.result-info .r-nombre { font-size: .87rem; font-weight: 700; color: var(--pos-dark); }
+.result-info .r-code   { font-size: .73rem; color: var(--pos-muted); }
+.result-precio { font-size: .95rem; font-weight: 800; color: var(--pos-primary); }
+.result-stock  { font-size: .72rem; color: var(--pos-success); font-weight: 600; }
+.result-stock.sin-stock { color: var(--pos-danger); }
+
+/* Carrito */
+.cart-empty {
+  text-align: center; padding: 2.5rem 1rem;
+  color: var(--pos-muted); font-size: .88rem;
+}
+.cart-empty i { font-size: 2.5rem; margin-bottom: .75rem; display: block; opacity: .3; }
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem .6rem;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background .12s;
+}
+.cart-item:hover { background: #f8faff; }
+.cart-item:last-child { border-bottom: none; }
+.ci-nombre { font-size: .84rem; font-weight: 700; color: var(--pos-dark); line-height: 1.2; }
+.ci-precio { font-size: .75rem; color: var(--pos-muted); }
+.ci-qty {
+  display: flex; align-items: center; gap: .25rem;
+}
+.qty-btn {
+  width: 24px; height: 24px; border-radius: 5px;
+  border: 1px solid var(--pos-border);
+  background: var(--pos-bg); color: var(--pos-dark);
+  font-size: .82rem; font-weight: 700;
+  display: grid; place-items: center;
+  cursor: pointer; transition: background .12s;
+}
+.qty-btn:hover { background: #e0e7ff; border-color: #a5b4fc; }
+.qty-val {
+  min-width: 32px; text-align: center;
+  font-size: .87rem; font-weight: 700;
+  border: 1px solid var(--pos-border);
+  border-radius: 5px; padding: .1rem .3rem;
+  color: var(--pos-dark);
+}
+.ci-subtotal { font-size: .87rem; font-weight: 800; color: var(--pos-primary); text-align: right; }
+.ci-del {
+  background: none; border: none; color: #fca5a5;
+  cursor: pointer; font-size: .85rem; padding: .2rem;
+  border-radius: 4px; transition: color .12s, background .12s;
+}
+.ci-del:hover { color: var(--pos-danger); background: #fff1f2; }
+
+/* Panel derecho - resumen */
+.pos-right { display: flex; flex-direction: column; gap: .85rem; }
+
+/* Cliente */
+.cliente-wrap { position: relative; }
+.cliente-results {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 1px solid var(--pos-border);
+  border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.1);
+  z-index: 100; display: none; max-height: 180px; overflow-y: auto;
+}
+.cliente-results.open { display: block; }
+.cli-item {
+  padding: .5rem .75rem; cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: .83rem; transition: background .12s;
+}
+.cli-item:hover { background: #f0f9ff; }
+.cli-item:last-child { border-bottom: none; }
+.cli-nombre { font-weight: 700; color: var(--pos-dark); }
+.cli-cedula { font-size: .72rem; color: var(--pos-muted); }
+.cli-selected {
+  display: none; background: #f0fdf4;
+  border: 1px solid #bbf7d0; border-radius: 7px;
+  padding: .5rem .75rem; margin-top: .4rem;
+  align-items: center; gap: .5rem;
+}
+.cli-selected.visible { display: flex; }
+.cli-clear {
+  margin-left: auto; background: none; border: none;
+  color: var(--pos-muted); cursor: pointer; font-size: .8rem;
+  border-radius: 4px; padding: .15rem .35rem;
+}
+.cli-clear:hover { color: var(--pos-danger); background: #fee2e2; }
+
+/* Totales */
+.totales-box {
+  background: var(--pos-bg); border: 1px solid var(--pos-border);
+  border-radius: 8px; padding: .85rem 1rem;
+}
+.total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .83rem; color: #374151; margin-bottom: .35rem;
+}
+.total-row:last-child { margin-bottom: 0; }
+.total-row.grand {
+  border-top: 2px solid var(--pos-border);
+  padding-top: .5rem; margin-top: .4rem;
+  font-size: 1.05rem; font-weight: 800; color: var(--pos-dark);
+}
+.total-row .label { font-weight: 500; }
+.total-row .value { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Pagos */
+.pagos-box {
+  background: #fff; border: 1px solid var(--pos-border);
+  border-radius: 8px; overflow: hidden;
+}
+.pagos-header {
+  padding: .6rem .85rem;
+  background: var(--pos-bg); border-bottom: 1px solid var(--pos-border);
+  font-size: .76rem; font-weight: 700; color: #374151;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.pagos-body { padding: .75rem .85rem; }
+.pago-row {
+  display: flex; gap: .5rem; align-items: center; margin-bottom: .5rem;
+}
+.pago-row:last-child { margin-bottom: 0; }
+.pago-select, .pago-input {
+  font-size: .83rem; border: 1px solid var(--pos-border);
+  border-radius: 6px; padding: .38rem .6rem;
+  color: var(--pos-dark); transition: border-color .15s;
+}
+.pago-select:focus, .pago-input:focus {
+  border-color: var(--pos-primary); outline: none;
+}
+.pago-select { flex: 1; }
+.pago-input  { width: 130px; text-align: right; font-variant-numeric: tabular-nums; }
+.pago-del {
+  background: none; border: none; color: #fca5a5;
+  cursor: pointer; font-size: .85rem;
+  border-radius: 4px; padding: .2rem .35rem;
+}
+.pago-del:hover { color: var(--pos-danger); background: #fff1f2; }
+.btn-add-pago {
+  display: flex; align-items: center; gap: .3rem;
+  background: none; border: 1px dashed var(--pos-border);
+  border-radius: 6px; padding: .38rem .75rem;
+  font-size: .8rem; font-weight: 600; color: var(--pos-muted);
+  cursor: pointer; width: 100%; justify-content: center;
+  margin-top: .5rem; transition: border-color .15s, color .15s;
+}
+.btn-add-pago:hover { border-color: var(--pos-primary); color: var(--pos-primary); }
+
+/* Vuelto */
+.vuelto-box {
+  border-radius: 8px; padding: .65rem .85rem;
+  display: flex; justify-content: space-between; align-items: center;
+  border: 1px solid var(--pos-border); background: var(--pos-bg);
+  font-size: .87rem;
+}
+.vuelto-box.positivo { background: #d1fae5; border-color: #6ee7b7; }
+.vuelto-box.negativo { background: #fee2e2; border-color: #fca5a5; }
+.vuelto-label { font-weight: 600; }
+.vuelto-valor { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* Botón cobrar */
+.btn-cobrar {
+  width: 100%; padding: .85rem;
+  background: var(--pos-success); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 1rem; font-weight: 800;
+  cursor: pointer; transition: background .15s, transform .1s;
+  box-shadow: 0 3px 10px rgba(22,163,74,.25);
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+}
+.btn-cobrar:hover  { background: #15803d; }
+.btn-cobrar:active { transform: scale(.98); }
+.btn-cobrar:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+
+.btn-limpiar {
+  width: 100%; padding: .5rem;
+  background: none; color: var(--pos-muted);
+  border: 1px solid var(--pos-border); border-radius: 7px;
+  font-size: .82rem; font-weight: 600; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.btn-limpiar:hover { background: #fee2e2; color: var(--pos-danger); border-color: #fca5a5; }
+
+/* Label form */
+.pos-label {
+  font-size: .72rem; font-weight: 700; color: #374151;
+  text-transform: uppercase; letter-spacing: .04em;
+  margin-bottom: .3rem; display: block;
+}
+.pos-input {
+  font-size: .87rem; border: 1px solid var(--pos-border);
+  border-radius: 7px; padding: .42rem .75rem;
+  color: var(--pos-dark); width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.pos-input:focus {
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.1); outline: none;
+}
+
+.spin { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.divider { border: none; border-top: 1px solid var(--pos-border); margin: .6rem 0; }
+</style>
+
+<div style="padding: 1rem 0 .5rem">
+  <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+    <div style="width:36px;height:36px;border-radius:8px;background:var(--pos-success);display:grid;place-items:center;color:#fff;font-size:.9rem">
+      <i class="fas fa-cash-register"></i>
+    </div>
+    <h2 style="font-size:1.3rem;font-weight:700;color:#111827;margin:0">Punto de Venta</h2>
+    <span id="lblCodigo" style="margin-left:auto;font-size:.8rem;font-weight:700;color:var(--pos-muted);background:var(--pos-bg);border:1px solid var(--pos-border);padding:.25rem .7rem;border-radius:6px"></span>
+  </div>
+</div>
+
+<div class="pos-layout">
+
+  <!-- ===== IZQUIERDA: búsqueda + carrito ===== -->
+  <div style="display:flex;flex-direction:column;gap:.85rem;overflow:hidden">
+
+    <!-- Búsqueda -->
+    <div class="pos-panel" style="flex-shrink:0">
+      <div class="pos-panel-header">
+        <i class="fas fa-search"></i> Buscar producto
+      </div>
+      <div class="pos-panel-body" style="overflow:visible">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="inputBuscar"
+                 placeholder="Nombre, código interno o código de barra…">
+          <button class="search-btn" id="btnBuscar">
+            <i class="fas fa-barcode"></i> Buscar
+          </button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>
+
+    <!-- Carrito -->
+    <div class="pos-panel" style="flex:1;min-height:0">
+      <div class="pos-panel-header">
+        <i class="fas fa-shopping-basket"></i> Carrito
+        <span id="lblItems" style="margin-left:auto;font-weight:500;font-size:.75rem;color:var(--pos-muted);text-transform:none;letter-spacing:0">
+          0 ítems
+        </span>
+      </div>
+      <div class="pos-panel-body" id="carritoBody">
+        <div class="cart-empty" id="carritoVacio">
+          <i class="fas fa-shopping-cart"></i>
+          Agregá productos buscando arriba
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== DERECHA: cliente + totales + cobro ===== -->
+  <div class="pos-right" style="overflow-y:auto">
+
+    <!-- Cliente -->
+    <div class="pos-panel" style="flex-shrink:0">
+      <div class="pos-panel-header"><i class="fas fa-user"></i> Cliente</div>
+      <div class="pos-panel-body" style="overflow:visible">
+        <div class="cliente-wrap">
+          <input type="text" class="pos-input" id="inputCliente"
+                 placeholder="Buscar por nombre o cédula…" autocomplete="off">
+          <div class="cliente-results" id="clienteResults"></div>
+        </div>
+        <div class="cli-selected" id="clienteSelected">
+          <div>
+            <div class="cli-nombre" id="clienteNombre">—</div>
+            <div class="cli-cedula">CI/RUC: <span id="clienteCedula">—</span></div>
+          </div>
+          <button class="cli-clear" id="clienteClear"><i class="fas fa-times"></i></button>
+        </div>
+        <input type="hidden" id="clienteId">
+        <p style="font-size:.71rem;color:var(--pos-muted);margin:.3rem 0 0;display:flex;align-items:center;gap:.3rem">
+          <i class="fas fa-info-circle"></i> Dejá vacío para CONSUMIDOR FINAL
+        </p>
+      </div>
+    </div>
+
+    <!-- Totales IVA -->
+    <div class="totales-box">
+      <div class="total-row">
+        <span class="label">Subtotal</span>
+        <span class="value" id="lblSubtotal">₲ 0</span>
+      </div>
+      <div class="total-row">
+        <span class="label">IVA 10%</span>
+        <span class="value" id="lblIva10">₲ 0</span>
+      </div>
+      <div class="total-row">
+        <span class="label">IVA 5%</span>
+        <span class="value" id="lblIva5">₲ 0</span>
+      </div>
+      <div class="total-row grand">
+        <span>TOTAL</span>
+        <span id="lblTotal">₲ 0</span>
+      </div>
+    </div>
+
+    <!-- Formas de pago -->
+    <div class="pagos-box">
+      <div class="pagos-header"><i class="fas fa-coins me-1"></i> Formas de pago</div>
+      <div class="pagos-body" id="pagosBody">
+        <!-- filas dinámicas -->
+      </div>
+      <div style="padding:0 .85rem .75rem">
+        <button class="btn-add-pago" id="btnAddPago">
+          <i class="fas fa-plus"></i> Agregar forma de pago
+        </button>
+      </div>
+    </div>
+
+    <!-- Vuelto -->
+    <div class="vuelto-box" id="vueltoBox">
+      <span class="vuelto-label">Vuelto / Pendiente</span>
+      <span class="vuelto-valor" id="lblVuelto">₲ 0</span>
+    </div>
+
+    <!-- Botones -->
+    <button class="btn-cobrar" id="btnCobrar" disabled>
+      <i class="fas fa-check-circle"></i> COBRAR
+    </button>
+    <button class="btn-limpiar" id="btnLimpiar">
+      <i class="fas fa-trash"></i> Limpiar todo
+    </button>
+
+  </div>
+</div>
+
+<!-- ===== MODAL FACTURA ===== -->
+<div class="modal fade" id="modalFactura" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content" style="border:none;border-radius:14px;overflow:hidden">
+      <div class="modal-header" style="background:#1a56db;border:none;padding:1rem 1.4rem">
+        <h5 class="modal-title" style="color:#fff;font-weight:700;display:flex;align-items:center;gap:.5rem">
+          <i class="fas fa-file-invoice"></i> Factura de Venta
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.75);opacity:1">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="facturaContenido" style="padding:1.5rem;background:#fff">
+        <!-- Generado dinámicamente -->
+      </div>
+      <div class="modal-footer" style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:.85rem 1.4rem">
+        <button type="button" class="btn-cobrar" style="width:auto;padding:.5rem 1.25rem;font-size:.87rem"
+                onclick="imprimirFactura()">
+          <i class="fas fa-print"></i> Imprimir
+        </button>
+        <button type="button"
+                style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:7px;padding:.5rem 1rem;font-size:.84rem;font-weight:600;cursor:pointer"
+                onclick="nuevaVenta()">
+          <i class="fas fa-plus"></i> Nueva Venta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+const CSRFToken = "{{ csrf_token() }}";
+
+// ============================================================
+// Estado global
+// ============================================================
+let carrito       = [];   // [{id_item, item_code, descripcion, precio_unitario, cantidad, tipo_impuesto, id_tipo_impuesto}]
+let clienteSel    = null; // {id_cliente, nombre_completo, cedula}
+let formasPago    = [];   // [{id, descripcion}]
+let filasPago     = [];   // [{id_forma_cobro, monto}]
+
+// ============================================================
+// Helpers
+// ============================================================
+function fmt(n){
+  return '₲ ' + parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:0});
+}
+function iniciales(n){
+  return (n||'').split(' ').slice(0,2).map(p=>p[0]||'').join('').toUpperCase();
+}
+
+// Calcular IVA por tipo
+function calcularIVA(items){
+  let sub=0, iva10=0, iva5=0;
+  items.forEach(i=>{
+    const total = i.precio_unitario * i.cantidad;
+    sub += total;
+    const tipo = String(i.id_tipo_impuesto||'');
+    if(tipo==='2')      iva10 += total - (total / 1.10);   // IVA 10%
+    else if(tipo==='3') iva5  += total - (total / 1.05);   // IVA 5%
+  });
+  return { sub, iva10, iva5, total: sub };
+}
+
+function actualizarTotales(){
+  const { sub, iva10, iva5, total } = calcularIVA(carrito);
+  $('#lblSubtotal').text(fmt(sub));
+  $('#lblIva10').text(fmt(iva10));
+  $('#lblIva5').text(fmt(iva5));
+  $('#lblTotal').text(fmt(total));
+  $('#lblItems').text(carrito.length + ' ítem' + (carrito.length!==1?'s':''));
+  actualizarVuelto();
+}
+
+function actualizarVuelto(){
+  const total = calcularIVA(carrito).total;
+  const pagado = filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
+  const diff   = pagado - total;
+  const box    = $('#vueltoBox');
+  box.removeClass('positivo negativo');
+  if(diff > 0){
+    $('#lblVuelto').text(fmt(diff));
+    box.addClass('positivo');
+    $('#lblVuelto').closest('.vuelto-box').find('.vuelto-label').text('Vuelto');
+  } else if(diff < 0){
+    $('#lblVuelto').text(fmt(Math.abs(diff)) + ' pendiente');
+    box.addClass('negativo');
+    $('#lblVuelto').closest('.vuelto-box').find('.vuelto-label').text('Falta');
+  } else {
+    $('#lblVuelto').text(fmt(0));
+    $('.vuelto-label').text('Vuelto / Pendiente');
+  }
+
+  // Habilitar cobrar
+  const ok = carrito.length > 0 && total > 0 && pagado >= total && filasPago.length > 0;
+  $('#btnCobrar').prop('disabled', !ok);
+}
+
+// ============================================================
+// Renderizar carrito
+// ============================================================
+function renderCarrito(){
+  const body = $('#carritoBody');
+  body.empty();
+  if(carrito.length === 0){
+    body.html('<div class="cart-empty" id="carritoVacio"><i class="fas fa-shopping-cart"></i>Agregá productos buscando arriba</div>');
+    actualizarTotales();
+    return;
+  }
+  carrito.forEach((item, idx)=>{
+    const subtotal = item.precio_unitario * item.cantidad;
+    body.append(`
+      <div class="cart-item" data-idx="${idx}">
+        <div>
+          <div class="ci-nombre">${item.descripcion}</div>
+          <div class="ci-precio">${fmt(item.precio_unitario)} c/u · ${item.id_tipo_impuesto ? item.tipo_impuesto : 'Sin IVA'}</div>
+        </div>
+        <div class="ci-qty">
+          <button class="qty-btn btn-qty-menos" data-idx="${idx}">−</button>
+          <input class="qty-val" type="number" value="${item.cantidad}" min="1" data-idx="${idx}">
+          <button class="qty-btn btn-qty-mas" data-idx="${idx}">+</button>
+        </div>
+        <div class="ci-subtotal">${fmt(subtotal)}</div>
+        <button class="ci-del btn-del-item" data-idx="${idx}"><i class="fas fa-times"></i></button>
+      </div>`);
+  });
+  actualizarTotales();
+}
+
+// Eventos carrito
+$(document).on('click', '.btn-qty-menos', function(){
+  const idx = parseInt($(this).data('idx'));
+  if(carrito[idx].cantidad > 1) carrito[idx].cantidad--;
+  renderCarrito();
+});
+$(document).on('click', '.btn-qty-mas', function(){
+  const idx = parseInt($(this).data('idx'));
+  carrito[idx].cantidad++;
+  renderCarrito();
+});
+$(document).on('change', '.qty-val', function(){
+  const idx = parseInt($(this).data('idx'));
+  const v   = parseFloat($(this).val()) || 1;
+  carrito[idx].cantidad = Math.max(1, v);
+  renderCarrito();
+});
+$(document).on('click', '.btn-del-item', function(){
+  const idx = parseInt($(this).data('idx'));
+  carrito.splice(idx, 1);
+  renderCarrito();
+});
+
+// ============================================================
+// Búsqueda de productos
+// ============================================================
+let buscarTimer = null;
+
+function buscarProducto(q){
+  if(!q.trim()){ $('#searchResults').empty().removeClass('open'); return; }
+  $('#searchResults').html(
+    '<div style="padding:.6rem;font-size:.82rem;color:var(--pos-muted)"><i class="fas fa-circle-notch spin me-1"></i>Buscando...</div>'
+  ).addClass('open');
+
+  fetch('/api/v1/ventas/productos/buscar?q='+encodeURIComponent(q))
+    .then(r=>r.json())
+    .then(data=>{
+      $('#searchResults').empty();
+      if(!data.success||!data.data.length){
+        $('#searchResults').html('<div style="padding:.6rem;font-size:.82rem;color:var(--pos-muted)"><i class="fas fa-inbox me-1"></i>Sin resultados</div>');
+        return;
+      }
+      data.data.forEach(p=>{
+        const sinStock = p.stock <= 0;
+        const item = $(`
+          <div class="result-item ${sinStock?'opacity-50':''}">
+            <div class="result-info">
+              <div class="r-nombre">${p.descripcion}</div>
+              <div class="r-code">Cód: ${p.item_code} · ${p.tipo_impuesto||'Sin IVA'}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="result-precio">${fmt(p.precio_unitario)}</div>
+              <div class="result-stock ${sinStock?'sin-stock':''}">
+                ${sinStock ? 'Sin stock' : 'Stock: '+p.stock}
+              </div>
+            </div>
+          </div>`);
+        if(!sinStock){
+          item.on('click', ()=>{ agregarAlCarrito(p); $('#inputBuscar').val(''); $('#searchResults').empty().removeClass('open'); });
+        }
+        $('#searchResults').append(item);
+      });
+      $('#searchResults').addClass('open');
+    })
+    .catch(()=>{
+      $('#searchResults').html('<div style="padding:.6rem;font-size:.82rem;color:var(--pos-danger)">Error al buscar</div>');
+    });
+}
+
+$('#inputBuscar').on('input', function(){
+  clearTimeout(buscarTimer);
+  buscarTimer = setTimeout(()=>buscarProducto($(this).val().trim()), 300);
+});
+
+$('#btnBuscar').on('click', ()=>buscarProducto($('#inputBuscar').val().trim()));
+
+$('#inputBuscar').on('keydown', function(e){
+  if(e.key==='Enter'){ clearTimeout(buscarTimer); buscarProducto($(this).val().trim()); }
+});
+
+$(document).on('click', function(e){
+  if(!$(e.target).closest('#inputBuscar, #searchResults, #btnBuscar').length)
+    $('#searchResults').removeClass('open');
+});
+
+function agregarAlCarrito(p){
+  const existe = carrito.findIndex(c=>c.id_item===p.id_item);
+  if(existe>=0){
+    carrito[existe].cantidad++;
+  } else {
+    carrito.push({
+      id_item:         p.id_item,
+      item_code:       p.item_code,
+      descripcion:     p.descripcion,
+      precio_unitario: p.precio_unitario,
+      cantidad:        1,
+      id_tipo_impuesto:p.id_tipo_impuesto,
+      tipo_impuesto:   p.tipo_impuesto
+    });
+  }
+  renderCarrito();
+}
+
+// ============================================================
+// Búsqueda de clientes
+// ============================================================
+let cliTimer = null;
+
+$('#inputCliente').on('input', function(){
+  const q = $(this).val().trim();
+  $('#clienteResults').empty().removeClass('open');
+  clearTimeout(cliTimer);
+  if(q.length < 2) return;
+  cliTimer = setTimeout(()=>{
+    fetch('/api/v1/ventas/clientes/buscar?q='+encodeURIComponent(q))
+      .then(r=>r.json())
+      .then(data=>{
+        $('#clienteResults').empty();
+        if(!data.success||!data.data.length){
+          $('#clienteResults').html('<div class="cli-item" style="color:var(--pos-muted)">Sin resultados</div>').addClass('open');
+          return;
+        }
+        data.data.forEach(c=>{
+          const item = $(`<div class="cli-item">
+            <div class="cli-nombre">${c.nombre_completo.toUpperCase()}</div>
+            <div class="cli-cedula">CI/RUC: ${c.cedula}</div>
+          </div>`);
+          item.on('click', ()=>seleccionarCliente(c));
+          $('#clienteResults').append(item);
+        });
+        $('#clienteResults').addClass('open');
+      });
+  }, 350);
+});
+
+function seleccionarCliente(c){
+  clienteSel = c;
+  $('#clienteId').val(c.id_cliente);
+  $('#clienteNombre').text(c.nombre_completo.toUpperCase());
+  $('#clienteCedula').text(c.cedula);
+  $('#clienteSelected').addClass('visible');
+  $('#inputCliente').val('');
+  $('#clienteResults').empty().removeClass('open');
+}
+
+$('#clienteClear').on('click',()=>{
+  clienteSel=null; $('#clienteId').val('');
+  $('#clienteSelected').removeClass('visible');
+  $('#inputCliente').val('').focus();
+});
+
+$(document).on('click',function(e){
+  if(!$(e.target).closest('#inputCliente,#clienteResults').length)
+    $('#clienteResults').removeClass('open');
+});
+
+// ============================================================
+// Formas de pago
+// ============================================================
+function renderPagos(){
+  const body = $('#pagosBody');
+  body.empty();
+  filasPago.forEach((p,idx)=>{
+    const opciones = formasPago.map(f=>
+      `<option value="${f.id}" ${f.id==p.id_forma_cobro?'selected':''}>${f.descripcion}</option>`
+    ).join('');
+    body.append(`
+      <div class="pago-row" data-idx="${idx}">
+        <select class="pago-select pago-forma" data-idx="${idx}">${opciones}</select>
+        <input type="number" class="pago-input pago-monto" data-idx="${idx}"
+               value="${p.monto||''}" placeholder="0" min="0">
+        <button class="pago-del pago-del-btn" data-idx="${idx}"><i class="fas fa-times"></i></button>
+      </div>`);
+  });
+  actualizarVuelto();
+}
+
+$(document).on('change','.pago-forma',function(){
+  filasPago[parseInt($(this).data('idx'))].id_forma_cobro = parseInt($(this).val());
+  actualizarVuelto();
+});
+$(document).on('input','.pago-monto',function(){
+  filasPago[parseInt($(this).data('idx'))].monto = parseFloat($(this).val())||0;
+  actualizarVuelto();
+});
+$(document).on('click','.pago-del-btn',function(){
+  filasPago.splice(parseInt($(this).data('idx')),1);
+  renderPagos();
+});
+
+$('#btnAddPago').on('click',()=>{
+  if(!formasPago.length) return;
+  filasPago.push({id_forma_cobro: formasPago[0].id, monto: 0});
+  renderPagos();
+});
+
+// ============================================================
+// Limpiar
+// ============================================================
+$('#btnLimpiar').on('click',()=>{
+  Swal.fire({
+    title:'¿Limpiar carrito?', icon:'warning',
+    showCancelButton:true, confirmButtonText:'Sí',
+    cancelButtonText:'No', confirmButtonColor:'#dc2626'
+  }).then(r=>{ if(r.isConfirmed) limpiarTodo(); });
+});
+
+function limpiarTodo(){
+  carrito=[]; filasPago=[]; clienteSel=null;
+  $('#clienteId').val('');
+  $('#clienteSelected').removeClass('visible');
+  $('#inputCliente').val('');
+  renderCarrito();
+  renderPagos();
+  cargarCodigoVenta();
+}
+
+// ============================================================
+// COBRAR
+// ============================================================
+$('#btnCobrar').on('click', function(){
+  const total  = calcularIVA(carrito).total;
+  const pagado = filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
+
+  if(pagado < total){
+    return Swal.fire({title:'Monto insuficiente', text:'El total pagado no cubre el monto de la venta.', icon:'warning', confirmButtonColor:'#1a56db'});
+  }
+
+  const btn = $(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i> Procesando...');
+
+  const payload = {
+    fun_id:       1,   // idealmente de session
+    id_sucursal:  1,
+    id_cliente:   clienteSel ? clienteSel.id_cliente : null,
+    total_venta:  total,
+    detalle: carrito.map(c=>({
+      id_item:       c.id_item,
+      item_code:     c.item_code,
+      cantidad:      c.cantidad,
+      precio_unitario: c.precio_unitario
+    })),
+    pagos: filasPago.map(p=>({
+      id_forma_cobro: p.id_forma_cobro,
+      monto: p.monto,
+      es_tarjeta: [3,4].includes(p.id_forma_cobro),  // IDs tarjeta crédito/débito
+      nro_tarjeta: p.nro_tarjeta || null
+    }))
+  };
+
+  fetch('/api/v1/ventas',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken},
+    body: JSON.stringify(payload)
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.success){
+      mostrarFactura(data.id_venta_cab, pagado - total);
+    } else {
+      Swal.fire('Error', data.error||'No se pudo registrar la venta.', 'error');
+    }
+  })
+  .catch(()=>Swal.fire('Error','Error al procesar la venta.','error'))
+  .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-check-circle"></i> COBRAR'));
+});
+
+// ============================================================
+// FACTURA
+// ============================================================
+function mostrarFactura(id_venta, vuelto){
+  fetch('/api/v1/ventas/'+id_venta)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.success) return;
+      const v  = data.data;
+      const nroTimbrado = '001-001-' + String(id_venta).padStart(7,'0');
+
+      let detalleHTML = v.detalle.map(d=>`
+        <tr>
+          <td style="padding:.4rem .6rem;font-size:.83rem">${d.descripcion}</td>
+          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:center">${d.cantidad}</td>
+          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:right">${fmt(d.precio_unitario)}</td>
+          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:right;font-weight:700">${fmt(d.subtotal)}</td>
+          <td style="padding:.4rem .6rem;font-size:.83rem;text-align:center">${d.tipo_impuesto||'—'}</td>
+        </tr>`).join('');
+
+      const { iva10, iva5, total } = calcularIVA(carrito);
+      const pagado = filasPago.reduce((s,p)=>s+parseFloat(p.monto||0),0);
+
+      $('#facturaContenido').html(`
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;max-width:680px;margin:0 auto">
+
+          <!-- Header factura -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
+            <div>
+              <div style="font-size:1.3rem;font-weight:800;color:#111827">GRANVIA SYS</div>
+              <div style="font-size:.78rem;color:#6b7280">RUC: 80000000-0</div>
+              <div style="font-size:.78rem;color:#6b7280">Asunción, Paraguay</div>
+            </div>
+            <div style="text-align:right">
+              <div style="background:#1a56db;color:#fff;padding:.3rem .85rem;border-radius:6px;font-size:.78rem;font-weight:700;margin-bottom:.35rem">
+                FACTURA
+              </div>
+              <div style="font-size:.82rem;font-weight:700;color:#111827">${nroTimbrado}</div>
+              <div style="font-size:.74rem;color:#6b7280">Timbrado: 12345678</div>
+              <div style="font-size:.74rem;color:#6b7280">Fecha: ${v.fecha_venta}</div>
+            </div>
+          </div>
+
+          <!-- Datos cliente -->
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+              <div>
+                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Cliente</div>
+                <div style="font-size:.87rem;font-weight:700;color:#111827">${v.cliente_nombre}</div>
+              </div>
+              <div>
+                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">RUC / CI</div>
+                <div style="font-size:.87rem;font-weight:700;color:#111827">${v.cliente_ruc}</div>
+              </div>
+              <div>
+                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Dirección</div>
+                <div style="font-size:.83rem;color:#374151">${v.cliente_dir}</div>
+              </div>
+              <div>
+                <div style="font-size:.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em">Vendedor</div>
+                <div style="font-size:.83rem;color:#374151">${v.vendedor}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla detalle -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:1rem">
+            <thead>
+              <tr style="background:#f1f5f9">
+                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;border-bottom:2px solid #e5e7eb">Descripción</th>
+                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;border-bottom:2px solid #e5e7eb">Cant.</th>
+                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">P. Unit.</th>
+                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Subtotal</th>
+                <th style="padding:.45rem .6rem;font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center;border-bottom:2px solid #e5e7eb">IVA</th>
+              </tr>
+            </thead>
+            <tbody>${detalleHTML}</tbody>
+          </table>
+
+          <!-- Totales -->
+          <div style="display:flex;justify-content:flex-end">
+            <div style="min-width:260px">
+              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:.3rem">
+                <span style="color:#6b7280">Subtotal</span>
+                <span style="font-weight:600">${fmt(total)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:.3rem">
+                <span style="color:#6b7280">IVA 10%</span>
+                <span style="font-weight:600">${fmt(iva10)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:.5rem">
+                <span style="color:#6b7280">IVA 5%</span>
+                <span style="font-weight:600">${fmt(iva5)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:800;border-top:2px solid #e5e7eb;padding-top:.4rem">
+                <span>TOTAL</span>
+                <span style="color:#1a56db">${fmt(total)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-top:.4rem;color:#6b7280">
+                <span>Pagado</span><span>${fmt(pagado)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:.83rem;color:#16a34a;font-weight:700">
+                <span>Vuelto</span><span>${fmt(vuelto)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.25rem;border-top:1px dashed #e5e7eb;padding-top:.75rem;text-align:center;font-size:.73rem;color:#9ca3af">
+            Gracias por su compra · GranViaSys © 2024
+          </div>
+        </div>
+      `);
+
+      $('#modalFactura').modal('show');
+    });
+}
+
+function imprimirFactura(){
+  const contenido = document.getElementById('facturaContenido').innerHTML;
+  const win = window.open('','_blank');
+  win.document.write(`
+    <html><head>
+      <title>Factura</title>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+      <style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:2rem;}</style>
+    </head><body>${contenido}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); win.close(); }, 600);
+}
+
+function nuevaVenta(){
+  $('#modalFactura').modal('hide');
+  limpiarTodo();
+}
+
+// ============================================================
+// Init
+// ============================================================
+function cargarCodigoVenta(){
+  fetch('/api/v1/ventas/siguiente-codigo')
+    .then(r=>r.json())
+    .then(d=>{ if(d.success) $('#lblCodigo').text(d.codigo); });
+}
+
+async function cargarFormasPago(){
+  const r    = await fetch('/api/v1/ventas/formas-pago');
+  const data = await r.json();
+  if(data.success) formasPago = data.data;
+  // Agregar primera fila de pago por defecto
+  if(formasPago.length){
+    filasPago.push({id_forma_cobro: formasPago[0].id, monto: 0});
+    renderPagos();
+  }
+}
+
+$(document).ready(async function(){
+  cargarCodigoVenta();
+  await cargarFormasPago();
+  renderCarrito();
+});
+</script>
+{% endblock %}
