@@ -37,13 +37,13 @@ class VentaDao:
             cur.execute(sql, (like, termino, termino))
             filas = cur.fetchall()
             return [{
-                "id_item":        f[0],
-                "item_code":      f[1],
-                "descripcion":    f[2],
-                "precio_unitario":float(f[3]) if f[3] else 0.0,
+                "id_item":          f[0],
+                "item_code":        f[1],
+                "descripcion":      f[2],
+                "precio_unitario":  float(f[3]) if f[3] else 0.0,
                 "id_tipo_impuesto": f[4],
-                "tipo_impuesto":  f[5] or '',
-                "stock":          float(f[6])
+                "tipo_impuesto":    f[5] or '',
+                "stock":            float(f[6])
             } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al buscar producto: {e}")
@@ -105,20 +105,58 @@ class VentaDao:
             con.close()
 
     # ================================
+    # Obtener apertura activa para vincular a la venta
+    # ================================
+    def getAperturaActiva(self):
+        sql = """
+        SELECT id_apertura, nro_turno
+        FROM aperturas
+        WHERE estado = 'activo'
+        ORDER BY registro DESC
+        LIMIT 1
+        """
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute(sql)
+            row = cur.fetchone()
+            if row:
+                return {"id_apertura": row[0], "nro_turno": row[1]}
+            return None
+        except Exception as e:
+            app.logger.error(f"Error al obtener apertura activa en venta: {e}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
     # Registrar venta (cabecera + detalle + cobro)
+    # Falla si no hay apertura activa
     # ================================
     def registrarVenta(self, datos):
         conexion = Conexion()
         con = conexion.getConexion()
-        con.autocommit = False
         cur = con.cursor()
         try:
-            # 1. Insertar cabecera
+            cur.execute("BEGIN")
+
+            # Verificar apertura activa
+            cur.execute("SELECT id_apertura FROM aperturas WHERE estado = 'activo' LIMIT 1")
+            apertura = cur.fetchone()
+            if not apertura:
+                cur.execute("ROLLBACK")
+                return {"error": "No hay un turno abierto. Debe realizar una apertura de caja antes de registrar ventas."}
+
+            id_apertura = apertura[0]
+
+            # 1. Insertar cabecera con id_apertura
             cur.execute("""
                 INSERT INTO venta_cab
                     (fun_id, id_sucursal, id_caja, codigo_venta, id_cliente,
-                     fecha_venta, total_venta, estado)
-                VALUES (%s, %s, %s, %s, %s, CURRENT_DATE, %s, 'PAGADO')
+                     fecha_venta, total_venta, estado, id_apertura)
+                VALUES (%s, %s, %s, %s, %s, CURRENT_DATE, %s, 'PAGADO', %s)
                 RETURNING id_venta_cab
             """, (
                 datos['fun_id'],
@@ -126,7 +164,8 @@ class VentaDao:
                 datos.get('id_caja', 1),
                 datos['codigo_venta'],
                 datos.get('id_cliente'),
-                datos['total_venta']
+                datos['total_venta'],
+                id_apertura
             ))
             id_venta_cab = cur.fetchone()[0]
 
@@ -173,7 +212,6 @@ class VentaDao:
                     pago['monto']
                 ))
 
-                # Si es tarjeta, insertar en cobro_tarjeta
                 if pago.get('es_tarjeta') and pago.get('nro_tarjeta'):
                     cur.execute("""
                         INSERT INTO cobro_tarjeta
@@ -181,15 +219,14 @@ class VentaDao:
                         VALUES (%s, %s, %s)
                     """, (id_cobro_cab, pago['nro_tarjeta'], pago['monto']))
 
-            con.commit()
+            cur.execute("COMMIT")
             return id_venta_cab
 
         except Exception as e:
-            con.rollback()
+            cur.execute("ROLLBACK")
             app.logger.error(f"Error al registrar venta: {e}")
             return None
         finally:
-            con.autocommit = True
             cur.close()
             con.close()
 
@@ -201,7 +238,6 @@ class VentaDao:
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            # Cabecera
             cur.execute("""
                 SELECT v.id_venta_cab, v.codigo_venta, v.fecha_venta,
                        v.total_venta, v.estado,
@@ -231,7 +267,6 @@ class VentaDao:
                 "detalle":        []
             }
 
-            # Detalle
             cur.execute("""
                 SELECT d.item_code, i.descripcion, d.cantidad,
                        d.precio_unitario, i.id_tipo_impuesto,
@@ -244,14 +279,13 @@ class VentaDao:
             for f in cur.fetchall():
                 cant  = float(f[2])
                 precio = float(f[3])
-                subtotal = cant * precio
                 venta['detalle'].append({
-                    "item_code":      f[0],
-                    "descripcion":    f[1] or '',
-                    "cantidad":       cant,
-                    "precio_unitario":precio,
-                    "subtotal":       subtotal,
-                    "tipo_impuesto":  f[5] or ''
+                    "item_code":       f[0],
+                    "descripcion":     f[1] or '',
+                    "cantidad":        cant,
+                    "precio_unitario": precio,
+                    "subtotal":        cant * precio,
+                    "tipo_impuesto":   f[5] or ''
                 })
 
             return venta
@@ -272,8 +306,7 @@ class VentaDao:
         cur = con.cursor()
         try:
             cur.execute("SELECT id, descripcion FROM formas_pago ORDER BY id")
-            filas = cur.fetchall()
-            return [{"id": f[0], "descripcion": f[1]} for f in filas]
+            return [{"id": f[0], "descripcion": f[1]} for f in cur.fetchall()]
         except Exception as e:
             app.logger.error(f"Error al obtener formas de pago: {e}")
             return []
@@ -303,16 +336,50 @@ class VentaDao:
             cur.execute(sql)
             filas = cur.fetchall()
             return [{
-                "id_venta_cab":  f[0],
-                "codigo_venta":  f[1],
-                "fecha_venta":   f[2].strftime("%d/%m/%Y") if f[2] else '',
-                "total_venta":   float(f[3]) if f[3] else 0.0,
-                "estado":        f[4],
-                "cliente":       f[5],
-                "vendedor":      f[6] or ''
+                "id_venta_cab": f[0],
+                "codigo_venta": f[1],
+                "fecha_venta":  f[2].strftime("%d/%m/%Y") if f[2] else '',
+                "total_venta":  float(f[3]) if f[3] else 0.0,
+                "estado":       f[4],
+                "cliente":      f[5],
+                "vendedor":     f[6] or ''
             } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al obtener ventas: {e}")
+            return []
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Obtener entidades emisoras (bancos para tarjeta)
+    # ================================
+    def getEntidadesEmisoras(self):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT id_entidad_emisora, descrpcion FROM entidad_emisora ORDER BY descrpcion")
+            return [{"id": f[0], "descripcion": f[1]} for f in cur.fetchall()]
+        except Exception as e:
+            app.logger.error(f"Error al obtener entidades emisoras: {e}")
+            return []
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Obtener entidades adheridas (redes QR)
+    # ================================
+    def getEntidadesAdheridas(self):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT id_entidad_adherida, descripcion FROM entidad_adherida ORDER BY descripcion")
+            return [{"id": f[0], "descripcion": f[1]} for f in cur.fetchall()]
+        except Exception as e:
+            app.logger.error(f"Error al obtener entidades adheridas: {e}")
             return []
         finally:
             cur.close()

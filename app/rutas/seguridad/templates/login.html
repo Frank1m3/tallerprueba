@@ -10,61 +10,92 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <title>Login</title>
     <link href="{{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
-    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}" rel="stylesheet">
+
+    <style>
+        body.bg-gradient-primary {
+            background-repeat: repeat !important;
+            background-size: 200px 200px !important;
+            background-position: 0 0 !important;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 
-<body class="bg-gradient-primary"style="background-image: url('{{ url_for('static', filename='img/bg2.svg') }}'); background-repeat: repeat; background-size: auto; height: 100vh;">
+<body class="bg-gradient-primary"
+      style="background-image: url('{{ url_for('static', filename='img/bg2.svg') }}');">
 
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-xl-10 col-lg-10 col-md-9">
-                <div class="card o-hidden border-0 shadow-lg my-5">
+        <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+            <div class="col-xl-6 col-lg-7 col-md-9 col-sm-11">
+                <div class="card o-hidden border-0 shadow-lg">
                     <div class="card-body p-0">
-                        <div class="row">
-                            <div class="col-lg-6 d-none d-lg-block">
-                                <div style="text-align: center;">
-                                    <img src="{{ url_for('static', filename='img/logo.PNG') }}" width="450">
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="p-5">
-                                    <div class="text-center">
-                                        <h2 class="h1 text-gray-900 mb-2 text-center font-weight-bold" style="font-size: 3rem;">¡Bienvenido!</h2>
-                                    </div>
-                                    <tr></tr>
-                                    <div class="topbar-divider d-none d-sm-block">
-                                        <!-- Mostrar mensajes flash -->
-                                        {% with messages = get_flashed_messages(with_categories=true) %}
-                                            {% if messages %}
-                                                <div class="alert alert-warning">
-                                                    {% for category, message in messages %}
-                                                        <strong>{{ category.capitalize() }}:</strong> {{ message }} <br>
-                                                    {% endfor %}
-                                                </div>
-                                            {% endif %}
-                                        {% endwith %}
-                                        <form class="user" method="post" action="{{ url_for('login.login') }}">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                            <div class="form-group">
-                                                <input type="text" class="form-control form-control-user" name="usuario_nombre"
-                                                    aria-describedby="usuario_nombre" placeholder="Ingrese un usuario" required
-                                                    autocomplete="off">
-                                            </div>
-                                            <div class="form-group">
-                                                <input type="password" class="form-control form-control-user" name="usuario_clave"
-                                                    placeholder="Contraseña" required>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary btn-user btn-block">INGRESAR</button>
-                                            <p></p>
-                                            <p></p>
-                                            <p></p>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+
+                        <!-- Cabecera con logo y título -->
+                        <div class="text-center py-4 px-5 border-bottom" style="background-color: #f8f9fc;">
+                            <img src="{{ url_for('static', filename='img/logo.PNG') }}" style="max-width: 180px; height: auto;">
+                            <h1 class="h3 text-gray-900 mt-3 mb-1 font-weight-bold">¡Bienvenido!</h1>
+                            <p class="text-muted small mb-0">Ingresá tus credenciales para continuar</p>
                         </div>
+
+                        <!-- Formulario -->
+                        <div class="p-5">
+
+                            <!-- Mensajes flash -->
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    <div class="alert alert-warning">
+                                        {% for category, message in messages %}
+                                            <strong>{{ category.capitalize() }}:</strong> {{ message }}<br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+
+                            <form method="post" action="{{ url_for('login.login') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                                <div class="form-group">
+                                    <label class="small font-weight-bold text-uppercase text-muted">Usuario</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-user fa-sm text-gray-400"></i>
+                                            </span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-user"
+                                            name="usuario_nombre"
+                                            placeholder="Ingrese un usuario"
+                                            required autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="small font-weight-bold text-uppercase text-muted">Contraseña</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-lock fa-sm text-gray-400"></i>
+                                            </span>
+                                        </div>
+                                        <input type="password" class="form-control form-control-user"
+                                            name="usuario_clave"
+                                            placeholder="Contraseña"
+                                            required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-user btn-block mt-4">
+                                    <i class="fas fa-sign-in-alt mr-2"></i> Ingresar
+                                </button>
+
+                            </form>
+                        </div>
+
                     </div>
                 </div>
             </div>

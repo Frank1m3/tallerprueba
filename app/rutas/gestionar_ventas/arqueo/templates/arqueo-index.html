@@ -1,0 +1,737 @@
+{% extends 'base.html' %}
+{% block titulo %}Arqueo de Caja{% endblock %}
+
+{% block contenido %}
+<style>
+:root {
+  --ar-primary: #1a56db;
+  --ar-success: #16a34a;
+  --ar-danger:  #dc2626;
+  --ar-warn:    #d97706;
+  --ar-indigo:  #4338ca;
+  --ar-border:  #e5e7eb;
+  --ar-bg:      #f9fafb;
+  --ar-muted:   #6b7280;
+  --ar-radius:  10px;
+}
+
+/* ---- Encabezado ---- */
+.ar-page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.4rem 0 1.2rem;
+  border-bottom: 2px solid var(--ar-border);
+  margin-bottom: 1.5rem;
+}
+.ar-page-header h2 {
+  font-size: 1.3rem; font-weight: 700; color: #111827;
+  margin: 0; display: flex; align-items: center; gap: .5rem;
+}
+.icon-box {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: grid; place-items: center;
+  color: #fff; font-size: .9rem; flex-shrink: 0;
+  background: var(--ar-indigo);
+}
+
+/* ---- Cards ---- */
+.ar-card {
+  background: #fff; border: 1px solid var(--ar-border);
+  border-radius: var(--ar-radius);
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
+  overflow: hidden; margin-bottom: 1.25rem;
+}
+.ar-card-header {
+  padding: .75rem 1.2rem; background: var(--ar-bg);
+  border-bottom: 1px solid var(--ar-border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .8rem; font-weight: 700; color: #374151;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.ar-card-body { padding: 1.25rem 1.4rem; }
+
+/* ---- Selector de apertura ---- */
+.apertura-select-wrap {
+  display: flex; gap: .75rem; align-items: end;
+}
+.ar-label { font-size: .76rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .3rem; display: block; }
+.ar-select, .ar-input, .ar-textarea {
+  font-size: .875rem; border: 1px solid var(--ar-border);
+  border-radius: 7px; padding: .44rem .75rem;
+  color: #1f2937; width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ar-select:focus, .ar-input:focus, .ar-textarea:focus {
+  border-color: var(--ar-primary); box-shadow: 0 0 0 3px rgba(26,86,219,.12); outline: none;
+}
+.ar-input[readonly] { background: #f3f4f6; color: var(--ar-muted); cursor: default; }
+
+/* ---- Info chips apertura ---- */
+.apertura-info {
+  display: none; background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: 8px; padding: .75rem 1rem; margin-top: .75rem;
+}
+.apertura-info.visible { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; }
+.info-chip { display: flex; flex-direction: column; gap: .15rem; }
+.info-chip .lbl { font-size: .68rem; font-weight: 700; color: var(--ar-muted); text-transform: uppercase; letter-spacing: .06em; }
+.info-chip .val { font-size: .88rem; font-weight: 700; color: #1e40af; }
+
+/* ---- Grid de formas de pago ---- */
+.formas-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .85rem; margin-bottom: 1rem;
+}
+.forma-card {
+  background: #fff; border: 1.5px solid var(--ar-border);
+  border-radius: 9px; padding: .85rem .95rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.forma-card:focus-within {
+  border-color: var(--ar-primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,.08);
+}
+.forma-card .fc-icon {
+  width: 32px; height: 32px; border-radius: 7px;
+  display: grid; place-items: center;
+  font-size: .9rem; margin-bottom: .5rem; flex-shrink: 0;
+}
+.fc-efectivo   .fc-icon { background: #d1fae5; color: #065f46; }
+.fc-credito    .fc-icon { background: #dbeafe; color: #1e40af; }
+.fc-debito     .fc-icon { background: #e0e7ff; color: #4338ca; }
+.fc-cheque     .fc-icon { background: #fef3c7; color: #92400e; }
+.fc-qr         .fc-icon { background: #fce7f3; color: #9d174d; }
+.fc-otros      .fc-icon { background: #f3f4f6; color: #374151; }
+
+.forma-card .fc-label { font-size: .74rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .3rem; }
+.forma-card .fc-sistema { font-size: .72rem; color: var(--ar-muted); margin-bottom: .3rem; }
+.forma-card .fc-sistema span { font-weight: 700; color: var(--ar-success); }
+.fc-input {
+  font-size: .92rem; font-weight: 700;
+  border: 1.5px solid var(--ar-border); border-radius: 6px;
+  padding: .38rem .65rem; width: 100%; text-align: right;
+  font-variant-numeric: tabular-nums; color: #1f2937;
+  transition: border-color .15s;
+}
+.fc-input:focus { border-color: var(--ar-primary); outline: none; }
+
+/* ---- Resumen totales ---- */
+.resumen-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: .75rem; margin-bottom: 1rem;
+}
+.resumen-box {
+  border-radius: 9px; padding: .85rem 1rem;
+  text-align: center; border: 1px solid var(--ar-border);
+}
+.resumen-box .rb-label { font-size: .7rem; font-weight: 700; color: var(--ar-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
+.resumen-box .rb-value { font-size: 1.1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.box-sistema   { background: #eff6ff; border-color: #bfdbfe; }
+.box-sistema   .rb-value { color: var(--ar-primary); }
+.box-arqueo    { background: #f0fdf4; border-color: #bbf7d0; }
+.box-arqueo    .rb-value { color: var(--ar-success); }
+.box-dif       { background: var(--ar-bg); border-color: var(--ar-border); }
+.box-dif.pos   { background: #d1fae5; border-color: #6ee7b7; }
+.box-dif.neg   { background: #fee2e2; border-color: #fca5a5; }
+.box-dif.pos   .rb-value { color: var(--ar-success); }
+.box-dif.neg   .rb-value { color: var(--ar-danger); }
+.box-dif .rb-value { color: var(--ar-muted); }
+
+/* ---- Tabla historial ---- */
+#tblArqueos thead th {
+  background: #f1f5f9; color: #374151;
+  font-size: .75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: 2px solid var(--ar-border);
+  padding: .6rem .8rem; white-space: nowrap;
+}
+#tblArqueos tbody td {
+  font-size: .855rem; color: #1f2937;
+  vertical-align: middle; padding: .55rem .8rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+#tblArqueos tbody tr:hover td { background: #f8faff; }
+
+.badge-estado {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .25rem .65rem; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+}
+.badge-estado::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.badge-finalizado { background: #d1fae5; color: #065f46; }
+.badge-borrador   { background: #fef3c7; color: #92400e; }
+
+.dif-pos { color: var(--ar-success); font-weight: 700; }
+.dif-neg { color: var(--ar-danger);  font-weight: 700; }
+.dif-neu { color: var(--ar-muted);   font-weight: 600; }
+
+/* ---- Botones ---- */
+.btn-ar {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .44rem 1rem; border-radius: 7px;
+  font-size: .84rem; font-weight: 600;
+  border: none; cursor: pointer;
+  transition: opacity .15s, transform .1s, box-shadow .15s;
+}
+.btn-ar:hover  { opacity: .87; transform: translateY(-1px); }
+.btn-ar:active { transform: scale(.97); }
+.btn-primary-ar { background: var(--ar-indigo); color: #fff; box-shadow: 0 2px 8px rgba(67,56,202,.22); }
+.btn-success-ar { background: var(--ar-success); color: #fff; box-shadow: 0 2px 8px rgba(22,163,74,.2); }
+.btn-cancel-ar  { background: #f3f4f6; color: #374151; border: 1px solid var(--ar-border); }
+.btn-ver-sm {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: #eff6ff; color: var(--ar-primary); border: 1px solid #bfdbfe;
+  padding: .28rem .65rem; font-size: .77rem; border-radius: 5px; font-weight: 600; cursor: pointer;
+}
+.btn-ver-sm:hover { background: #dbeafe; }
+
+/* DataTables */
+div.dataTables_wrapper div.dataTables_filter input,
+div.dataTables_wrapper div.dataTables_length select {
+  border-radius: 6px; border: 1px solid var(--ar-border); padding: .3rem .6rem; font-size: .82rem;
+}
+.dataTables_paginate .paginate_button { border-radius: 6px !important; font-size: .8rem !important; }
+.dataTables_paginate .paginate_button.current,
+.dataTables_paginate .paginate_button.current:hover {
+  background: var(--ar-indigo) !important; color: #fff !important; border-color: var(--ar-indigo) !important;
+}
+
+.spin { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="container-fluid px-4">
+
+  <!-- Encabezado -->
+  <div class="ar-page-header">
+    <h2>
+      <span class="icon-box"><i class="fas fa-calculator"></i></span>
+      Arqueo de Caja
+    </h2>
+    <button class="btn-ar btn-primary-ar" id="btnNuevoArqueo">
+      <i class="fas fa-plus"></i> Nuevo Arqueo
+    </button>
+  </div>
+
+  <!-- Historial -->
+  <div class="ar-card">
+    <div class="ar-card-header">
+      <span><i class="fas fa-history me-1"></i> Historial de arqueos</span>
+    </div>
+    <div class="ar-card-body">
+      <div class="table-responsive">
+        <table id="tblArqueos" class="table table-hover w-100">
+          <thead>
+            <tr>
+              <th>Turno</th>
+              <th>Cajero</th>
+              <th>Fiscal</th>
+              <th class="text-end">Monto Inicial</th>
+              <th class="text-end">Total Sistema</th>
+              <th class="text-end">Total Arqueo</th>
+              <th class="text-end">Diferencia</th>
+              <th>Fecha</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Ver</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== MODAL NUEVO ARQUEO ===== -->
+<div class="modal fade" id="modalArqueo" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content" style="border:none;border-radius:14px;overflow:hidden">
+      <div class="modal-header" style="background:var(--ar-indigo);padding:1rem 1.4rem;border:none">
+        <h5 style="color:#fff;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:.5rem;margin:0">
+          <i class="fas fa-calculator"></i> Realizar Arqueo de Caja
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
+      </div>
+
+      <div class="modal-body" style="padding:1.4rem;background:#fff">
+
+        <!-- Selección de apertura -->
+        <div class="ar-card" style="margin-bottom:1rem">
+          <div class="ar-card-header"><span><i class="fas fa-door-open me-1"></i> Seleccionar turno</span></div>
+          <div class="ar-card-body">
+            <div class="apertura-select-wrap">
+              <div style="flex:1">
+                <label class="ar-label">Turno / Apertura activa</label>
+                <select class="ar-select" id="selApertura">
+                  <option value="">— Seleccione un turno —</option>
+                </select>
+              </div>
+              <button class="btn-ar btn-primary-ar" id="btnCargarApertura" style="height:38px">
+                <i class="fas fa-sync-alt"></i> Cargar
+              </button>
+            </div>
+
+            <!-- Info chips -->
+            <div class="apertura-info" id="aperturaInfo">
+              <div class="info-chip">
+                <span class="lbl">Turno</span>
+                <span class="val" id="infoTurno">—</span>
+              </div>
+              <div class="info-chip">
+                <span class="lbl">Cajero</span>
+                <span class="val" id="infoCajero">—</span>
+              </div>
+              <div class="info-chip">
+                <span class="lbl">Fiscal</span>
+                <span class="val" id="infoFiscal">—</span>
+              </div>
+              <div class="info-chip">
+                <span class="lbl">Monto Inicial</span>
+                <span class="val" id="infoMontoInicial">₲ 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formas de pago -->
+        <div class="ar-card" style="margin-bottom:1rem">
+          <div class="ar-card-header">
+            <span><i class="fas fa-coins me-1"></i> Conteo por forma de pago</span>
+            <span style="font-size:.74rem;color:var(--ar-muted);font-weight:500;text-transform:none;letter-spacing:0">
+              Ingresá el monto físico contado para cada forma
+            </span>
+          </div>
+          <div class="ar-card-body">
+            <div class="formas-grid">
+
+              <!-- Efectivo -->
+              <div class="forma-card fc-efectivo">
+                <div class="fc-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="fc-label">Efectivo</div>
+                <div class="fc-sistema">Sistema: <span id="sisEfectivo">₲ 0</span></div>
+                <input type="number" class="fc-input forma-input" id="inpEfectivo" placeholder="0" min="0" data-forma="efectivo">
+              </div>
+
+              <!-- Tarjeta Crédito -->
+              <div class="forma-card fc-credito">
+                <div class="fc-icon"><i class="fas fa-credit-card"></i></div>
+                <div class="fc-label">Tarjeta Crédito</div>
+                <div class="fc-sistema">Sistema: <span id="sisCredito">₲ 0</span></div>
+                <input type="number" class="fc-input forma-input" id="inpCredito" placeholder="0" min="0" data-forma="credito">
+              </div>
+
+              <!-- Tarjeta Débito -->
+              <div class="forma-card fc-debito">
+                <div class="fc-icon"><i class="fas fa-credit-card"></i></div>
+                <div class="fc-label">Tarjeta Débito</div>
+                <div class="fc-sistema">Sistema: <span id="sisDebito">₲ 0</span></div>
+                <input type="number" class="fc-input forma-input" id="inpDebito" placeholder="0" min="0" data-forma="debito">
+              </div>
+
+              <!-- Cheque -->
+              <div class="forma-card fc-cheque">
+                <div class="fc-icon"><i class="fas fa-money-check"></i></div>
+                <div class="fc-label">Cheque</div>
+                <div class="fc-sistema">Sistema: <span id="sisCheque">₲ 0</span></div>
+                <input type="number" class="fc-input forma-input" id="inpCheque" placeholder="0" min="0" data-forma="cheque">
+              </div>
+
+              <!-- QR -->
+              <div class="forma-card fc-qr">
+                <div class="fc-icon"><i class="fas fa-qrcode"></i></div>
+                <div class="fc-label">QR</div>
+                <div class="fc-sistema">Sistema: <span id="sisQR">₲ 0</span></div>
+                <input type="number" class="fc-input forma-input" id="inpQR" placeholder="0" min="0" data-forma="qr">
+              </div>
+
+              <!-- Otros -->
+              <div class="forma-card fc-otros">
+                <div class="fc-icon"><i class="fas fa-ellipsis-h"></i></div>
+                <div class="fc-label">Otros</div>
+                <div class="fc-sistema">Sistema: <span id="sisOtros">₲ 0</span></div>
+                <input type="number" class="fc-input forma-input" id="inpOtros" placeholder="0" min="0" data-forma="otros">
+              </div>
+
+            </div>
+
+            <!-- Observación -->
+            <div>
+              <label class="ar-label">Observación</label>
+              <textarea class="ar-textarea" id="txtObservacion" rows="2" placeholder="Notas del arqueo (opcional)…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="resumen-grid">
+          <div class="resumen-box box-sistema">
+            <div class="rb-label"><i class="fas fa-desktop me-1"></i>Total Sistema</div>
+            <div class="rb-value" id="resumenSistema">₲ 0</div>
+          </div>
+          <div class="resumen-box box-arqueo">
+            <div class="rb-label"><i class="fas fa-hand-holding-usd me-1"></i>Total Contado</div>
+            <div class="rb-value" id="resumenArqueo">₲ 0</div>
+          </div>
+          <div class="resumen-box box-dif" id="boxDiferencia">
+            <div class="rb-label"><i class="fas fa-balance-scale me-1"></i>Diferencia</div>
+            <div class="rb-value" id="resumenDiferencia">₲ 0</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="background:var(--ar-bg);border-top:1px solid var(--ar-border);padding:.85rem 1.4rem;display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn-ar btn-cancel-ar" data-dismiss="modal">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="button" class="btn-ar btn-success-ar" id="btnGuardarArqueo" disabled>
+          <i class="fas fa-save"></i> Guardar Arqueo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DETALLE ARQUEO ===== -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content" style="border:none;border-radius:14px;overflow:hidden">
+      <div class="modal-header" style="background:var(--ar-indigo);padding:.9rem 1.3rem;border:none">
+        <h5 style="color:#fff;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:.5rem;margin:0">
+          <i class="fas fa-eye"></i> Detalle de Arqueo
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
+      </div>
+      <div class="modal-body" id="detalleContenido" style="padding:1.4rem;background:#fff">
+        <!-- Generado dinámicamente -->
+      </div>
+      <div class="modal-footer" style="background:var(--ar-bg);border-top:1px solid var(--ar-border);padding:.75rem 1.3rem;display:flex;justify-content:flex-end">
+        <button type="button" class="btn-ar btn-cancel-ar" data-dismiss="modal">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button type="button" class="btn-ar btn-primary-ar" id="btnImprimirArqueo">
+          <i class="fas fa-print"></i> Imprimir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+const CSRFToken = "{{ csrf_token() }}";
+
+// IDs de formas de pago en la BD
+const ID_EFECTIVO = 1;
+const ID_CHEQUE   = 3;
+const ID_DEBITO   = 4;
+const ID_CREDITO  = 5;
+const ID_QR       = 999; // virtual
+
+function fmt(n){ return '₲ ' + parseFloat(n||0).toLocaleString('es-PY',{minimumFractionDigits:0}); }
+
+// Estado del arqueo actual
+let aperturaActual = null;
+let totalesSistema = {};  // {id_forma: total}
+
+// ============================================================
+// Tabla historial
+// ============================================================
+const tabla = $('#tblArqueos').DataTable({
+  language: { url:"{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+  ajax: { url:'/api/v1/arqueo', dataSrc:'data' },
+  order: [[7,'desc']],
+  pageLength: 15,
+  columns: [
+    { data:'nro_turno', render:v=>`<span style="font-weight:800;color:var(--ar-indigo)">#${v}</span>` },
+    { data:'cajero' },
+    { data:'fiscal' },
+    { data:'monto_inicial',  className:'text-end', render:v=>fmt(v) },
+    { data:'total_sistema',  className:'text-end', render:v=>`<span style="color:var(--ar-primary);font-weight:700">${fmt(v)}</span>` },
+    { data:'total_arqueo',   className:'text-end', render:v=>`<span style="color:var(--ar-success);font-weight:700">${fmt(v)}</span>` },
+    { data:'diferencia', className:'text-end',
+      render:v=>{
+        const n=parseFloat(v);
+        if(n>0) return `<span class="dif-pos">+${fmt(n)}</span>`;
+        if(n<0) return `<span class="dif-neg">${fmt(n)}</span>`;
+        return `<span class="dif-neu">${fmt(0)}</span>`;
+      }
+    },
+    { data:'fecha_arqueo' },
+    { data:'estado', className:'text-center',
+      render:v=>{
+        const cls=v==='finalizado'?'badge-finalizado':'badge-borrador';
+        return `<span class="badge-estado ${cls}">${v}</span>`;
+      }
+    },
+    { data:null, orderable:false, className:'text-center',
+      render:row=>`<button class="btn-ver-sm btn-ver-detalle" data-id="${row.id_arqueo}"><i class="fas fa-eye"></i> Ver</button>`
+    }
+  ]
+});
+
+// ============================================================
+// Abrir modal nuevo arqueo
+// ============================================================
+$('#btnNuevoArqueo').on('click', function(){
+  // Limpiar estado
+  aperturaActual = null;
+  totalesSistema = {};
+  $('#selApertura').val('');
+  $('#aperturaInfo').removeClass('visible');
+  $('.forma-input').val('');
+  $('#txtObservacion').val('');
+  actualizarResumen();
+  $('#btnGuardarArqueo').prop('disabled', true);
+
+  // Cargar aperturas activas
+  fetch('/api/v1/arqueo/aperturas-activas')
+    .then(r=>r.json())
+    .then(data=>{
+      const sel=$('#selApertura');
+      sel.find('option:not(:first)').remove();
+      if(data.success && data.data.length){
+        data.data.forEach(a=>{
+          sel.append(`<option value="${a.id_apertura}">Turno #${a.nro_turno} — ${a.cajero} (${a.registro})</option>`);
+        });
+      } else {
+        sel.append('<option value="" disabled>Sin turnos activos</option>');
+      }
+    });
+
+  $('#modalArqueo').modal('show');
+});
+
+// ============================================================
+// Cargar datos de apertura seleccionada
+// ============================================================
+$('#btnCargarApertura').on('click', function(){
+  const id = $('#selApertura').val();
+  if(!id) return Swal.fire({title:'Seleccioná un turno', icon:'warning', confirmButtonColor:'#4338ca', timer:1500, showConfirmButton:false});
+
+  const btn=$(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i>');
+
+  fetch(`/api/v1/arqueo/apertura/${id}`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.success){ Swal.fire('Error', data.error||'No se pudo cargar.', 'error'); return; }
+
+      aperturaActual = data.data;
+
+      // Mostrar info chips
+      $('#infoTurno').text('#'+aperturaActual.nro_turno);
+      $('#infoCajero').text(aperturaActual.cajero);
+      $('#infoFiscal').text(aperturaActual.fiscal);
+      $('#infoMontoInicial').text(fmt(aperturaActual.monto_inicial));
+      $('#aperturaInfo').addClass('visible');
+
+      // Cargar totales del sistema
+      totalesSistema = {};
+      if(data.totales){
+        data.totales.forEach(t=>{ totalesSistema[t.id_forma]=t.total; });
+      }
+
+      // Mostrar en los campos del sistema
+      $('#sisEfectivo').text(fmt(totalesSistema[ID_EFECTIVO]||0));
+      $('#sisCredito').text(fmt(totalesSistema[ID_CREDITO]||0));
+      $('#sisDebito').text(fmt(totalesSistema[ID_DEBITO]||0));
+      $('#sisCheque').text(fmt(totalesSistema[ID_CHEQUE]||0));
+      $('#sisQR').text(fmt(0));     // QR virtual, siempre 0 en sistema
+      $('#sisOtros').text(fmt(0));  // Otros no mapeados
+
+      // Pre-rellenar inputs con valores del sistema (puede editar)
+      $('#inpEfectivo').val(totalesSistema[ID_EFECTIVO]||0);
+      $('#inpCredito').val(totalesSistema[ID_CREDITO]||0);
+      $('#inpDebito').val(totalesSistema[ID_DEBITO]||0);
+      $('#inpCheque').val(totalesSistema[ID_CHEQUE]||0);
+      $('#inpQR').val(0);
+      $('#inpOtros').val(0);
+
+      actualizarResumen();
+      $('#btnGuardarArqueo').prop('disabled', false);
+    })
+    .catch(()=>Swal.fire('Error','Error al cargar la apertura.','error'))
+    .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-sync-alt"></i> Cargar'));
+});
+
+// ============================================================
+// Actualizar resumen en tiempo real
+// ============================================================
+function getTotalSistema(){
+  return Object.values(totalesSistema).reduce((s,v)=>s+v,0);
+}
+
+function getTotalArqueo(){
+  return ['#inpEfectivo','#inpCredito','#inpDebito','#inpCheque','#inpQR','#inpOtros']
+    .reduce((s,id)=>s+(parseFloat($(id).val())||0), 0);
+}
+
+function actualizarResumen(){
+  const sistema = getTotalSistema();
+  const arqueo  = getTotalArqueo();
+  const diff    = arqueo - sistema;
+
+  $('#resumenSistema').text(fmt(sistema));
+  $('#resumenArqueo').text(fmt(arqueo));
+  $('#resumenDiferencia').text((diff>=0?'+':'')+fmt(diff));
+
+  const box=$('#boxDiferencia').removeClass('pos neg');
+  if(diff>0) box.addClass('pos');
+  else if(diff<0) box.addClass('neg');
+}
+
+$('.forma-input').on('input', actualizarResumen);
+
+// ============================================================
+// Guardar arqueo
+// ============================================================
+$('#btnGuardarArqueo').on('click', function(){
+  if(!aperturaActual) return;
+
+  const sistema = getTotalSistema();
+  const arqueo  = getTotalArqueo();
+  const diff    = arqueo - sistema;
+
+  const payload = {
+    id_apertura:          aperturaActual.id_apertura,
+    nro_turno:            aperturaActual.nro_turno,
+    cajero:               aperturaActual.cajero,
+    fiscal:               aperturaActual.fiscal,
+    monto_inicial:        aperturaActual.monto_inicial,
+    total_efectivo:       parseFloat($('#inpEfectivo').val())||0,
+    total_tarjeta_credito:parseFloat($('#inpCredito').val())||0,
+    total_tarjeta_debito: parseFloat($('#inpDebito').val())||0,
+    total_cheque:         parseFloat($('#inpCheque').val())||0,
+    total_qr:             parseFloat($('#inpQR').val())||0,
+    total_otros:          parseFloat($('#inpOtros').val())||0,
+    total_sistema:        sistema,
+    total_arqueo:         arqueo,
+    diferencia:           diff,
+    observacion:          $('#txtObservacion').val().trim(),
+    estado:               'finalizado'
+  };
+
+  const btn=$(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i> Guardando…');
+
+  fetch('/api/v1/arqueo',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken},
+    body:JSON.stringify(payload)
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.success){
+      $('#modalArqueo').modal('hide');
+      tabla.ajax.reload(null,false);
+      Swal.fire({
+        title:'Arqueo guardado',
+        html:`<p style="margin:0;font-size:.9rem">Diferencia: <strong>${(diff>=0?'+':'')+fmt(diff)}</strong></p>`,
+        icon: diff===0 ? 'success' : (diff>0?'info':'warning'),
+        timer:2500, showConfirmButton:false
+      });
+    } else {
+      Swal.fire('Error', data.error||'No se pudo guardar.', 'error');
+    }
+  })
+  .catch(()=>Swal.fire('Error','Error al guardar.','error'))
+  .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-save"></i> Guardar Arqueo'));
+});
+
+// ============================================================
+// Ver detalle de arqueo
+// ============================================================
+$('#tblArqueos').on('click','.btn-ver-detalle',function(){
+  const id=$(this).data('id');
+  fetch(`/api/v1/arqueo/${id}`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.success){ Swal.fire('Error',data.error,'error'); return; }
+      const a=data.data;
+      const diff=parseFloat(a.diferencia);
+      const difColor=diff>0?'#16a34a':diff<0?'#dc2626':'#6b7280';
+      const difPrefix=diff>0?'+':'';
+
+      $('#detalleContenido').html(`
+        <div style="font-family:'Plus Jakarta Sans',sans-serif">
+
+          <!-- Encabezado -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
+            <div>
+              <div style="font-size:1.1rem;font-weight:800;color:#111827">Arqueo — Turno #${a.nro_turno}</div>
+              <div style="font-size:.8rem;color:#6b7280;margin-top:.2rem">${a.fecha_arqueo}</div>
+            </div>
+            <span style="background:#e0e7ff;color:#4338ca;padding:.28rem .8rem;border-radius:999px;font-size:.75rem;font-weight:700;text-transform:uppercase">${a.estado}</span>
+          </div>
+
+          <!-- Info personal -->
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem">
+            <div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">Cajero</div><div style="font-size:.87rem;font-weight:700">${a.cajero}</div></div>
+            <div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">Fiscal</div><div style="font-size:.87rem;font-weight:700">${a.fiscal}</div></div>
+            <div><div style="font-size:.67rem;font-weight:700;color:#6b7280;text-transform:uppercase">Monto Inicial</div><div style="font-size:.87rem;font-weight:700;color:#1a56db">${fmt(a.monto_inicial)}</div></div>
+          </div>
+
+          <!-- Detalle por forma -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:1rem">
+            <thead>
+              <tr style="background:#f1f5f9">
+                <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;border-bottom:2px solid #e5e7eb">Forma de Pago</th>
+                <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Sistema</th>
+                <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Contado</th>
+                <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filaDetalle('Efectivo',       a.total_sistema>0?(a.total_efectivo):0, a.total_efectivo)}
+              ${filaDetalle('Tarjeta Crédito',a.total_tarjeta_credito, a.total_tarjeta_credito)}
+              ${filaDetalle('Tarjeta Débito', a.total_tarjeta_debito,  a.total_tarjeta_debito)}
+              ${filaDetalle('Cheque',         a.total_cheque, a.total_cheque)}
+              ${filaDetalle('QR',             0, a.total_qr)}
+              ${filaDetalle('Otros',          0, a.total_otros)}
+            </tbody>
+          </table>
+
+          <!-- Resumen total -->
+          <div style="display:flex;justify-content:flex-end">
+            <div style="min-width:280px">
+              <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:.3rem"><span style="color:#6b7280">Total Sistema</span><span style="font-weight:700;color:#1a56db">${fmt(a.total_sistema)}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:.84rem;margin-bottom:.3rem"><span style="color:#6b7280">Total Contado</span><span style="font-weight:700;color:#16a34a">${fmt(a.total_arqueo)}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:800;border-top:2px solid #e5e7eb;padding-top:.4rem">
+                <span>Diferencia</span>
+                <span style="color:${difColor}">${difPrefix}${fmt(Math.abs(diff))}</span>
+              </div>
+            </div>
+          </div>
+
+          ${a.observacion ? `<div style="margin-top:1rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.65rem .9rem;font-size:.84rem;color:#374151"><strong>Observación:</strong> ${a.observacion}</div>` : ''}
+        </div>`
+      );
+
+      $('#btnImprimirArqueo').off('click').on('click',()=>imprimirDetalle());
+      $('#modalDetalle').modal('show');
+    });
+});
+
+function filaDetalle(nombre, sistema, contado){
+  const d = contado - sistema;
+  const color = d>0?'#16a34a':d<0?'#dc2626':'#6b7280';
+  const prefix = d>0?'+':'';
+  return `<tr>
+    <td style="padding:.4rem .75rem;font-size:.84rem;font-weight:600">${nombre}</td>
+    <td style="padding:.4rem .75rem;font-size:.84rem;text-align:right;color:#6b7280">${fmt(sistema)}</td>
+    <td style="padding:.4rem .75rem;font-size:.84rem;text-align:right;font-weight:700">${fmt(contado)}</td>
+    <td style="padding:.4rem .75rem;font-size:.84rem;text-align:right;font-weight:700;color:${color}">${prefix}${fmt(Math.abs(d))}</td>
+  </tr>`;
+}
+
+function imprimirDetalle(){
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>Arqueo de Caja</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:2rem;}table{width:100%;border-collapse:collapse;}th,td{padding:.5rem .75rem;border-bottom:1px solid #e5e7eb;}</style>
+  </head><body>${document.getElementById('detalleContenido').innerHTML}</body></html>`);
+  win.document.close();
+  setTimeout(()=>{ win.print(); win.close(); },600);
+}
+</script>
+{% endblock %}

@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app as app
 from app.dao.referenciales.apertura.AperturaDao import AperturaDao
-from datetime import datetime
 
 aperapi = Blueprint('aperapi', __name__)
 
@@ -26,6 +25,23 @@ def getAperturas():
 
 
 # ================================
+# GET apertura activa
+# GET /api/v1/aperturas/activa
+# ================================
+@aperapi.route('/aperturas/activa', methods=['GET'])
+def getAperturaActiva():
+    dao = AperturaDao()
+    try:
+        apertura = dao.getAperturaActiva()
+        if apertura:
+            return jsonify({'success': True, 'data': apertura, 'error': None}), 200
+        return jsonify({'success': False, 'error': 'No hay ningún turno activo.'}), 404
+    except Exception as e:
+        app.logger.error(f"Error al obtener apertura activa: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
+
+
+# ================================
 # GET apertura por ID
 # ================================
 @aperapi.route('/aperturas/<int:id_apertura>', methods=['GET'])
@@ -42,7 +58,7 @@ def getApertura(id_apertura):
 
 
 # ================================
-# NUEVO: GET validar fiscal por fun_id (clave ingresada)
+# GET validar fiscal por fun_id
 # GET /api/v1/aperturas/fiscal/<fun_id>
 # ================================
 @aperapi.route('/aperturas/fiscal/<int:fun_id>', methods=['GET'])
@@ -59,7 +75,7 @@ def getFiscal(fun_id):
 
 
 # ================================
-# NUEVO: GET buscar cajeros por nombre/CI
+# GET buscar cajeros por nombre/CI
 # GET /api/v1/aperturas/cajeros/buscar?q=pedro
 # ================================
 @aperapi.route('/aperturas/cajeros/buscar', methods=['GET'])
@@ -77,7 +93,7 @@ def buscarCajeros():
 
 
 # ================================
-# POST crear apertura
+# POST crear apertura — bloquea si ya hay una activa
 # ================================
 @aperapi.route('/aperturas', methods=['POST'])
 def addApertura():
@@ -94,23 +110,25 @@ def addApertura():
             int(data['cajero']),
             data['monto_inicial']
         )
-        if result is None:
-            return jsonify({
-                'success': False,
-                'error': 'No se pudo realizar la apertura. Verifique que el fiscal y cajero sean válidos y distintos.'
-            }), 400
 
-        apertura = dao.getAperturaById(result['id_apertura'])
-        return jsonify({
-            'success': True,
-            'data': {
-                'id_apertura':  result['id_apertura'],
-                'nro_turno':    apertura.get('nro_turno') if apertura else None,
-                'registro':     apertura.get('registro')  if apertura else None,
-                'monto_inicial':data['monto_inicial']
-            },
-            'error': None
-        }), 201
+        # Error controlado desde el DAO (apertura activa existente u otro)
+        if isinstance(result, dict) and 'error' in result:
+            return jsonify({'success': False, 'error': result['error']}), 400
+
+        if result and 'id_apertura' in result:
+            apertura = dao.getAperturaById(result['id_apertura'])
+            return jsonify({
+                'success': True,
+                'data': {
+                    'id_apertura':  result['id_apertura'],
+                    'nro_turno':    apertura.get('nro_turno') if apertura else None,
+                    'registro':     apertura.get('registro')  if apertura else None,
+                    'monto_inicial':data['monto_inicial']
+                },
+                'error': None
+            }), 201
+
+        return jsonify({'success': False, 'error': 'No se pudo realizar la apertura. Verificá que el fiscal y cajero sean válidos y distintos.'}), 400
 
     except Exception as e:
         app.logger.error(f"Error al realizar apertura: {e}")

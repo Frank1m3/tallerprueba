@@ -1,111 +1,134 @@
 from flask import Blueprint, request, jsonify, current_app as app
 from app.dao.referenciales.cierre.CierreDao import CierreDao
+from app.dao.referenciales.apertura.AperturaDao import AperturaDao
 
 cierreapi = Blueprint('cierreapi', __name__)
 
-# Obtener todos los cierres
+
+# ================================
+# GET todos los cierres
+# ================================
 @cierreapi.route('/cierres', methods=['GET'])
 def getCierres():
     dao = CierreDao()
     try:
-        cierres = dao.getCierres()
-        return jsonify({
-            'success': True,
-            'data': cierres,
-            'error': None
-        }), 200
+        return jsonify({'success': True, 'data': dao.getCierres(), 'error': None}), 200
     except Exception as e:
-        app.logger.error(f"Error al obtener cierres: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno al listar los cierres.'
-        }), 500
+        app.logger.error(f"Error al obtener cierres: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
-# Obtener cierre por ID
+
+# ================================
+# GET cierre por ID
+# ================================
 @cierreapi.route('/cierres/<int:id_cierre>', methods=['GET'])
 def getCierre(id_cierre):
     dao = CierreDao()
     try:
         cierre = dao.getCierreById(id_cierre)
         if cierre:
-            return jsonify({
-                'success': True,
-                'data': cierre,
-                'error': None
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No se encontró el cierre con el ID proporcionado.'
-            }), 404
+            return jsonify({'success': True, 'data': cierre, 'error': None}), 200
+        return jsonify({'success': False, 'error': 'Cierre no encontrado.'}), 404
     except Exception as e:
-        app.logger.error(f"Error al obtener cierre: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno.'
-        }), 500
+        app.logger.error(f"Error al obtener cierre: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
-# Guardar un cierre
+
+# ================================
+# GET total de ventas de una apertura
+# GET /api/v1/cierres/total-ventas/<id_apertura>
+# ================================
+@cierreapi.route('/cierres/total-ventas/<int:id_apertura>', methods=['GET'])
+def getTotalVentas(id_apertura):
+    dao  = CierreDao()
+    adao = AperturaDao()
+    try:
+        apertura = adao.getAperturaById(id_apertura)
+        if not apertura:
+            return jsonify({'success': False, 'error': 'Apertura no encontrada.'}), 404
+
+        totales = dao.getTotalVentasPorApertura(id_apertura)
+        return jsonify({
+            'success':      True,
+            'total_ventas': totales['total_ventas'],
+            'cant_ventas':  totales['cant_ventas'],
+            'monto_inicial':float(apertura.get('monto_inicial', 0)),
+            'nro_turno':    apertura.get('nro_turno'),
+            'cajero':       apertura.get('cajero', ''),
+            'fiscal':       apertura.get('fiscal', ''),
+            'registro':     apertura.get('registro', ''),
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Error al obtener total ventas: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
+
+
+# ================================
+# POST crear cierre desde apertura activa
+# Espera: { id_apertura, observacion? }
+# ================================
 @cierreapi.route('/cierres', methods=['POST'])
 def addCierre():
-    data = request.get_json()
-    dao = CierreDao()
+    data = request.get_json() or {}
+    dao  = CierreDao()
+    adao = AperturaDao()
 
-    campos_requeridos = ['monto_final', 'monto_inicial']
-
-    for campo in campos_requeridos:
-        if campo not in data or data[campo] is None:
-            return jsonify({
-                'success': False,
-                'error': f'El campo {campo} es obligatorio.'
-            }), 400
+    if not data.get('id_apertura'):
+        return jsonify({'success': False, 'error': 'El campo id_apertura es obligatorio.'}), 400
 
     try:
-        result = dao.guardarCierre(
-            data['monto_final'],
-            data['monto_inicial'],
-            data.get('diferencia'),
-            data.get('observacion')
+        apertura = adao.getAperturaById(int(data['id_apertura']))
+        if not apertura:
+            return jsonify({'success': False, 'error': 'Apertura no encontrada.'}), 404
+        if apertura.get('estado') != 'activo':
+            return jsonify({'success': False, 'error': 'La apertura no está activa.'}), 400
+
+        totales       = dao.getTotalVentasPorApertura(int(data['id_apertura']))
+        monto_final   = totales['total_ventas']
+        monto_inicial = float(apertura.get('monto_inicial', 0))
+        diferencia    = monto_final - monto_inicial
+
+        id_cierre = dao.guardarCierre(
+            id_apertura   = apertura['id_apertura'],
+            monto_final   = monto_final,
+            monto_inicial = monto_inicial,
+            diferencia    = diferencia,
+            observacion   = data.get('observacion', ''),
+            nro_turno     = apertura.get('nro_turno'),
+            cajero        = apertura.get('cajero', ''),
+            fiscal        = apertura.get('fiscal', ''),
+            hora_apertura = apertura.get('registro')
         )
 
-        if result:
+        if id_cierre:
             return jsonify({
-                'success': True,
-                'data': result,
-                'error': None
+                'success':      True,
+                'id_cierre':    id_cierre,
+                'monto_final':  monto_final,
+                'monto_inicial':monto_inicial,
+                'diferencia':   diferencia,
+                'cant_ventas':  totales['cant_ventas'],
+                'error':        None
             }), 201
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No se pudo registrar el cierre.'
-            }), 400
+
+        return jsonify({'success': False, 'error': 'No se pudo registrar el cierre.'}), 500
 
     except Exception as e:
-        app.logger.error(f"Error al guardar cierre: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Ocurrió un error interno.'
-        }), 500
+        app.logger.error(f"Error al guardar cierre: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
-# Cerrar cierre (cambiar estado a 'cerrado')
+
+# ================================
+# PATCH cerrar cierre → cierra cierre Y apertura en una transacción
+# PATCH /api/v1/cierres/cerrar/<id_cierre>
+# ================================
 @cierreapi.route('/cierres/cerrar/<int:id_cierre>', methods=['PATCH'])
 def cerrarCierre(id_cierre):
     dao = CierreDao()
     try:
         if dao.cerrarCierre(id_cierre):
-            return jsonify({
-                'success': True,
-                'mensaje': f'Cierre con ID {id_cierre} cerrado correctamente.',
-                'error': None
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'No se pudo cerrar el cierre o no se encontró el ID.'
-            }), 404
+            return jsonify({'success': True, 'mensaje': f'Cierre {id_cierre} cerrado. Turno finalizado.', 'error': None}), 200
+        return jsonify({'success': False, 'error': 'No se pudo cerrar. Verificá que el cierre exista y esté en estado abierto.'}), 404
     except Exception as e:
-        app.logger.error(f"Error al cerrar cierre: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': 'Error interno del servidor.'
-        }), 500
+        app.logger.error(f"Error al cerrar cierre: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500

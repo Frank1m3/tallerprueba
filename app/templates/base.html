@@ -15,6 +15,8 @@
     <link href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
 
+    {% block css %}{% endblock %}
+
 <style>
 /* ============================================================
    TOKENS GLOBALES
@@ -142,7 +144,6 @@ body {
   border: 1px solid rgba(255,255,255,.06);
 }
 
-/* bg-warning y bg-success overrides para los submenús */
 .bg-warning.collapse-inner {
   background: rgba(245,158,11,.08) !important;
   border-color: rgba(245,158,11,.2) !important;
@@ -150,6 +151,10 @@ body {
 .bg-success.collapse-inner {
   background: rgba(34,197,94,.08) !important;
   border-color: rgba(34,197,94,.2) !important;
+}
+.bg-info.collapse-inner {
+  background: rgba(59,130,246,.08) !important;
+  border-color: rgba(59,130,246,.2) !important;
 }
 
 .collapse-item {
@@ -169,6 +174,17 @@ body {
 .collapse-item.active {
   background: var(--gv-accent) !important;
   color: #fff !important;
+}
+
+/* Section label dentro de un collapse-inner */
+.collapse-section {
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  padding: .5rem .75rem .25rem;
+  display: block;
 }
 
 /* Sidebar toggler */
@@ -281,7 +297,7 @@ body {
 .scroll-to-top:hover { background: var(--gv-accent-d) !important; }
 
 /* ============================================================
-   CARDS Y TABLAS GLOBALES (mejoras menores)
+   CARDS Y TABLAS GLOBALES
    ============================================================ */
 .card {
   border: 1px solid var(--gv-border) !important;
@@ -370,7 +386,9 @@ table.dataTable tbody tr:hover td { background: #f8faff !important; }
 
     <hr class="sidebar-divider">
 
-    <!-- Referenciales -->
+    <!-- ============================================
+         REFERENCIALES (agrupadas por módulo)
+         ============================================ -->
     <li class="nav-item">
       <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseRef"
          aria-expanded="false" aria-controls="collapseRef">
@@ -379,22 +397,44 @@ table.dataTable tbody tr:hover td { background: #f8faff !important; }
       </a>
       <div id="collapseRef" class="collapse" aria-labelledby="headingRef" data-parent="#accordionSidebar">
         <div class="collapse-inner">
+
+          <span class="collapse-section">Generales</span>
           <a class="collapse-item" href="{{ url_for('ciudad.ciudadIndex') }}">Ciudad</a>
           <a class="collapse-item" href="{{ url_for('pais.paisIndex') }}">País</a>
           <a class="collapse-item" href="{{ url_for('nacionalidad.nacionalidadIndex') }}">Nacionalidad</a>
           <a class="collapse-item" href="{{ url_for('persona.personaIndex') }}">Personas</a>
-          <a class="collapse-item" href="{{ url_for('proveedor.proveedorIndex') }}">Proveedores</a>
-          <a class="collapse-item" href="{{ url_for('cliente.clienteIndex') }}">Clientes</a>
+          <a class="collapse-item" href="{{ url_for('sexo.sexoIndex') }}">Sexo</a>
           <a class="collapse-item" href="{{ url_for('sucursal.sucursalIndex') }}">Sucursales</a>
           <a class="collapse-item" href="{{ url_for('deposito.depositoIndex') }}">Depósitos</a>
-          <a class="collapse-item" href="{{ url_for('formapago.formasPagoIndex') }}">Formas de Pago</a>
-          <a class="collapse-item" href="{{ url_for('sexo.sexoIndex') }}">Sexo</a>
+
+          <span class="collapse-section">Compras</span>
+          <a class="collapse-item" href="{{ url_for('proveedor.proveedorIndex') }}">Proveedores</a>
+          <a class="collapse-item" href="{{ url_for('item.itemIndex') }}">Items / Productos</a>
+          <a class="collapse-item" href="{{ url_for('tipoitem.tipoItemIndex') }}">Tipo de Item</a>
+          <a class="collapse-item" href="{{ url_for('grupo.grupoIndex') }}">Grupos</a>
           <a class="collapse-item" href="{{ url_for('marca.marcaIndex') }}">Marcas</a>
+          <a class="collapse-item" href="{{ url_for('unidadmedida.unidadMedidaIndex') }}">Unidad de Medida</a>
+          <a class="collapse-item" href="{{ url_for('tipoimpuesto.tipoImpuestoIndex') }}">Tipo de Impuesto</a>
+          <a class="collapse-item" href="{{ url_for('moneda.monedaIndex') }}">Monedas</a>
+          <a class="collapse-item" href="{{ url_for('formapago.formasPagoIndex') }}">Formas de Pago</a>
+
+          <span class="collapse-section">Ventas</span>
+          <a class="collapse-item" href="{{ url_for('cliente.clienteIndex') }}">Clientes</a>
+          <a class="collapse-item" href="{{ url_for('marcatarjeta.marcaTarjetaIndex') }}">Marcas de Tarjeta</a>
+          <a class="collapse-item" href="{{ url_for('entidademisora.entidadEmisoraIndex') }}">Entidades Emisoras</a>
+
+          <span class="collapse-section">Producción</span>
+          <a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>
+          <a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>
+          <a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>
+
         </div>
       </div>
     </li>
 
-    <!-- MÓDULO VENTA -->
+    <!-- ============================================
+         MÓDULO VENTA
+         ============================================ -->
     <span class="sidebar-heading">Módulo de Venta</span>
 
     <li class="nav-item">
@@ -406,13 +446,16 @@ table.dataTable tbody tr:hover td { background: #f8faff !important; }
       <div id="collapseCaja" class="collapse" aria-labelledby="headingCaja" data-parent="#accordionSidebar">
         <div class="collapse-inner bg-warning">
           <a class="collapse-item" href="{{ url_for('apertura.aperturaIndex') }}">Apertura</a>
-          <a class="collapse-item" href="{{ url_for('cierre.cierreIndex') }}">Cierre</a>
           <a class="collapse-item" href="{{ url_for('ventamod.ventaPos') }}">Punto de Venta</a>
+          <a class="collapse-item" href="{{ url_for('arqueomod.arqueo_index') }}">Arqueo de Caja</a>
+          <a class="collapse-item" href="{{ url_for('cierre.cierreIndex') }}">Cierre</a>
         </div>
       </div>
     </li>
 
-    <!-- MÓDULO COMPRA -->
+    <!-- ============================================
+         MÓDULO COMPRA
+         ============================================ -->
     <span class="sidebar-heading">Módulo de Compra</span>
 
     <li class="nav-item">
@@ -427,6 +470,26 @@ table.dataTable tbody tr:hover td { background: #f8faff !important; }
           <a class="collapse-item" href="{{ url_for('presumod.presupuesto_index') }}">R. Presupuesto</a>
           <a class="collapse-item" href="{{ url_for('pdcmod.pedidos_index') }}">Generar OC</a>
           <a class="collapse-item" href="{{ url_for('rm_mod.recepcion_mercaderia') }}">Rec. Mercaderías</a>
+        </div>
+      </div>
+    </li>
+
+    <!-- ============================================
+         MÓDULO PRODUCCIÓN
+         ============================================ -->
+    <span class="sidebar-heading">Módulo de Producción</span>
+
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseProd"
+         aria-expanded="false" aria-controls="collapseProd">
+        <i class="fas fa-fw fa-industry"></i>
+        <span>Producción</span>
+      </a>
+      <div id="collapseProd" class="collapse" aria-labelledby="headingProd" data-parent="#accordionSidebar">
+        <div class="collapse-inner bg-info">
+          <a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>
+          <a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>
+          <a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>
         </div>
       </div>
     </li>

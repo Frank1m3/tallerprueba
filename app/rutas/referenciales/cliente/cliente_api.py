@@ -1,22 +1,17 @@
 from flask import Blueprint, request, jsonify, current_app as app
 from app.dao.referenciales.cliente.ClienteDao import ClienteDao
-from app import csrf  # Importamos csrf para la protección
+from app import csrf
 
 cliapi = Blueprint('cliapi', __name__)
 
 def response_json(success, data=None, error=None, status_code=200):
-    return jsonify({
-        'success': success,
-        'data': data,
-        'error': error
-    }), status_code
+    return jsonify({'success': success, 'data': data, 'error': error}), status_code
 
 @cliapi.route('/clientes', methods=['GET'])
 def getClientes():
     dao = ClienteDao()
     try:
-        clientes = dao.getClientes()
-        return response_json(True, clientes)
+        return response_json(True, dao.getClientes())
     except Exception as e:
         app.logger.error(f"Error al obtener clientes: {e}")
         return response_json(False, error='Error interno.', status_code=500)
@@ -38,24 +33,22 @@ def getCliente(id_cliente):
 def addCliente():
     data = request.get_json() or {}
     dao = ClienteDao()
-    campos_requeridos = ['nombre', 'apellido', 'cedula', 'direccion', 'telefono']
 
-    for campo in campos_requeridos:
+    for campo in ['nombre', 'cedula']:
         if campo not in data or not str(data[campo]).strip():
             return response_json(False, error=f'El campo {campo} es obligatorio.', status_code=400)
 
     try:
-        exito, error = dao.guardarCliente(
-            data['nombre'].strip().upper(),
-            data['apellido'].strip().upper(),
-            data['cedula'].strip(),
-            data['direccion'].strip().upper(),
-            data['telefono'].strip()
+        exito, resultado = dao.guardarCliente(
+            nombre    = data['nombre'].strip().upper(),
+            cedula    = data['cedula'].strip(),
+            direccion = data.get('direccion', '').strip().upper(),
+            telefono  = data.get('telefono', '').strip(),
+            cta_cobrar= data.get('cta_cobrar', False)
         )
         if exito:
-            return response_json(True, data=data, status_code=201)
-        else:
-            return response_json(False, error=error or "No se pudo guardar el cliente.", status_code=500)
+            return response_json(True, {'id_cliente': resultado}, status_code=201)
+        return response_json(False, error=resultado or 'No se pudo guardar el cliente.', status_code=500)
     except Exception as e:
         app.logger.error(f"Error al agregar cliente: {e}")
         return response_json(False, error='Error interno.', status_code=500)
@@ -65,30 +58,26 @@ def addCliente():
 def updateCliente(id_cliente):
     data = request.get_json() or {}
     dao = ClienteDao()
-    campos_requeridos = ['nombre', 'apellido', 'cedula', 'direccion', 'telefono']
 
-    for campo in campos_requeridos:
+    for campo in ['nombre', 'cedula']:
         if campo not in data or not str(data[campo]).strip():
             return response_json(False, error=f'El campo {campo} es obligatorio.', status_code=400)
 
     try:
-        cliente_existente = dao.getClienteById(id_cliente)
-        if not cliente_existente:
+        if not dao.getClienteById(id_cliente):
             return response_json(False, error='Cliente no encontrado.', status_code=404)
 
         exito, error = dao.updateCliente(
-            id_cliente,
-            data['nombre'].strip().upper(),
-            data['apellido'].strip().upper(),
-            data['cedula'].strip(),
-            data['direccion'].strip().upper(),
-            data['telefono'].strip()
+            id_cliente = id_cliente,
+            nombre     = data['nombre'].strip().upper(),
+            cedula     = data['cedula'].strip(),
+            direccion  = data.get('direccion', '').strip().upper(),
+            telefono   = data.get('telefono', '').strip(),
+            cta_cobrar = data.get('cta_cobrar', False)
         )
         if exito:
-            return response_json(True, data=data)
-        else:
-            return response_json(False, error=error or "No se pudo actualizar el cliente.", status_code=500)
-
+            return response_json(True, data)
+        return response_json(False, error=error or 'No se pudo actualizar el cliente.', status_code=500)
     except Exception as e:
         app.logger.error(f"Error al actualizar cliente: {e}")
         return response_json(False, error='Error interno.', status_code=500)
@@ -98,16 +87,13 @@ def updateCliente(id_cliente):
 def deleteCliente(id_cliente):
     dao = ClienteDao()
     try:
-        cliente_existente = dao.getClienteById(id_cliente)
-        if not cliente_existente:
+        if not dao.getClienteById(id_cliente):
             return response_json(False, error='Cliente no encontrado.', status_code=404)
 
         exito, error = dao.deleteCliente(id_cliente)
         if exito:
-            return response_json(True, data={'mensaje': f'Cliente {id_cliente} eliminado correctamente.'})
-        else:
-            return response_json(False, error=error or "No se pudo eliminar el cliente.", status_code=500)
-
+            return response_json(True, {'mensaje': f'Cliente {id_cliente} eliminado.'})
+        return response_json(False, error=error or 'No se pudo eliminar.', status_code=500)
     except Exception as e:
         app.logger.error(f"Error al eliminar cliente: {e}")
         return response_json(False, error='Error interno.', status_code=500)

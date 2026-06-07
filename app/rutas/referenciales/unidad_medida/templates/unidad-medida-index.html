@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block titulo %}Unidades de Medida{% endblock %}
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Unidades de Medida</h3>
+    <div class="card">
+      <div class="card-header"><button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button></div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Tipo</th><th>Acciones</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
+        <div class="modal-header"><h4 class="modal-title" id="modalTitle"></h4>
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="txtId">
+          <div class="form-group">
+            <label for="txtCodigo">Código (ej. UN, KG, LT):</label>
+            <input type="text" class="form-control" placeholder="KG" id="txtCodigo" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="txtDescripcion">Descripción:</label>
+            <input type="text" class="form-control" placeholder="Kilogramo" id="txtDescripcion" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="txtTipo">Tipo de unidad:</label>
+            <select class="form-control" id="txtTipo">
+              <option value="">-- Sin especificar --</option>
+              <option value="Unidad">Unidad</option>
+              <option value="Peso">Peso</option>
+              <option value="Volumen">Volumen</option>
+              <option value="Longitud">Longitud</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button></div>
+      </div></div>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+  const API = '/api/v1/unidad_medida';
+  const initDatatable = () => {
+    $('#tbl').DataTable({
+      language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+      ajax: API,
+      columns: [
+        { data: 'id' }, { data: 'codigo' }, { data: 'descripcion' }, { data: 'tipo' },
+        { data: null, render: r => `<button type="button" name="btn_editar" class="btn btn-primary btn-sm mr-1" data-id="${r.id}">Editar</button><button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${r.id}">Eliminar</button>`, orderable:false, searchable:false }
+      ],
+      destroy: true
+    });
+  }
+  const limpiar = () => { $('#txtId').val(""); $('#txtCodigo').val(""); $('#txtDescripcion').val(""); $('#txtTipo').val(""); };
+  $('#btnAgregar').on('click', () => { $('#modalTitle').text("Agregar Unidad"); limpiar(); $('#modalFormulario').modal('show'); });
+  $('#btnGuardar').on('click', function(){
+    const id = $('#txtId').val();
+    const codigo = $('#txtCodigo').val().trim();
+    const descripcion = $('#txtDescripcion').val().trim();
+    const tipo = $('#txtTipo').val();
+    const tabla = $('#tbl').DataTable();
+    if (!descripcion) { Swal.fire("Error","La descripción es obligatoria.","warning"); return; }
+    fetch(id ? `${API}/${id}` : API, { method: id?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({codigo, descripcion, tipo}) })
+    .then(r=>r.json()).then(d=>{ if(d&&d.success){ tabla.ajax.reload(null,false); Swal.fire(id?"Actualizada":"Agregada","Unidad guardada.","success"); } else { Swal.fire("Error", d.error||"Error.","error"); } })
+    .catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");});
+    $('#modalFormulario').modal("hide");
+  });
+  $('#tbl').on('click','button[name="btn_editar"]', function(){
+    const id = $(this).data('id');
+    fetch(`${API}/${id}`).then(r=>r.json()).then(d=>{ if(d&&d.success){ $('#modalTitle').text("Editar Unidad"); $('#txtId').val(id); $('#txtCodigo').val(d.data.codigo||""); $('#txtDescripcion').val(d.data.descripcion||""); $('#txtTipo').val(d.data.tipo||""); $('#modalFormulario').modal('show'); } else { Swal.fire("Error", d.error||"No se pudo obtener.","error"); } })
+    .catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");});
+  });
+  $('#tbl').on('click','button[name="btn_eliminar"]', function(){
+    const id = $(this).data('id');
+    Swal.fire({title:"¿Deseas eliminar este registro?",icon:'warning',showCancelButton:true,confirmButtonText:"Sí",cancelButtonText:"No"}).then(res=>{
+      if(res.isConfirmed){ fetch(`${API}/${id}`,{method:'DELETE',headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>{ if(d&&d.success){ $('#tbl').DataTable().ajax.reload(null,false); Swal.fire("Eliminada","Unidad eliminada.","success"); } else { Swal.fire("Error", d.error||"No se pudo eliminar.","error"); } }).catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");}); }
+    });
+  });
+  $(document).ready(()=> initDatatable());
+</script>
+{% endblock %}

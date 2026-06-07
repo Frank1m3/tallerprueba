@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block titulo %}Cierre de Caja{% endblock %}
 
 {% block contenido %}
@@ -16,7 +15,6 @@
     --ci-radius:  10px;
   }
 
-  /* ---- Encabezado ---- */
   .ci-page-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 1.4rem 0 1.2rem;
@@ -33,25 +31,19 @@
     color: #fff; font-size: .9rem; flex-shrink: 0;
     background: var(--ci-indigo);
   }
-
-  /* ---- Card ---- */
   .ci-card {
-    background: #fff;
-    border: 1px solid var(--ci-border);
+    background: #fff; border: 1px solid var(--ci-border);
     border-radius: var(--ci-radius);
-    box-shadow: 0 1px 6px rgba(0,0,0,.06);
-    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,.06); overflow: hidden;
   }
   .ci-card-header {
-    padding: .8rem 1.25rem;
-    background: var(--ci-bg);
+    padding: .8rem 1.25rem; background: var(--ci-bg);
     border-bottom: 1px solid var(--ci-border);
     font-size: .8rem; font-weight: 700; color: #374151;
     text-transform: uppercase; letter-spacing: .05em;
   }
   .ci-card-body { padding: 1.25rem; }
 
-  /* ---- Tabla ---- */
   #tbl thead th {
     background: #f1f5f9; color: #374151;
     font-size: .75rem; font-weight: 700;
@@ -61,158 +53,128 @@
   }
   #tbl tbody td {
     font-size: .855rem; color: #1f2937;
-    vertical-align: middle;
-    padding: .58rem .8rem;
+    vertical-align: middle; padding: .58rem .8rem;
     border-bottom: 1px solid #f3f4f6;
   }
   #tbl tbody tr:hover td { background: #f8faff; }
 
-  /* ---- Badges ---- */
   .badge-estado {
     display: inline-flex; align-items: center; gap: .3rem;
     padding: .25rem .65rem; border-radius: 999px;
-    font-size: .71rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .03em;
+    font-size: .71rem; font-weight: 700; text-transform: uppercase;
   }
-  .badge-estado::before {
-    content:''; width:6px; height:6px;
-    border-radius:50%; background:currentColor;
-  }
-  .badge-abierto  { background: #d1fae5; color: #065f46; }
-  .badge-cerrado  { background: #e0e7ff; color: #3730a3; }
-  .badge-anulado  { background: #fee2e2; color: #991b1b; }
+  .badge-estado::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .badge-abierto { background:#d1fae5; color:#065f46; }
+  .badge-cerrado { background:#e0e7ff; color:#3730a3; }
+  .badge-anulado { background:#fee2e2; color:#991b1b; }
 
-  /* ---- Diferencia ---- */
-  .dif-pos { color: var(--ci-success); font-weight: 700; }
-  .dif-neg { color: var(--ci-danger);  font-weight: 700; }
-  .dif-neu { color: var(--ci-muted);   font-weight: 600; }
+  .dif-pos { color:var(--ci-success); font-weight:700; }
+  .dif-neg { color:var(--ci-danger);  font-weight:700; }
+  .dif-neu { color:var(--ci-muted);   font-weight:600; }
+  .nro-turno  { font-weight:800; color:var(--ci-indigo); font-variant-numeric:tabular-nums; }
+  .monto-cell { font-weight:600; font-variant-numeric:tabular-nums; }
 
-  .nro-turno  { font-weight: 800; color: var(--ci-indigo); font-variant-numeric: tabular-nums; }
-  .monto-cell { font-weight: 600; font-variant-numeric: tabular-nums; }
-
-  /* ---- Botones ---- */
   .btn-ci {
-    display: inline-flex; align-items: center; gap: .35rem;
-    padding: .44rem 1rem; border-radius: 7px;
-    font-size: .84rem; font-weight: 600;
-    border: none; cursor: pointer;
-    transition: opacity .15s, transform .1s;
+    display:inline-flex; align-items:center; gap:.35rem;
+    padding:.44rem 1rem; border-radius:7px;
+    font-size:.84rem; font-weight:600;
+    border:none; cursor:pointer;
+    transition:opacity .15s,transform .1s;
   }
-  .btn-ci:hover  { opacity: .87; transform: translateY(-1px); }
-  .btn-ci:active { transform: scale(.97); }
-  .btn-cerrar-sm {
-    display: inline-flex; align-items: center; gap: .3rem;
-    background: #eff6ff; color: var(--ci-primary);
-    border: 1px solid #bfdbfe;
-    padding: .28rem .65rem; font-size: .77rem;
-    border-radius: 5px; font-weight: 600; cursor: pointer;
-    transition: background .15s;
-  }
-  .btn-cerrar-sm:hover    { background: #dbeafe; }
-  .btn-cerrar-sm:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-ci:hover  { opacity:.87; transform:translateY(-1px); }
+  .btn-ci:active { transform:scale(.97); }
+  .btn-primary-ci { background:var(--ci-indigo); color:#fff; box-shadow:0 2px 8px rgba(67,56,202,.22); }
+  .btn-success-ci { background:var(--ci-success); color:#fff; box-shadow:0 2px 8px rgba(22,163,74,.2); }
+  .btn-cancel-ci  { background:#f3f4f6; color:#374151; border:1px solid var(--ci-border); }
 
-  /* ---- Modal detalle ---- */
-  .ci-modal .modal-content {
-    border: none; border-radius: 14px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.16); overflow: hidden;
+  .btn-sm-ci {
+    display:inline-flex; align-items:center; gap:.3rem;
+    padding:.28rem .65rem; font-size:.77rem; border-radius:5px; font-weight:600; cursor:pointer;
   }
-  .ci-modal .modal-header {
-    background: var(--ci-indigo); padding: 1rem 1.4rem; border-bottom: none;
-  }
-  .ci-modal .modal-title {
-    font-size: 1rem; font-weight: 700; color: #fff;
-    display: flex; align-items: center; gap: .5rem;
-  }
-  .ci-modal .modal-header .close { color: rgba(255,255,255,.75); opacity: 1; font-size: 1.3rem; }
-  .ci-modal .modal-header .close:hover { color: #fff; }
-  .ci-modal .modal-body   { padding: 1.5rem; background: #fff; }
-  .ci-modal .modal-footer {
-    background: var(--ci-bg); border-top: 1px solid var(--ci-border); padding: .85rem 1.4rem;
-  }
+  .btn-ver-ci   { background:#eff6ff; color:var(--ci-primary); border:1px solid #bfdbfe; }
+  .btn-ver-ci:hover { background:#dbeafe; }
+  .btn-cerrar-ci { background:#f0fdf4; color:var(--ci-success); border:1px solid #bbf7d0; }
+  .btn-cerrar-ci:hover    { background:#d1fae5; }
+  .btn-cerrar-ci:disabled { opacity:.35; cursor:not-allowed; }
 
-  /* Grilla de datos del modal */
-  .detail-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
-    margin-bottom: 1rem;
-  }
-  .detail-item {
-    background: var(--ci-bg); border: 1px solid var(--ci-border);
-    border-radius: 8px; padding: .65rem .9rem;
-  }
-  .detail-item.full { grid-column: 1 / -1; }
-  .detail-label {
-    font-size: .68rem; font-weight: 700; color: var(--ci-muted);
-    text-transform: uppercase; letter-spacing: .06em; margin-bottom: .2rem;
-  }
-  .detail-value {
-    font-size: .9rem; font-weight: 700; color: #111827;
-  }
-  .detail-value.accent  { color: var(--ci-indigo); }
-  .detail-value.success { color: var(--ci-success); }
-  .detail-value.danger  { color: var(--ci-danger); }
+  /* Modal nuevo cierre */
+  .ci-modal .modal-content { border:none; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.16); overflow:hidden; }
+  .ci-modal .modal-header  { padding:1rem 1.4rem; border:none; }
+  .ci-modal .modal-body    { padding:1.4rem; background:#fff; }
+  .ci-modal .modal-footer  { background:var(--ci-bg); border-top:1px solid var(--ci-border); padding:.85rem 1.4rem; }
 
-  /* Monto resumen en modal */
-  .monto-resumen {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;
-    margin: .75rem 0;
+  .ci-label { font-size:.76rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.3rem; display:block; }
+  .ci-select, .ci-textarea {
+    font-size:.875rem; border:1px solid var(--ci-border); border-radius:7px;
+    padding:.44rem .75rem; color:#1f2937; width:100%;
+    transition:border-color .15s, box-shadow .15s;
   }
-  .monto-box {
-    border-radius: 8px; padding: .75rem .9rem; text-align: center;
-    border: 1px solid var(--ci-border);
-  }
-  .monto-box .mb-label {
-    font-size: .67rem; font-weight: 700; color: var(--ci-muted);
-    text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem;
-  }
-  .monto-box .mb-value {
-    font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums;
-  }
-  .box-apertura  { background: #f0fdf4; border-color: #bbf7d0; }
-  .box-apertura  .mb-value { color: var(--ci-success); }
-  .box-cierre    { background: #eff6ff; border-color: #bfdbfe; }
-  .box-cierre    .mb-value { color: var(--ci-primary); }
-  .box-diferencia { background: #fefce8; border-color: #fde68a; }
-  .box-diferencia .mb-value { color: var(--ci-warn); }
-  .box-diferencia.negativa { background: #fff1f2; border-color: #fca5a5; }
-  .box-diferencia.negativa .mb-value { color: var(--ci-danger); }
+  .ci-select:focus, .ci-textarea:focus { border-color:var(--ci-indigo); box-shadow:0 0 0 3px rgba(67,56,202,.1); outline:none; }
 
-  /* Observación */
-  .obs-box {
-    background: var(--ci-bg); border: 1px solid var(--ci-border);
-    border-radius: 8px; padding: .65rem .9rem;
-    font-size: .85rem; color: #374151;
-    min-height: 48px;
+  /* Info chips */
+  .resumen-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin:.85rem 0;
   }
-  .ap-divider { border: none; border-top: 1px solid var(--ci-border); margin: .85rem 0; }
+  .resumen-box {
+    border-radius:9px; padding:.85rem 1rem; text-align:center; border:1px solid var(--ci-border);
+  }
+  .resumen-box .rb-label { font-size:.68rem; font-weight:700; color:var(--ci-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.3rem; }
+  .resumen-box .rb-value { font-size:1.05rem; font-weight:900; font-variant-numeric:tabular-nums; }
+  .box-inicial { background:#f0fdf4; border-color:#bbf7d0; }
+  .box-inicial .rb-value { color:var(--ci-success); }
+  .box-ventas  { background:#eff6ff; border-color:#bfdbfe; }
+  .box-ventas  .rb-value { color:var(--ci-primary); }
+  .box-cant    { background:var(--ci-bg); border-color:var(--ci-border); }
+  .box-cant    .rb-value { color:#374151; }
 
-  /* DataTables */
+  /* Modal detalle */
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:1rem; }
+  .detail-item { background:var(--ci-bg); border:1px solid var(--ci-border); border-radius:8px; padding:.65rem .9rem; }
+  .detail-label { font-size:.68rem; font-weight:700; color:var(--ci-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.2rem; }
+  .detail-value { font-size:.9rem; font-weight:700; color:#111827; }
+  .detail-value.accent { color:var(--ci-indigo); }
+  .monto-resumen { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin:.75rem 0; }
+  .monto-box { border-radius:8px; padding:.75rem .9rem; text-align:center; border:1px solid var(--ci-border); }
+  .monto-box .mb-label { font-size:.67rem; font-weight:700; color:var(--ci-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.3rem; }
+  .monto-box .mb-value { font-size:1rem; font-weight:800; font-variant-numeric:tabular-nums; }
+  .box-apertura  { background:#f0fdf4; border-color:#bbf7d0; }
+  .box-apertura  .mb-value { color:var(--ci-success); }
+  .box-cierre    { background:#eff6ff; border-color:#bfdbfe; }
+  .box-cierre    .mb-value { color:var(--ci-primary); }
+  .box-diferencia { background:#fefce8; border-color:#fde68a; }
+  .box-diferencia .mb-value { color:var(--ci-warn); }
+  .box-diferencia.negativa { background:#fff1f2; border-color:#fca5a5; }
+  .box-diferencia.negativa .mb-value { color:var(--ci-danger); }
+  .obs-box { background:var(--ci-bg); border:1px solid var(--ci-border); border-radius:8px; padding:.65rem .9rem; font-size:.85rem; color:#374151; min-height:48px; }
+  .ap-divider { border:none; border-top:1px solid var(--ci-border); margin:.85rem 0; }
+
   div.dataTables_wrapper div.dataTables_filter input,
   div.dataTables_wrapper div.dataTables_length select {
-    border-radius: 6px; border: 1px solid var(--ci-border); padding: .3rem .6rem; font-size: .82rem;
+    border-radius:6px; border:1px solid var(--ci-border); padding:.3rem .6rem; font-size:.82rem;
   }
-  .dataTables_paginate .paginate_button { border-radius: 6px !important; font-size: .8rem !important; }
+  .dataTables_paginate .paginate_button { border-radius:6px!important; font-size:.8rem!important; }
   .dataTables_paginate .paginate_button.current,
   .dataTables_paginate .paginate_button.current:hover {
-    background: var(--ci-indigo) !important; color: #fff !important;
-    border-color: var(--ci-indigo) !important;
+    background:var(--ci-indigo)!important; color:#fff!important; border-color:var(--ci-indigo)!important;
   }
+  .spin { animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
 </style>
 
 <div class="container-fluid px-4">
 
-  <!-- Encabezado -->
   <div class="ci-page-header">
     <h2>
       <span class="icon-box"><i class="fas fa-store-slash"></i></span>
       Cierre de Caja
     </h2>
+    <button class="btn-ci btn-primary-ci" id="btnNuevoCierre">
+      <i class="fas fa-plus"></i> Nuevo Cierre
+    </button>
   </div>
 
-  <!-- Tabla -->
   <div class="ci-card">
-    <div class="ci-card-header">
-      <i class="fas fa-list me-1"></i> Cierres registrados
-    </div>
+    <div class="ci-card-header"><i class="fas fa-list me-1"></i> Cierres registrados</div>
     <div class="ci-card-body">
       <div class="table-responsive">
         <table id="tbl" class="table table-hover w-100">
@@ -222,7 +184,7 @@
               <th>Cajero</th>
               <th>Fiscal</th>
               <th class="text-end">Monto Apertura</th>
-              <th class="text-end">Monto Cierre</th>
+              <th class="text-end">Total Ventas</th>
               <th class="text-end">Diferencia</th>
               <th>Hora Apertura</th>
               <th>Fecha Cierre</th>
@@ -238,23 +200,91 @@
 
 </div>
 
+<!-- ===== MODAL NUEVO CIERRE ===== -->
+<div class="modal fade ci-modal" id="modalNuevoCierre" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--ci-indigo)">
+        <h5 class="modal-title" style="color:#fff;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:.5rem;margin:0">
+          <i class="fas fa-store-slash"></i> Nuevo Cierre de Turno
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Selección apertura -->
+        <div class="mb-3">
+          <label class="ci-label">Turno a cerrar</label>
+          <div style="display:flex;gap:.5rem">
+            <select class="ci-select" id="selAperturaCierre" style="flex:1">
+              <option value="">— Seleccione un turno activo —</option>
+            </select>
+            <button class="btn-ci btn-primary-ci" id="btnCargarCierre" style="height:38px;white-space:nowrap">
+              <i class="fas fa-sync-alt"></i> Cargar
+            </button>
+          </div>
+        </div>
+
+        <!-- Resumen -->
+        <div id="resumenCierre" style="display:none">
+          <div class="resumen-grid">
+            <div class="resumen-box box-inicial">
+              <div class="rb-label"><i class="fas fa-door-open me-1"></i>Monto Apertura</div>
+              <div class="rb-value" id="ciMontoInicial">₲ 0</div>
+            </div>
+            <div class="resumen-box box-ventas">
+              <div class="rb-label"><i class="fas fa-shopping-cart me-1"></i>Total Ventas</div>
+              <div class="rb-value" id="ciTotalVentas">₲ 0</div>
+            </div>
+            <div class="resumen-box box-cant">
+              <div class="rb-label"><i class="fas fa-receipt me-1"></i>Cant. Ventas</div>
+              <div class="rb-value" id="ciCantVentas">0</div>
+            </div>
+          </div>
+
+          <!-- Info turno -->
+          <div style="background:#f9fafb;border:1px solid var(--ci-border);border-radius:8px;padding:.65rem .9rem;margin-bottom:.85rem;display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <div>
+              <div style="font-size:.68rem;font-weight:700;color:var(--ci-muted);text-transform:uppercase">Cajero</div>
+              <div style="font-size:.87rem;font-weight:700" id="ciCajero">—</div>
+            </div>
+            <div>
+              <div style="font-size:.68rem;font-weight:700;color:var(--ci-muted);text-transform:uppercase">Fiscal</div>
+              <div style="font-size:.87rem;font-weight:700" id="ciFiscal">—</div>
+            </div>
+          </div>
+
+          <!-- Observación -->
+          <div>
+            <label class="ci-label">Observación (opcional)</label>
+            <textarea class="ci-textarea" id="ciObservacion" rows="2" placeholder="Notas del cierre…"></textarea>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn-ci btn-cancel-ci" data-dismiss="modal">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="button" class="btn-ci btn-success-ci" id="btnGuardarCierre" disabled>
+          <i class="fas fa-save"></i> Registrar Cierre
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL DETALLE ===== -->
 <div class="modal fade ci-modal" id="modalDetalle" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-md" role="document">
     <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="fas fa-store-slash"></i>
-          Detalle — Turno <span id="detTurno">—</span>
+      <div class="modal-header" style="background:var(--ci-indigo)">
+        <h5 class="modal-title" style="color:#fff;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:.5rem;margin:0">
+          <i class="fas fa-store-slash"></i> Detalle — Turno <span id="detTurno">—</span>
         </h5>
-        <button type="button" class="close" data-dismiss="modal">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,.8);opacity:1"><span>&times;</span></button>
       </div>
-
       <div class="modal-body">
-
         <div class="detail-grid">
           <div class="detail-item">
             <div class="detail-label"><i class="fas fa-user me-1"></i>Cajero</div>
@@ -273,17 +303,14 @@
             <div class="detail-value accent" id="detRegistro">—</div>
           </div>
         </div>
-
         <hr class="ap-divider">
-
-        <!-- Resumen montos -->
         <div class="monto-resumen">
           <div class="monto-box box-apertura">
             <div class="mb-label">Monto Apertura</div>
             <div class="mb-value" id="detMontoApertura">—</div>
           </div>
           <div class="monto-box box-cierre">
-            <div class="mb-label">Monto Cierre</div>
+            <div class="mb-label">Total Ventas</div>
             <div class="mb-value" id="detMontoCierre">—</div>
           </div>
           <div class="monto-box box-diferencia" id="boxDiferencia">
@@ -291,25 +318,18 @@
             <div class="mb-value" id="detDiferencia">—</div>
           </div>
         </div>
-
         <hr class="ap-divider">
-
         <div class="detail-label mb-1"><i class="fas fa-comment me-1"></i>Observación</div>
         <div class="obs-box" id="detObservacion">Sin observaciones.</div>
-
       </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-ci" style="background:#f3f4f6;color:#374151;border:1px solid var(--ci-border)"
-                data-dismiss="modal">
+      <div class="modal-footer" style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn-ci btn-cancel-ci" data-dismiss="modal">
           <i class="fas fa-times"></i> Cerrar
         </button>
-        <button type="button" class="btn-ci" id="btnCerrarDesdeModal"
-                style="background:var(--ci-indigo);color:#fff;box-shadow:0 2px 8px rgba(67,56,202,.22)">
+        <button type="button" class="btn-ci btn-success-ci" id="btnCerrarDesdeModal" style="display:none">
           <i class="fas fa-lock"></i> Confirmar Cierre
         </button>
       </div>
-
     </div>
   </div>
 </div>
@@ -320,118 +340,192 @@
 <script>
 const CSRFToken = "{{ csrf_token() }}";
 
-function fmtMonto(n){
-  return '\u20b2 ' + parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
+function fmt(n){ return '\u20b2 ' + parseFloat(n||0).toLocaleString('es-PY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function estadoBadge(e){
-  const v = (e||'').toLowerCase();
-  if(v==='abierto')  return '<span class="badge-estado badge-abierto">Abierto</span>';
-  if(v==='cerrado')  return '<span class="badge-estado badge-cerrado">Cerrado</span>';
-  if(v==='anulado')  return '<span class="badge-estado badge-anulado">Anulado</span>';
+  const v=(e||'').toLowerCase();
+  if(v==='abierto') return '<span class="badge-estado badge-abierto">Abierto</span>';
+  if(v==='cerrado') return '<span class="badge-estado badge-cerrado">Cerrado</span>';
+  if(v==='anulado') return '<span class="badge-estado badge-anulado">Anulado</span>';
   return '<span class="badge-estado" style="background:#f3f4f6;color:#374151">'+e+'</span>';
 }
 
-function fmtDiferencia(n){
-  const v = parseFloat(n||0);
-  const fmt = '\u20b2 ' + Math.abs(v).toLocaleString('es-PY', {minimumFractionDigits:2});
-  if(v > 0)  return '<span class="dif-pos">+'+fmt+'</span>';
-  if(v < 0)  return '<span class="dif-neg">-'+fmt+'</span>';
-  return '<span class="dif-neu">' + fmt + '</span>';
+function fmtDif(n){
+  const v=parseFloat(n||0);
+  const f='\u20b2 '+Math.abs(v).toLocaleString('es-PY',{minimumFractionDigits:2});
+  if(v>0) return '<span class="dif-pos">+'+f+'</span>';
+  if(v<0) return '<span class="dif-neg">-'+f+'</span>';
+  return '<span class="dif-neu">'+f+'</span>';
 }
 
-/* ---- Tabla ---- */
+// ---- Tabla ----
 let tabla;
-function initDatatable(){
+$(document).ready(function(){
   tabla = $('#tbl').DataTable({
-    language: { url:"{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
-    ajax: { url:'/api/v1/cierres', dataSrc:'data' },
-    order: [[0,'desc']],
-    pageLength: 15,
+    language:{ url:"{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax:{ url:'/api/v1/cierres', dataSrc:'data' },
+    order:[[0,'desc']], pageLength:15,
     columns:[
-      { data:'nro_turno',    render: v=>'<span class="nro-turno">#'+v+'</span>' },
+      { data:'nro_turno',    render:v=>'<span class="nro-turno">#'+v+'</span>' },
       { data:'cajero' },
       { data:'fiscal' },
-      { data:'monto_inicial', className:'text-end', render: v=>'<span class="monto-cell">'+fmtMonto(v)+'</span>' },
-      { data:'monto_final',   className:'text-end', render: v=>'<span class="monto-cell">'+fmtMonto(v)+'</span>' },
-      { data:'diferencia',    className:'text-end', render: v=>fmtDiferencia(v) },
+      { data:'monto_inicial', className:'text-end', render:v=>'<span class="monto-cell">'+fmt(v)+'</span>' },
+      { data:'monto_final',   className:'text-end', render:v=>'<span class="monto-cell">'+fmt(v)+'</span>' },
+      { data:'diferencia',    className:'text-end', render:v=>fmtDif(v) },
       { data:'hora_apertura' },
       { data:'registro' },
-      { data:'estado', className:'text-center', render: v=>estadoBadge(v) },
-      {
-        data: null, orderable:false, className:'text-center',
-        render: function(row){
-          const abierto = (row.estado||'').toLowerCase() === 'abierto';
-          return '<button class="btn-cerrar-sm btn-ver-detalle" data-id="'+row.id_cierre+'">'
-               + '<i class="fas fa-eye"></i> Ver</button> '
-               + '<button class="btn-cerrar-sm btn-cerrar" data-id="'+row.id_cierre+'" '+(abierto?'':'disabled')+'>'
-               + '<i class="fas fa-lock"></i> Cerrar</button>';
+      { data:'estado', className:'text-center', render:v=>estadoBadge(v) },
+      { data:null, orderable:false, className:'text-center',
+        render:function(row){
+          const abierto=(row.estado||'').toLowerCase()==='abierto';
+          return '<button class="btn-sm-ci btn-ver-ci btn-ver-detalle me-1" data-id="'+row.id_cierre+'"><i class="fas fa-eye"></i> Ver</button>'+
+                 '<button class="btn-sm-ci btn-cerrar-ci btn-cerrar" data-id="'+row.id_cierre+'" '+(abierto?'':'disabled')+'><i class="fas fa-lock"></i> Cerrar</button>';
         }
       }
     ]
   });
-}
+});
 
-/* ---- Ver detalle en modal ---- */
-let idCierreActual = null;
+// ---- Nuevo Cierre ----
+let aperturaSeleccionada = null;
 
-$('#tbl tbody').on('click', '.btn-ver-detalle', function(){
-  const id = $(this).data('id');
-  idCierreActual = id;
+$('#btnNuevoCierre').on('click', function(){
+  aperturaSeleccionada = null;
+  $('#selAperturaCierre').val('');
+  $('#resumenCierre').hide();
+  $('#btnGuardarCierre').prop('disabled', true);
+  $('#ciObservacion').val('');
 
-  fetch('/api/v1/cierres/'+id)
+  // Cargar aperturas activas
+  fetch('/api/v1/aperturas')
     .then(r=>r.json())
     .then(data=>{
-      if(!data.success) return Swal.fire('Error', data.error||'No se pudo cargar.', 'error');
-      const c = data.data;
+      const sel=$('#selAperturaCierre');
+      sel.find('option:not(:first)').remove();
+      const activas=(data.data||[]).filter(a=>(a.estado||'').toLowerCase()==='activo');
+      if(activas.length){
+        activas.forEach(a=>{
+          sel.append('<option value="'+a.id_apertura+'">Turno #'+a.nro_turno+' — '+a.cajero+' ('+a.registro+')</option>');
+        });
+      } else {
+        sel.append('<option disabled>Sin turnos activos</option>');
+      }
+    });
 
-      $('#detTurno').text('#'+c.nro_turno);
-      $('#detCajero').text(c.cajero||'—');
-      $('#detFiscal').text(c.fiscal||'—');
-      $('#detHoraApertura').text(c.hora_apertura||'—');
-      $('#detRegistro').text(c.registro||'—');
-      $('#detMontoApertura').text(fmtMonto(c.monto_inicial));
-      $('#detMontoCierre').text(fmtMonto(c.monto_final));
+  $('#modalNuevoCierre').modal('show');
+});
 
-      // Diferencia con color
-      const dif = parseFloat(c.diferencia||0);
-      $('#detDiferencia').text(
-        (dif>=0?'+':'-') + '\u20b2 ' + Math.abs(dif).toLocaleString('es-PY',{minimumFractionDigits:2})
-      );
-      const boxDif = $('#boxDiferencia');
-      boxDif.toggleClass('negativa', dif < 0);
+$('#btnCargarCierre').on('click', function(){
+  const id=$('#selAperturaCierre').val();
+  if(!id) return Swal.fire({title:'Seleccioná un turno',icon:'warning',timer:1400,showConfirmButton:false});
 
-      $('#detObservacion').text(c.observacion || 'Sin observaciones.');
+  const btn=$(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i>');
 
-      // Botón confirmar cierre: solo si está abierto
-      const abierto = (c.estado||'').toLowerCase() === 'abierto';
-      $('#btnCerrarDesdeModal').toggle(abierto);
+  fetch('/api/v1/cierres/total-ventas/'+id)
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.success){ Swal.fire('Error',data.error||'No se pudo cargar.','error'); return; }
 
-      $('#modalDetalle').modal('show');
+      aperturaSeleccionada = {
+        id_apertura:   parseInt(id),
+        nro_turno:     data.nro_turno,
+        cajero:        data.cajero,
+        fiscal:        data.fiscal,
+        monto_inicial: data.monto_inicial,
+        total_ventas:  data.total_ventas,
+        cant_ventas:   data.cant_ventas
+      };
+
+      $('#ciMontoInicial').text(fmt(data.monto_inicial));
+      $('#ciTotalVentas').text(fmt(data.total_ventas));
+      $('#ciCantVentas').text(data.cant_ventas + ' venta' + (data.cant_ventas!==1?'s':''));
+      $('#ciCajero').text(data.cajero||'—');
+      $('#ciFiscal').text(data.fiscal||'—');
+      $('#resumenCierre').show();
+      $('#btnGuardarCierre').prop('disabled', false);
     })
-    .catch(()=>Swal.fire('Error','Error al cargar el detalle.','error'));
+    .catch(()=>Swal.fire('Error','Error al cargar datos.','error'))
+    .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-sync-alt"></i> Cargar'));
 });
 
-/* ---- Cerrar desde la tabla ---- */
-$('#tbl tbody').on('click', '.btn-cerrar', function(){
-  const id = $(this).data('id');
-  confirmarCierre(id);
+$('#btnGuardarCierre').on('click', function(){
+  if(!aperturaSeleccionada) return;
+
+  Swal.fire({
+    title:'¿Registrar cierre?',
+    html:'Se registrará el cierre del turno <strong>#'+aperturaSeleccionada.nro_turno+'</strong>.<br>Total ventas: <strong>'+fmt(aperturaSeleccionada.total_ventas)+'</strong>',
+    icon:'question', showCancelButton:true,
+    confirmButtonText:'Sí, registrar', cancelButtonText:'Cancelar',
+    confirmButtonColor:'#16a34a'
+  }).then(r=>{
+    if(!r.isConfirmed) return;
+
+    const btn=$(this).prop('disabled',true).html('<i class="fas fa-circle-notch spin"></i> Registrando...');
+
+    fetch('/api/v1/cierres',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRFToken},
+      body:JSON.stringify({
+        id_apertura: aperturaSeleccionada.id_apertura,
+        observacion: $('#ciObservacion').val().trim()
+      })
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.success){
+        $('#modalNuevoCierre').modal('hide');
+        tabla.ajax.reload(null,false);
+        Swal.fire({
+          title:'Cierre registrado',
+          html:'Total ventas: <strong>'+fmt(data.monto_final)+'</strong><br>Diferencia: <strong>'+fmt(data.diferencia)+'</strong>',
+          icon:'success', timer:2500, showConfirmButton:false
+        });
+      } else {
+        Swal.fire('Error',data.error||'No se pudo registrar.','error');
+      }
+    })
+    .catch(()=>Swal.fire('Error','Error al registrar.','error'))
+    .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-save"></i> Registrar Cierre'));
+  });
 });
 
-/* ---- Cerrar desde el modal ---- */
-$('#btnCerrarDesdeModal').on('click', function(){
-  if(idCierreActual) confirmarCierre(idCierreActual, true);
+// ---- Ver detalle ----
+let idCierreActual = null;
+
+$('#tbl tbody').on('click','.btn-ver-detalle',function(){
+  const id=$(this).data('id');
+  idCierreActual=id;
+  fetch('/api/v1/cierres/'+id).then(r=>r.json()).then(data=>{
+    if(!data.success) return Swal.fire('Error',data.error||'No se pudo cargar.','error');
+    const c=data.data;
+    $('#detTurno').text('#'+c.nro_turno);
+    $('#detCajero').text(c.cajero||'—');
+    $('#detFiscal').text(c.fiscal||'—');
+    $('#detHoraApertura').text(c.hora_apertura||'—');
+    $('#detRegistro').text(c.registro||'—');
+    $('#detMontoApertura').text(fmt(c.monto_inicial));
+    $('#detMontoCierre').text(fmt(c.monto_final));
+    const dif=parseFloat(c.diferencia||0);
+    $('#detDiferencia').text((dif>=0?'+':'')+'\u20b2 '+Math.abs(dif).toLocaleString('es-PY',{minimumFractionDigits:2}));
+    $('#boxDiferencia').toggleClass('negativa',dif<0);
+    $('#detObservacion').text(c.observacion||'Sin observaciones.');
+    const abierto=(c.estado||'').toLowerCase()==='abierto';
+    $('#btnCerrarDesdeModal').toggle(abierto);
+    $('#modalDetalle').modal('show');
+  }).catch(()=>Swal.fire('Error','Error al cargar el detalle.','error'));
 });
+
+// ---- Cerrar desde tabla o modal ----
+$('#tbl tbody').on('click','.btn-cerrar',function(){ confirmarCierre($(this).data('id')); });
+$('#btnCerrarDesdeModal').on('click',function(){ if(idCierreActual) confirmarCierre(idCierreActual,true); });
 
 function confirmarCierre(id, desdeModal=false){
   Swal.fire({
-    title: '¿Confirmar cierre de turno?',
-    text: 'El turno pasará a estado CERRADO y no podrá reabrirse.',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, cerrar',
-    cancelButtonText: 'Cancelar',
-    confirmButtonColor: '#4338ca'
+    title:'¿Confirmar cierre de turno?',
+    text:'El turno pasará a CERRADO y no podrá reabrirse.',
+    icon:'warning', showCancelButton:true,
+    confirmButtonText:'Sí, cerrar', cancelButtonText:'Cancelar',
+    confirmButtonColor:'#4338ca'
   }).then(r=>{
     if(!r.isConfirmed) return;
     fetch('/api/v1/cierres/cerrar/'+id,{
@@ -442,20 +536,14 @@ function confirmarCierre(id, desdeModal=false){
     .then(data=>{
       if(data.success){
         if(desdeModal) $('#modalDetalle').modal('hide');
-        tabla.ajax.reload(null, false);
-        Swal.fire({
-          title:'Turno cerrado',
-          text:'El cierre fue registrado correctamente.',
-          icon:'success', timer:1800, showConfirmButton:false
-        });
+        tabla.ajax.reload(null,false);
+        Swal.fire({title:'Turno cerrado',text:'El cierre fue registrado correctamente.',icon:'success',timer:1800,showConfirmButton:false});
       } else {
-        Swal.fire('Error', data.error||'No se pudo cerrar.', 'error');
+        Swal.fire('Error',data.error||'No se pudo cerrar.','error');
       }
     })
-    .catch(()=>Swal.fire('Error','Error al cerrar el turno.','error'));
+    .catch(()=>Swal.fire('Error','Error al cerrar.','error'));
   });
 }
-
-$(document).ready(function(){ initDatatable(); });
 </script>
 {% endblock %}

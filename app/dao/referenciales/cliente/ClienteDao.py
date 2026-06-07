@@ -1,124 +1,122 @@
 from flask import current_app as app
 from app.conexion.Conexion import Conexion
 
+
 class ClienteDao:
 
     def getClientes(self):
-        clienteSQL = """
-        SELECT id_cliente, id_persona, nombre, apellido, cedula, direccion, telefono, fecha_registro
-        FROM clientes
+        sql = """
+        SELECT id_clie, clie_nombre, clie_ci, clie_direccion, clie_telefono, cta_cobrar
+        FROM cliente
+        ORDER BY clie_nombre
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(clienteSQL)
-            lista_clientes = cur.fetchall()
-            lista_ordenada = []
-            for item in lista_clientes:
-                lista_ordenada.append({
-                    "id_cliente": item[0],
-                    "id_persona": item[1],  # Relación opcional
-                    "nombre": item[2],
-                    "apellido": item[3],
-                    "cedula": item[4],
-                    "direccion": item[5],
-                    "telefono": item[6],
-                    "fecha_registro": item[7].strftime("%Y-%m-%d %H:%M:%S") if item[7] else None
-                })
-            return lista_ordenada
-        except con.Error as e:
-            app.logger.info(e)
+            cur.execute(sql)
+            filas = cur.fetchall()
+            return [{
+                "id_cliente":  f[0],
+                "nombre":      f[1] or '',
+                "cedula":      f[2] or '',
+                "direccion":   f[3] or '',
+                "telefono":    f[4] or '',
+                "cta_cobrar":  f[5] or False
+            } for f in filas]
+        except Exception as e:
+            app.logger.error(f"Error al obtener clientes: {e}")
+            return []
         finally:
             cur.close()
             con.close()
 
     def getClienteById(self, id_cliente):
-        clienteSQL = """
-        SELECT id_cliente, id_persona, nombre, apellido, cedula, direccion, telefono, fecha_registro
-        FROM clientes WHERE id_cliente=%s
+        sql = """
+        SELECT id_clie, clie_nombre, clie_ci, clie_direccion, clie_telefono, cta_cobrar
+        FROM cliente
+        WHERE id_clie = %s
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(clienteSQL, (id_cliente,))
-            clienteEncontrado = cur.fetchone()
-            if clienteEncontrado:
-                return {
-                    "id_cliente": clienteEncontrado[0],
-                    "id_persona": clienteEncontrado[1],  # Relación opcional
-                    "nombre": clienteEncontrado[2],
-                    "apellido": clienteEncontrado[3],
-                    "cedula": clienteEncontrado[4],
-                    "direccion": clienteEncontrado[5],
-                    "telefono": clienteEncontrado[6],
-                    "fecha_registro": clienteEncontrado[7].strftime("%Y-%m-%d %H:%M:%S") if clienteEncontrado[7] else None
-                }
+            cur.execute(sql, (id_cliente,))
+            f = cur.fetchone()
+            if not f:
+                return None
+            return {
+                "id_cliente": f[0],
+                "nombre":     f[1] or '',
+                "cedula":     f[2] or '',
+                "direccion":  f[3] or '',
+                "telefono":   f[4] or '',
+                "cta_cobrar": f[5] or False
+            }
+        except Exception as e:
+            app.logger.error(f"Error al obtener cliente por ID: {e}")
             return None
-        except con.Error as e:
-            app.logger.info(e)
         finally:
             cur.close()
             con.close()
 
-    def guardarCliente(self, nombre, apellido, cedula, direccion, telefono):
-        insertClienteSQL = """
-        INSERT INTO clientes(nombre, apellido, cedula, direccion, telefono)
+    def guardarCliente(self, nombre, cedula, direccion, telefono, cta_cobrar=False):
+        sql = """
+        INSERT INTO cliente (clie_nombre, clie_ci, clie_direccion, clie_telefono, cta_cobrar)
         VALUES (%s, %s, %s, %s, %s)
+        RETURNING id_clie
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(insertClienteSQL, (nombre, apellido, cedula, direccion, telefono))
+            cur.execute(sql, (nombre, cedula, direccion, telefono, cta_cobrar))
+            id_clie = cur.fetchone()[0]
             con.commit()
-            return True, None
-        except con.Error as e:
-            app.logger.info(e)
+            return True, id_clie
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al guardar cliente: {e}")
+            return False, str(e)
         finally:
             cur.close()
             con.close()
 
-        return False, 'Error al guardar el cliente.'
-
-    def updateCliente(self, id_cliente, nombre, apellido, cedula, direccion, telefono):
-        updateClienteSQL = """
-        UPDATE clientes
-        SET nombre=%s, apellido=%s, cedula=%s, direccion=%s, telefono=%s
-        WHERE id_cliente=%s
+    def updateCliente(self, id_cliente, nombre, cedula, direccion, telefono, cta_cobrar=False):
+        sql = """
+        UPDATE cliente
+        SET clie_nombre = %s, clie_ci = %s, clie_direccion = %s,
+            clie_telefono = %s, cta_cobrar = %s
+        WHERE id_clie = %s
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(updateClienteSQL, (nombre, apellido, cedula, direccion, telefono, id_cliente))
+            cur.execute(sql, (nombre, cedula, direccion, telefono, cta_cobrar, id_cliente))
             con.commit()
             return True, None
-        except con.Error as e:
-            app.logger.info(e)
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al actualizar cliente: {e}")
+            return False, str(e)
         finally:
             cur.close()
             con.close()
-
-        return False, 'Error al actualizar el cliente.'
 
     def deleteCliente(self, id_cliente):
-        deleteClienteSQL = """
-        DELETE FROM clientes
-        WHERE id_cliente=%s
-        """
+        sql = "DELETE FROM cliente WHERE id_clie = %s"
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(deleteClienteSQL, (id_cliente,))
+            cur.execute(sql, (id_cliente,))
             con.commit()
             return True, None
-        except con.Error as e:
-            app.logger.info(e)
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al eliminar cliente: {e}")
+            return False, str(e)
         finally:
             cur.close()
             con.close()
-
-        return False, 'Error al eliminar el cliente.'

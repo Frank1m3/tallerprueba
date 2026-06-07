@@ -91,25 +91,113 @@ class CierreDao:
             con.close()
 
     # ================================
-    # Cerrar cierre (estado → 'cerrado')
+    # Guardar cierre
     # ================================
-    def cerrarCierre(self, id_cierre):
+    def guardarCierre(self, id_apertura, monto_final, monto_inicial,
+                      diferencia=None, observacion=None,
+                      nro_turno=None, cajero=None, fiscal=None,
+                      hora_apertura=None):
         sql = """
-        UPDATE cierres
-        SET estado = 'cerrado'
-        WHERE id_cierre = %s AND estado = 'abierto'
+        INSERT INTO cierres
+            (id_apertura, monto_final, monto_inicial, diferencia,
+             observacion, estado, nro_turno, cajero, fiscal, hora_apertura)
+        VALUES
+            (%s, %s, %s, %s,
+             %s, 'abierto', %s, %s, %s, %s)
+        RETURNING id_cierre
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(sql, (id_cierre,))
+            cur.execute(sql, (
+                id_apertura, monto_final, monto_inicial, diferencia,
+                observacion, nro_turno, cajero, fiscal, hora_apertura
+            ))
+            id_cierre = cur.fetchone()[0]
             con.commit()
-            return cur.rowcount > 0
+            return id_cierre
         except Exception as e:
-            app.logger.error(f"Error al cerrar cierre: {e}")
             con.rollback()
+            app.logger.error(f"Error al guardar cierre: {e}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Cerrar cierre (estado → 'cerrado') y cierra la apertura en una transacción
+    # ================================
+    def cerrarCierre(self, id_cierre):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("BEGIN")
+
+            # Obtener id_apertura del cierre
+            cur.execute("""
+                SELECT id_apertura FROM cierres
+                WHERE id_cierre = %s AND estado = 'abierto'
+            """, (id_cierre,))
+            row = cur.fetchone()
+            if not row:
+                cur.execute("ROLLBACK")
+                return False
+
+            id_apertura = row[0]
+
+            # Cerrar el cierre
+            cur.execute("""
+                UPDATE cierres
+                SET estado = 'cerrado'
+                WHERE id_cierre = %s AND estado = 'abierto'
+            """, (id_cierre,))
+
+            # Cerrar la apertura asociada
+            cur.execute("""
+                UPDATE aperturas
+                SET estado = 'cerrado', fec_cierre_turno = NOW()
+                WHERE id_apertura = %s AND estado = 'activo'
+            """, (id_apertura,))
+
+            cur.execute("COMMIT")
+            return True
+
+        except Exception as e:
+            cur.execute("ROLLBACK")
+            app.logger.error(f"Error al cerrar cierre: {e}")
             return False
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Obtener total de ventas de una apertura
+    # Usa id_apertura directo en venta_cab (exacto, sin depender de fechas)
+    # ================================
+    def getTotalVentasPorApertura(self, id_apertura):
+        sql = """
+        SELECT
+            COALESCE(SUM(v.total_venta), 0) AS total_ventas,
+            COUNT(v.id_venta_cab)           AS cant_ventas
+        FROM venta_cab v
+        WHERE v.id_apertura = %s
+          AND v.estado = 'PAGADO'
+        """
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute(sql, (id_apertura,))
+            f = cur.fetchone()
+            return {
+                "total_ventas": float(f[0]) if f[0] else 0.0,
+                "cant_ventas":  int(f[1]) if f[1] else 0
+            }
+        except Exception as e:
+            app.logger.error(f"Error al obtener total ventas: {e}")
+            return {"total_ventas": 0.0, "cant_ventas": 0}
         finally:
             cur.close()
             con.close()

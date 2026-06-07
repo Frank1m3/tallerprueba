@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block titulo %}Entidades Emisoras{% endblock %}
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Listar Entidades Emisoras</h3>
+    <div class="card">
+      <div class="card-header"><button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button></div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl">
+          <thead><tr><th>ID</th><th>Descripción</th><th>Acciones</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
+        <div class="modal-header"><h4 class="modal-title" id="modalTitle"></h4>
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button></div>
+        <div class="modal-body"><div class="form-group">
+          <input type="hidden" id="txtId">
+          <label for="txtDescripcion">Descripción:</label>
+          <input type="text" class="form-control" placeholder="Ingrese una entidad emisora" id="txtDescripcion" autocomplete="off">
+        </div></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button></div>
+      </div></div>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+  const API = '/api/v1/entidad_emisora';
+  const initDatatable = () => {
+    $('#tbl').DataTable({
+      language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+      ajax: API,
+      columns: [
+        { data: 'id' }, { data: 'descripcion' },
+        { data: null, render: r => `<button type="button" name="btn_editar" class="btn btn-primary btn-sm mr-1" data-id="${r.id}">Editar</button><button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${r.id}">Eliminar</button>`, orderable:false, searchable:false }
+      ],
+      destroy: true
+    });
+  }
+  const agregar = () => $('#btnAgregar').on('click', () => { $('#modalTitle').text("Agregar"); $('#txtId').val(""); $('#txtDescripcion').val(""); $('#modalFormulario').modal('show'); });
+  const guardar = () => $('#btnGuardar').on('click', function(){
+    const id = $('#txtId').val(); const descripcion = $('#txtDescripcion').val().trim(); const tabla = $('#tbl').DataTable();
+    if (!descripcion) { Swal.fire("Error","La descripción no puede estar vacía.","warning"); return; }
+    fetch(id ? `${API}/${id}` : API, { method: id?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({descripcion}) })
+    .then(r=>r.json()).then(d=>{ if(d&&d.success){ tabla.ajax.reload(null,false); Swal.fire(id?"Actualizado":"Agregado","Registro guardado.","success"); } else { Swal.fire("Error", d.error||"Error.","error"); } })
+    .catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");});
+    $('#modalFormulario').modal("hide");
+  });
+  const editar = () => $('#tbl').on('click','button[name="btn_editar"]', function(){
+    const id = $(this).data('id');
+    fetch(`${API}/${id}`).then(r=>r.json()).then(d=>{ if(d&&d.success){ $('#modalTitle').text("Editar"); $('#txtId').val(id); $('#txtDescripcion').val(d.data.descripcion); $('#modalFormulario').modal('show'); } else { Swal.fire("Error", d.error||"No se pudo obtener.","error"); } })
+    .catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");});
+  });
+  const eliminar = () => $('#tbl').on('click','button[name="btn_eliminar"]', function(){
+    const id = $(this).data('id');
+    Swal.fire({title:"¿Deseas eliminar este registro?",icon:'warning',showCancelButton:true,confirmButtonText:"Sí",cancelButtonText:"No"}).then(res=>{
+      if(res.isConfirmed){ fetch(`${API}/${id}`,{method:'DELETE',headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>{ if(d&&d.success){ $('#tbl').DataTable().ajax.reload(null,false); Swal.fire("Eliminado","Registro eliminado.","success"); } else { Swal.fire("Error", d.error||"No se pudo eliminar.","error"); } }).catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");}); }
+    });
+  });
+  $(document).ready(()=>{ initDatatable(); agregar(); guardar(); editar(); eliminar(); });
+</script>
+{% endblock %}

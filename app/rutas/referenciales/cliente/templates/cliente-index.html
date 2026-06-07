@@ -1,285 +1,324 @@
 {% extends 'base.html' %}
-
-{% block titulo %}
-Clientes
-{% endblock %}
+{% block titulo %}Clientes{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4">
-    <h3>Listar Clientes</h3>
+<style>
+  :root {
+    --cl-primary: #1a56db;
+    --cl-danger:  #dc2626;
+    --cl-border:  #e5e7eb;
+    --cl-bg:      #f9fafb;
+    --cl-muted:   #6b7280;
+    --cl-radius:  10px;
+  }
+  .cl-page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.4rem 0 1.2rem;
+    border-bottom: 2px solid var(--cl-border);
+    margin-bottom: 1.5rem;
+  }
+  .cl-page-header h2 {
+    font-size: 1.3rem; font-weight: 700; color: #111827;
+    margin: 0; display: flex; align-items: center; gap: .5rem;
+  }
+  .icon-box {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center;
+    color: #fff; font-size: .9rem; flex-shrink: 0;
+    background: var(--cl-primary);
+  }
+  .cl-card {
+    background: #fff; border: 1px solid var(--cl-border);
+    border-radius: var(--cl-radius);
+    box-shadow: 0 1px 6px rgba(0,0,0,.06); overflow: hidden;
+  }
+  .cl-card-header {
+    padding: .8rem 1.25rem; background: var(--cl-bg);
+    border-bottom: 1px solid var(--cl-border);
+    font-size: .8rem; font-weight: 700; color: #374151;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .cl-card-body { padding: 1.25rem; }
 
-    <!-- tarjeta -->
-    <div class="card">
-      <div class="card-header">
-        <button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button>
-      </div>
-      <div class="card-body">
-        <table class="table table-striped" id="tbl">
+  #tbl thead th {
+    background: #f1f5f9; color: #374151;
+    font-size: .76rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 2px solid var(--cl-border);
+    padding: .65rem .85rem; white-space: nowrap;
+  }
+  #tbl tbody td {
+    font-size: .865rem; color: #1f2937;
+    vertical-align: middle; padding: .6rem .85rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  #tbl tbody tr:hover td { background: #f8faff; }
+
+  /* Badge cta_cobrar */
+  .badge-cta {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .22rem .6rem; border-radius: 999px;
+    font-size: .72rem; font-weight: 700;
+  }
+  .badge-cta.si  { background: #d1fae5; color: #065f46; }
+  .badge-cta.no  { background: #f3f4f6; color: var(--cl-muted); }
+
+  .btn-ap {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .44rem 1rem; border-radius: 7px;
+    font-size: .84rem; font-weight: 600;
+    border: none; cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn-ap:hover  { opacity: .87; transform: translateY(-1px); }
+  .btn-ap:active { transform: scale(.97); }
+  .btn-primary-ap { background: var(--cl-primary); color: #fff; box-shadow: 0 2px 8px rgba(26,86,219,.22); }
+  .btn-edit-sm {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: #fffbeb; color: #d97706; border: 1px solid #fcd34d;
+    padding: .28rem .65rem; font-size: .77rem; border-radius: 5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-edit-sm:hover { background: #fef3c7; }
+  .btn-del-sm {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: #fff1f2; color: var(--cl-danger); border: 1px solid #fca5a5;
+    padding: .28rem .65rem; font-size: .77rem; border-radius: 5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-del-sm:hover { background: #fee2e2; }
+
+  /* Modal */
+  .cl-modal .modal-content { border: none; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.18); overflow: hidden; }
+  .cl-modal .modal-header  { background: var(--cl-primary); padding: 1rem 1.4rem; border: none; }
+  .cl-modal .modal-title   { color: #fff; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: .5rem; }
+  .cl-modal .modal-header .close { color: rgba(255,255,255,.75); opacity: 1; }
+  .cl-modal .modal-body    { padding: 1.4rem; background: #fff; }
+  .cl-modal .modal-footer  { background: var(--cl-bg); border-top: 1px solid var(--cl-border); padding: .85rem 1.4rem; }
+
+  .cl-label { font-size: .76rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .3rem; display: block; }
+  .cl-input {
+    font-size: .875rem; border: 1px solid var(--cl-border); border-radius: 7px;
+    padding: .44rem .75rem; color: #1f2937; width: 100%;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .cl-input:focus { border-color: var(--cl-primary); box-shadow: 0 0 0 3px rgba(26,86,219,.12); outline: none; }
+  .cl-input.is-invalid { border-color: var(--cl-danger) !important; }
+
+  div.dataTables_wrapper div.dataTables_filter input,
+  div.dataTables_wrapper div.dataTables_length select {
+    border-radius: 6px; border: 1px solid var(--cl-border); padding: .3rem .6rem; font-size: .82rem;
+  }
+  .dataTables_paginate .paginate_button { border-radius: 6px !important; font-size: .8rem !important; }
+  .dataTables_paginate .paginate_button.current,
+  .dataTables_paginate .paginate_button.current:hover {
+    background: var(--cl-primary) !important; color: #fff !important; border-color: var(--cl-primary) !important;
+  }
+</style>
+
+<div class="container-fluid px-4">
+
+  <div class="cl-page-header">
+    <h2>
+      <span class="icon-box"><i class="fas fa-users"></i></span>
+      Clientes
+    </h2>
+    <button class="btn-ap btn-primary-ap" id="btnAgregar">
+      <i class="fas fa-plus"></i> Nuevo Cliente
+    </button>
+  </div>
+
+  <div class="cl-card">
+    <div class="cl-card-header"><i class="fas fa-list me-1"></i> Listado de clientes</div>
+    <div class="cl-card-body">
+      <div class="table-responsive">
+        <table id="tbl" class="table table-hover w-100">
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Nro. Cédula</th>
+              <th>CI / RUC</th>
               <th>Dirección</th>
               <th>Teléfono</th>
-              <th>Fecha Registro</th>
-              <th>Acciones</th>
+              <th class="text-center">Cta. Cobrar</th>
+              <th class="text-center">Acciones</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-    <!-- /tarjeta -->
+  </div>
 
-    <!-- El formulario -->
-    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
+</div>
 
-          <!-- Modal Header -->
-          <div class="modal-header">
-            <h4 class="modal-title" id="modalTitle"></h4>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-              <span aria-hidden="true">&times;</span>
-            </button>
+<!-- Modal -->
+<div class="modal fade cl-modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle"><i class="fas fa-user"></i> Nuevo Cliente</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="txtIdCliente">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="cl-label">Nombre completo *</label>
+            <input type="text" class="cl-input" id="txtNombre" placeholder="Ej: Juan Pérez">
           </div>
-
-          <!-- Modal body -->
-          <div class="modal-body">
-            <input type="hidden" id="txtIdCliente">
-            <div class="form-group">
-              <label for="txtNombre">Nombre:</label>
-              <input type="text" class="form-control" placeholder="Ingrese el nombre" id="txtNombre">
-            </div>
-            <div class="form-group">
-              <label for="txtApellido">Apellido:</label>
-              <input type="text" class="form-control" placeholder="Ingrese el apellido" id="txtApellido">
-            </div>
-            <div class="form-group">
-              <label for="txtCedula">Nro. Cédula:</label>
-              <input type="text" class="form-control" placeholder="Ingrese el número de cédula" id="txtCedula">
-            </div>
-            <div class="form-group">
-              <label for="txtDireccion">Dirección:</label>
-              <input type="text" class="form-control" placeholder="Ingrese la dirección" id="txtDireccion">
-            </div>
-            <div class="form-group">
-              <label for="txtTelefono">Teléfono:</label>
-              <input type="text" class="form-control" placeholder="Ingrese el teléfono" id="txtTelefono">
+          <div class="col-md-4">
+            <label class="cl-label">CI / RUC *</label>
+            <input type="text" class="cl-input" id="txtCedula" placeholder="12345678">
+          </div>
+          <div class="col-md-8">
+            <label class="cl-label">Dirección</label>
+            <input type="text" class="cl-input" id="txtDireccion" placeholder="Calle, ciudad">
+          </div>
+          <div class="col-md-4">
+            <label class="cl-label">Teléfono</label>
+            <input type="text" class="cl-input" id="txtTelefono" placeholder="0981 000 000">
+          </div>
+          <div class="col-12">
+            <div style="display:flex;align-items:center;gap:.5rem;margin-top:.25rem">
+              <input type="checkbox" id="chkCtaCobrar" style="width:16px;height:16px;cursor:pointer">
+              <label for="chkCtaCobrar" style="font-size:.84rem;font-weight:600;color:#374151;cursor:pointer;margin:0">
+                Habilitar cuenta corriente (cta. cobrar)
+              </label>
             </div>
           </div>
-
-          <!-- Modal footer -->
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
-            <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button>
-          </div>
-
         </div>
       </div>
+      <div class="modal-footer">
+        <button type="button" style="background:#f3f4f6;color:#374151;border:1px solid var(--cl-border);border-radius:7px;padding:.44rem 1rem;font-size:.84rem;font-weight:600;cursor:pointer" data-dismiss="modal">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="button" class="btn-ap btn-primary-ap" id="btnGuardar">
+          <i class="fas fa-save"></i> Guardar
+        </button>
+      </div>
     </div>
-
-    <div class="row mt-4 d-none" id="rowAlerta">
-        <div class="col col-md-12">
-            <div class="alert alert-success">
-                <strong>Registro Exitoso!</strong>
-                <div class="row" id="mostrarAlerta"></div>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block js %}
 <script>
-  let idCliente = null;  // Variable global para controlar si estamos editando o creando
+let idCliente = null;
 
-  const initDatatable = () => {
-    $('#tbl').DataTable({
-      language: {
-        url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
-      },
-      ajax: '/api/v1/clientes',
-      columns: [
-        { data: 'nombre' },
-        { data: 'apellido' },
-        { data: 'cedula' },
-        { data: 'direccion' },
-        { data: 'telefono' },
-        { 
-          data: 'fecha_registro',
-          render: function(data) {
-            if (!data) return '';
-            // Asume formato ISO 8601, muestra YYYY-MM-DD
-            return data.substring(0, 10);
-          }
-        },
-        { 
-          data: null,
-          orderable: false,
-          render: function(row) {
-            return `
-              <button type="button" name="btn_editar" class="btn btn-primary" data-id="${row.id_cliente}">Editar</button>
-              <button type="button" name="btn_eliminar" class="btn btn-danger" data-id="${row.id_cliente}">Eliminar</button>
-            `;
-          }
-        }
-      ]
-    });
-  };
+function limpiarModal(){
+  idCliente = null;
+  $('#txtIdCliente').val('');
+  $('#txtNombre').val('').removeClass('is-invalid');
+  $('#txtCedula').val('').removeClass('is-invalid');
+  $('#txtDireccion').val('');
+  $('#txtTelefono').val('');
+  $('#chkCtaCobrar').prop('checked', false);
+}
 
-  const agregar = () => {
-    $('#btnAgregar').on('click', function() {
-      idCliente = null;
-      $('#modalTitle').text("Agregar un Cliente");
-      $('#txtIdCliente').val('');
-      $('#txtNombre').val('');
-      $('#txtApellido').val('');
-      $('#txtCedula').val('');
-      $('#txtDireccion').val('');
-      $('#txtTelefono').val('');
-      $('#modalFormulario').modal('show');
-    });
-  };
+// ---- Tabla ----
+const tabla = $('#tbl').DataTable({
+  language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+  ajax: { url: '/api/v1/clientes', dataSrc: 'data' },
+  order: [[0, 'asc']],
+  pageLength: 15,
+  columns: [
+    { data: 'nombre' },
+    { data: 'cedula' },
+    { data: 'direccion', defaultContent: '—' },
+    { data: 'telefono',  defaultContent: '—' },
+    { data: 'cta_cobrar', className: 'text-center',
+      render: v => v
+        ? '<span class="badge-cta si"><i class="fas fa-check"></i> Sí</span>'
+        : '<span class="badge-cta no">No</span>'
+    },
+    { data: null, orderable: false, className: 'text-center',
+      render: row =>
+        `<button class="btn-edit-sm btn-editar me-1" data-id="${row.id_cliente}"><i class="fas fa-edit"></i> Editar</button>` +
+        `<button class="btn-del-sm btn-eliminar" data-id="${row.id_cliente}"><i class="fas fa-trash"></i> Eliminar</button>`
+    }
+  ]
+});
 
-  const guardar = () => {
-    $('#btnGuardar').on('click', function() {
-      const nuevoNombre = $('#txtNombre').val().trim();
-      const nuevoApellido = $('#txtApellido').val().trim();
-      const nuevaCedula = $('#txtCedula').val().trim();
-      const nuevaDireccion = $('#txtDireccion').val().trim();
-      const nuevoTelefono = $('#txtTelefono').val().trim();
+// ---- Agregar ----
+$('#btnAgregar').on('click', function(){
+  limpiarModal();
+  $('#modalTitle').html('<i class="fas fa-user-plus"></i> Nuevo Cliente');
+  $('#modalFormulario').modal('show');
+  setTimeout(()=>$('#txtNombre').focus(), 400);
+});
 
-      if (!nuevoNombre || !nuevoApellido || !nuevaCedula || !nuevaDireccion || !nuevoTelefono) {
-        Swal.fire("Error", "Todos los campos son obligatorios.", "warning");
-        return;
-      }
+// ---- Guardar ----
+$('#btnGuardar').on('click', function(){
+  const nombre    = $('#txtNombre').val().trim();
+  const cedula    = $('#txtCedula').val().trim();
+  const direccion = $('#txtDireccion').val().trim();
+  const telefono  = $('#txtTelefono').val().trim();
+  const ctaCobrar = $('#chkCtaCobrar').is(':checked');
 
-      const clienteData = {
-        nombre: nuevoNombre,
-        apellido: nuevoApellido,
-        cedula: nuevaCedula,
-        direccion: nuevaDireccion,
-        telefono: nuevoTelefono
-      };
+  let valido = true;
+  if(!nombre){ $('#txtNombre').addClass('is-invalid'); valido=false; } else $('#txtNombre').removeClass('is-invalid');
+  if(!cedula){ $('#txtCedula').addClass('is-invalid'); valido=false; } else $('#txtCedula').removeClass('is-invalid');
+  if(!valido) return Swal.fire({title:'Campos incompletos', text:'Nombre y CI/RUC son obligatorios.', icon:'warning', confirmButtonColor:'#1a56db'});
 
-      const tabla = $('#tbl').DataTable();
+  const payload = {nombre, cedula, direccion, telefono, cta_cobrar: ctaCobrar};
+  const url     = idCliente ? `/api/v1/clientes/${idCliente}` : '/api/v1/clientes';
+  const method  = idCliente ? 'PUT' : 'POST';
 
-      if (idCliente) {
-        // Actualizar
-        fetch(`/api/v1/clientes/${idCliente}`, {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(clienteData)
-        })
-        .then(resp => resp.json())
-        .then(data => {
-          if(data && data.success) {
-            tabla.ajax.reload();
-            Swal.fire("Actualizado", "El cliente ha sido actualizado correctamente.", "success");
-          } else {
-            Swal.fire("Error", data.error || "Error al actualizar.", "error");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          Swal.fire("Error", "Ocurrió un error al actualizar el cliente.", "error");
-        });
+  const btn = $(this).prop('disabled',true).html('<i class="fas fa-circle-notch fa-spin"></i> Guardando…');
+
+  fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.success){
+        $('#modalFormulario').modal('hide');
+        tabla.ajax.reload(null, false);
+        Swal.fire({title: idCliente?'Actualizado':'Guardado', text:'Cliente guardado correctamente.', icon:'success', timer:1800, showConfirmButton:false});
       } else {
-        // Crear
-        fetch(`/api/v1/clientes`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(clienteData)
-        })
-        .then(resp => resp.json())
-        .then(data => {
-          if(data && data.success) {
-            tabla.ajax.reload();
-            Swal.fire("Guardado", "El cliente ha sido agregado correctamente.", "success");
-          } else {
-            Swal.fire("Error", data.error || "Error al guardar.", "error");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          Swal.fire("Error", "Ocurrió un error al guardar el cliente.", "error");
-        });
+        Swal.fire('Error', data.error||'No se pudo guardar.', 'error');
       }
+    })
+    .catch(()=>Swal.fire('Error','Ocurrió un error.','error'))
+    .finally(()=>btn.prop('disabled',false).html('<i class="fas fa-save"></i> Guardar'));
+});
 
-      $('#modalFormulario').modal('hide');
-    });
-  };
+// ---- Editar ----
+$('#tbl').on('click', '.btn-editar', function(){
+  idCliente = $(this).data('id');
+  fetch(`/api/v1/clientes/${idCliente}`).then(r=>r.json()).then(data=>{
+    if(!data.success) return Swal.fire('Error', data.error||'No encontrado.', 'error');
+    const c = data.data;
+    $('#txtIdCliente').val(c.id_cliente);
+    $('#txtNombre').val(c.nombre);
+    $('#txtCedula').val(c.cedula);
+    $('#txtDireccion').val(c.direccion);
+    $('#txtTelefono').val(c.telefono);
+    $('#chkCtaCobrar').prop('checked', c.cta_cobrar);
+    $('#modalTitle').html('<i class="fas fa-user-edit"></i> Editar Cliente');
+    $('#modalFormulario').modal('show');
+  }).catch(()=>Swal.fire('Error','Error al cargar datos.','error'));
+});
 
-  const editar = () => {
-    $('#tbl').on('click', 'button[name="btn_editar"]', function() {
-      idCliente = $(this).data('id');
-      $('#modalTitle').text("Editar un Cliente");
-      fetch(`/api/v1/clientes/${idCliente}`, {
-        method: 'GET',
-        headers: {'Content-Type': 'application/json'}
-      })
-      .then(resp => resp.json())
-      .then(data => {
-        if (data && data.success && data.data) {
-          const cliente = data.data;
-          $('#txtIdCliente').val(cliente.id_cliente);
-          $('#txtNombre').val(cliente.nombre);
-          $('#txtApellido').val(cliente.apellido);
-          $('#txtCedula').val(cliente.cedula);
-          $('#txtDireccion').val(cliente.direccion);
-          $('#txtTelefono').val(cliente.telefono);
-          $('#modalFormulario').modal('show');
+// ---- Eliminar ----
+$('#tbl').on('click', '.btn-eliminar', function(){
+  const id = $(this).data('id');
+  Swal.fire({
+    title:'¿Eliminar cliente?', text:'Esta acción no se puede deshacer.',
+    icon:'warning', showCancelButton:true,
+    confirmButtonText:'Sí, eliminar', cancelButtonText:'Cancelar',
+    confirmButtonColor:'#dc2626'
+  }).then(r=>{
+    if(!r.isConfirmed) return;
+    fetch(`/api/v1/clientes/${id}`, {method:'DELETE', headers:{'Content-Type':'application/json'}})
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.success){
+          tabla.ajax.reload(null, false);
+          Swal.fire({title:'Eliminado', icon:'success', timer:1600, showConfirmButton:false});
         } else {
-          Swal.fire("Error", data.error || "No se encontró el cliente.", "error");
+          Swal.fire('Error', data.error||'No se pudo eliminar.', 'error');
         }
       })
-      .catch(err => {
-        console.error(err);
-        Swal.fire("Error", "Error al cargar datos del cliente.", "error");
-      });
-    });
-  };
-
-  const eliminar = () => {
-    $('#tbl').on('click', 'button[name="btn_eliminar"]', function() {
-      const id = $(this).data('id');
-      Swal.fire({
-        title: "¿Deseas eliminar este registro?",
-        showCancelButton: true,
-        confirmButtonText: "Sí",
-        cancelButtonText: "No"
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch(`/api/v1/clientes/${id}`, {
-            method: 'DELETE',
-            headers: {'Content-Type': 'application/json'}
-          })
-          .then(resp => resp.json())
-          .then(data => {
-            if(data && data.success) {
-              $('#tbl').DataTable().ajax.reload();
-              Swal.fire("Eliminado", "El cliente ha sido eliminado correctamente.", "success");
-            } else {
-              Swal.fire("Error", data.error || "No se pudo eliminar.", "error");
-            }
-          })
-          .catch(err => {
-            console.error(err);
-            Swal.fire("Error", "Ocurrió un error al eliminar el cliente.", "error");
-          });
-        }
-      });
-    });
-  };
-
-  $(document).ready(() => {
-    initDatatable();
-    agregar();
-    guardar();
-    editar();
-    eliminar();
+      .catch(()=>Swal.fire('Error','Error al eliminar.','error'));
   });
+});
 </script>
 {% endblock %}

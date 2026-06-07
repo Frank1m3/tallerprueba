@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block titulo %}Items / Productos{% endblock %}
+{% block contenido %}
+<div class="container-fluid mt-4">
+    <h3>Listar Items</h3>
+    <div class="card">
+      <div class="card-header"><button type="button" class="btn btn-primary" id="btnAgregar">Agregar</button></div>
+      <div class="card-body">
+        <table class="table table-striped" id="tbl" style="width:100%">
+          <thead><tr>
+            <th>ID</th><th>Código</th><th>Descripción</th><th>Unidad</th>
+            <th>Tipo</th><th>Proveedor</th><th>Precio</th><th>Stock mín.</th><th>Activo</th><th>Acciones</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal" id="modalFormulario" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg" role="document"><div class="modal-content">
+        <div class="modal-header"><h4 class="modal-title" id="modalTitle"></h4>
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="txtId">
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="txtCodigo">Código:</label>
+              <input type="text" class="form-control" id="txtCodigo" autocomplete="off">
+            </div>
+            <div class="form-group col-md-8">
+              <label for="txtDescripcion">Descripción:</label>
+              <input type="text" class="form-control" id="txtDescripcion" autocomplete="off">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="cmbUnidad">Unidad de medida:</label>
+              <select class="form-control" id="cmbUnidad"></select>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="cmbTipoItem">Tipo de item:</label>
+              <select class="form-control" id="cmbTipoItem"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="cmbImpuesto">Tipo de impuesto:</label>
+              <select class="form-control" id="cmbImpuesto"></select>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="cmbProveedor">Proveedor:</label>
+              <select class="form-control" id="cmbProveedor"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="txtPrecio">Costo unitario:</label>
+              <input type="number" step="0.01" min="0" class="form-control" id="txtPrecio" autocomplete="off">
+            </div>
+            <div class="form-group col-md-4">
+              <label for="txtCantMin">Stock mínimo:</label>
+              <input type="number" step="0.01" min="0" class="form-control" id="txtCantMin" autocomplete="off">
+            </div>
+            <div class="form-group col-md-4 d-flex align-items-end">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="chkActivo" checked>
+                <label class="custom-control-label" for="chkActivo">Activo</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Cerrar</button></div>
+      </div></div>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+  const API = '/api/v1/item';
+  let combosCargados = false;
+
+  const fmt = n => (n === null || n === undefined) ? '' : Number(n).toLocaleString('es-PY');
+
+  const initDatatable = () => {
+    $('#tbl').DataTable({
+      language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+      ajax: API,
+      columns: [
+        { data: 'id' },
+        { data: 'item_code' },
+        { data: 'descripcion' },
+        { data: 'unidad_desc', defaultContent: '' },
+        { data: 'tipo_item_desc', defaultContent: '' },
+        { data: 'proveedor_desc', defaultContent: '' },
+        { data: 'precio_unitario', render: fmt },
+        { data: 'cantidad_minima', render: fmt },
+        { data: 'activo', render: a => a ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>' },
+        { data: null, render: r => `<button type="button" name="btn_editar" class="btn btn-primary btn-sm mr-1" data-id="${r.id}">Editar</button><button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${r.id}">Eliminar</button>`, orderable:false, searchable:false }
+      ],
+      destroy: true
+    });
+  }
+
+  const opciones = (lista, vacio) => {
+    let html = `<option value="">${vacio}</option>`;
+    lista.forEach(o => html += `<option value="${o.id}">${o.descripcion}</option>`);
+    return html;
+  }
+
+  const cargarCombos = () => {
+    return fetch(`${API}/combos`).then(r=>r.json()).then(d=>{
+      if (d && d.success) {
+        $('#cmbUnidad').html(opciones(d.data.unidades, '-- Seleccione --'));
+        $('#cmbTipoItem').html(opciones(d.data.tipos_item, '-- Seleccione --'));
+        $('#cmbImpuesto').html(opciones(d.data.impuestos, '-- Seleccione --'));
+        $('#cmbProveedor').html(opciones(d.data.proveedores, '-- Seleccione --'));
+        combosCargados = true;
+      }
+    });
+  }
+
+  const limpiar = () => {
+    $('#txtId').val(""); $('#txtCodigo').val(""); $('#txtDescripcion').val("");
+    $('#cmbUnidad').val(""); $('#cmbTipoItem').val(""); $('#cmbImpuesto').val(""); $('#cmbProveedor').val("");
+    $('#txtPrecio').val(""); $('#txtCantMin').val(""); $('#chkActivo').prop('checked', true);
+  }
+
+  const payload = () => ({
+    item_code: $('#txtCodigo').val().trim(),
+    descripcion: $('#txtDescripcion').val().trim(),
+    unidad_med: $('#cmbUnidad').val() || null,
+    id_tipo_item: $('#cmbTipoItem').val() || null,
+    id_tipo_impuesto: $('#cmbImpuesto').val() || null,
+    id_proveedor: $('#cmbProveedor').val() || null,
+    precio_unitario: $('#txtPrecio').val() || null,
+    cantidad_minima: $('#txtCantMin').val() || null,
+    activo: $('#chkActivo').is(':checked')
+  });
+
+  $('#btnAgregar').on('click', async () => {
+    if (!combosCargados) await cargarCombos();
+    $('#modalTitle').text("Agregar Item");
+    limpiar();
+    $('#modalFormulario').modal('show');
+  });
+
+  $('#btnGuardar').on('click', function(){
+    const id = $('#txtId').val();
+    const d = payload();
+    const tabla = $('#tbl').DataTable();
+    if (!d.item_code || !d.descripcion) { Swal.fire("Error","Código y descripción son obligatorios.","warning"); return; }
+    fetch(id ? `${API}/${id}` : API, { method: id?'PUT':'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(d) })
+    .then(r=>r.json()).then(res=>{ if(res&&res.success){ tabla.ajax.reload(null,false); Swal.fire(id?"Actualizado":"Agregado","Item guardado.","success"); } else { Swal.fire("Error", res.error||"Error.","error"); } })
+    .catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");});
+    $('#modalFormulario').modal("hide");
+  });
+
+  $('#tbl').on('click','button[name="btn_editar"]', async function(){
+    const id = $(this).data('id');
+    if (!combosCargados) await cargarCombos();
+    fetch(`${API}/${id}`).then(r=>r.json()).then(res=>{
+      if(res&&res.success){
+        const d = res.data;
+        $('#modalTitle').text("Editar Item");
+        $('#txtId').val(d.id);
+        $('#txtCodigo').val(d.item_code||"");
+        $('#txtDescripcion').val(d.descripcion||"");
+        $('#cmbUnidad').val(d.unidad_med ?? "");
+        $('#cmbTipoItem').val(d.id_tipo_item ?? "");
+        $('#cmbImpuesto').val(d.id_tipo_impuesto ?? "");
+        $('#cmbProveedor').val(d.id_proveedor ?? "");
+        $('#txtPrecio').val(d.precio_unitario ?? "");
+        $('#txtCantMin').val(d.cantidad_minima ?? "");
+        $('#chkActivo').prop('checked', d.activo !== false);
+        $('#modalFormulario').modal('show');
+      } else { Swal.fire("Error", res.error||"No se pudo obtener.","error"); }
+    }).catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");});
+  });
+
+  $('#tbl').on('click','button[name="btn_eliminar"]', function(){
+    const id = $(this).data('id');
+    Swal.fire({title:"¿Deseas eliminar este registro?",icon:'warning',showCancelButton:true,confirmButtonText:"Sí",cancelButtonText:"No"}).then(res=>{
+      if(res.isConfirmed){ fetch(`${API}/${id}`,{method:'DELETE',headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>{ if(d&&d.success){ $('#tbl').DataTable().ajax.reload(null,false); Swal.fire("Eliminado","Item eliminado.","success"); } else { Swal.fire("Error", d.error||"No se pudo eliminar.","error"); } }).catch(e=>{console.error(e);Swal.fire("Error","Ocurrió un error.","error");}); }
+    });
+  });
+
+  $(document).ready(()=> initDatatable());
+</script>
+{% endblock %}

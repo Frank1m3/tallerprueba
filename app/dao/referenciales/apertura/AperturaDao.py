@@ -34,7 +34,7 @@ class AperturaDao:
                     "clave_fiscal": item[2] or '',
                     "cajero":       item[3] or '',
                     "registro":     item[4],
-                    "monto_inicial":item[5],
+                    "monto_inicial":float(item[5]) if item[5] else 0.0,
                     "estado":       item[6]
                 })
                 if ultimo_turno is None or item[1] > ultimo_turno:
@@ -51,28 +51,34 @@ class AperturaDao:
     # Obtener apertura por ID
     # ================================
     def getAperturaById(self, id_apertura):
-        aperturaSQL = """
-        SELECT a.id_apertura, a.nro_turno, a.clave_fiscal, a.cajero,
+        sql = """
+        SELECT a.id_apertura, a.nro_turno,
+               UPPER(f1.nombres || ' ' || f1.apellidos) AS fiscal,
+               UPPER(f2.nombres || ' ' || f2.apellidos) AS cajero,
                to_char(a.registro, 'DD/MM/YYYY HH24:MI:SS') AS registro,
-               a.monto_inicial, a.estado
+               a.monto_inicial, a.estado,
+               DATE(a.registro) AS fecha_apertura
         FROM aperturas a
+        LEFT JOIN funcionarios f1 ON f1.fun_id = a.clave_fiscal
+        LEFT JOIN funcionarios f2 ON f2.fun_id = a.cajero
         WHERE a.id_apertura = %s
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(aperturaSQL, (id_apertura,))
+            cur.execute(sql, (id_apertura,))
             row = cur.fetchone()
             if row:
                 return {
-                    "id_apertura":  row[0],
-                    "nro_turno":    row[1],
-                    "clave_fiscal": row[2],
-                    "cajero":       row[3],
-                    "registro":     row[4],
-                    "monto_inicial":row[5],
-                    "estado":       row[6]
+                    "id_apertura":   row[0],
+                    "nro_turno":     row[1],
+                    "fiscal":        row[2] or '',
+                    "cajero":        row[3] or '',
+                    "registro":      row[4],
+                    "monto_inicial": float(row[5]) if row[5] else 0.0,
+                    "estado":        row[6],
+                    "fecha_apertura":str(row[7]) if row[7] else ''
                 }
             return None
         except Exception as e:
@@ -83,8 +89,67 @@ class AperturaDao:
             con.close()
 
     # ================================
-    # NUEVO: Validar fiscal por su fun_id (clave)
-    # Retorna sus datos si es fiscal activo, None si no existe o no es fiscal
+    # Obtener apertura activa
+    # ================================
+    def getAperturaActiva(self):
+        sql = """
+        SELECT a.id_apertura, a.nro_turno,
+               UPPER(f1.nombres || ' ' || f1.apellidos) AS fiscal,
+               UPPER(f2.nombres || ' ' || f2.apellidos) AS cajero,
+               to_char(a.registro, 'DD/MM/YYYY HH24:MI:SS') AS registro,
+               a.monto_inicial, a.estado
+        FROM aperturas a
+        LEFT JOIN funcionarios f1 ON f1.fun_id = a.clave_fiscal
+        LEFT JOIN funcionarios f2 ON f2.fun_id = a.cajero
+        WHERE a.estado = 'activo'
+        ORDER BY a.registro DESC
+        LIMIT 1
+        """
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute(sql)
+            row = cur.fetchone()
+            if row:
+                return {
+                    "id_apertura":   row[0],
+                    "nro_turno":     row[1],
+                    "fiscal":        row[2] or '',
+                    "cajero":        row[3] or '',
+                    "registro":      row[4],
+                    "monto_inicial": float(row[5]) if row[5] else 0.0,
+                    "estado":        row[6]
+                }
+            return None
+        except Exception as e:
+            app.logger.error(f"Error al obtener apertura activa: {e}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Verificar si existe apertura activa
+    # ================================
+    def existeAperturaActiva(self):
+        sql = "SELECT COUNT(*) FROM aperturas WHERE estado = 'activo'"
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute(sql)
+            count = cur.fetchone()[0]
+            return count > 0
+        except Exception as e:
+            app.logger.error(f"Error al verificar apertura activa: {e}")
+            return False
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Validar fiscal por fun_id
     # ================================
     def getFiscalByClave(self, fun_id):
         sql = """
@@ -102,10 +167,10 @@ class AperturaDao:
             row = cur.fetchone()
             if row:
                 return {
-                    "fun_id":    row[0],
-                    "nombres":   row[1],
-                    "apellidos": row[2],
-                    "ci":        row[3],
+                    "fun_id":          row[0],
+                    "nombres":         row[1],
+                    "apellidos":       row[2],
+                    "ci":              row[3],
                     "nombre_completo": f"{row[1]} {row[2]}"
                 }
             return None
@@ -117,7 +182,7 @@ class AperturaDao:
             con.close()
 
     # ================================
-    # NUEVO: Buscar cajeros por nombre/apellido (para el buscador)
+    # Buscar cajeros por nombre/apellido
     # ================================
     def buscarCajeros(self, termino):
         sql = """
@@ -156,28 +221,32 @@ class AperturaDao:
             con.close()
 
     # ================================
-    # Guardar apertura
+    # Guardar apertura — bloquea si ya hay una activa
     # ================================
     def guardarApertura(self, clave_fiscal, cajero, monto_inicial):
-        insertAperturaSQL = """
-        INSERT INTO aperturas (clave_fiscal, cajero, monto_inicial)
-        SELECT %s, %s, %s
-        WHERE EXISTS (
-            SELECT 1 FROM funcionarios
-            WHERE fun_id = %s AND es_fiscal = TRUE AND fun_estado = TRUE
-        )
-        AND EXISTS (
-            SELECT 1 FROM funcionarios
-            WHERE fun_id = %s AND es_cajero = TRUE AND fun_estado = TRUE
-        )
-        AND %s != %s
-        RETURNING id_apertura
-        """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(insertAperturaSQL, (
+            # Bloquear si ya existe apertura activa
+            cur.execute("SELECT COUNT(*) FROM aperturas WHERE estado = 'activo'")
+            if cur.fetchone()[0] > 0:
+                return {"error": "Ya existe un turno activo. Debe cerrar el turno actual antes de abrir uno nuevo."}
+
+            cur.execute("""
+                INSERT INTO aperturas (clave_fiscal, cajero, monto_inicial)
+                SELECT %s, %s, %s
+                WHERE EXISTS (
+                    SELECT 1 FROM funcionarios
+                    WHERE fun_id = %s AND es_fiscal = TRUE AND fun_estado = TRUE
+                )
+                AND EXISTS (
+                    SELECT 1 FROM funcionarios
+                    WHERE fun_id = %s AND es_cajero = TRUE AND fun_estado = TRUE
+                )
+                AND %s != %s
+                RETURNING id_apertura
+            """, (
                 clave_fiscal, cajero, monto_inicial,
                 clave_fiscal, cajero,
                 clave_fiscal, cajero
@@ -186,11 +255,35 @@ class AperturaDao:
             if result:
                 con.commit()
                 return {"id_apertura": result[0]}
-            return None
+            return {"error": "No se pudo crear la apertura. Verificá que el fiscal y cajero sean distintos y estén activos."}
         except Exception as e:
             app.logger.error(f"Error al insertar apertura: {e}")
             con.rollback()
-            return None
+            return {"error": str(e)}
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Cerrar apertura activa (estado → 'cerrado')
+    # ================================
+    def cerrarApertura(self, id_apertura):
+        sql = """
+        UPDATE aperturas
+        SET estado = 'cerrado', fec_cierre_turno = NOW()
+        WHERE id_apertura = %s AND estado = 'activo'
+        """
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute(sql, (id_apertura,))
+            con.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            app.logger.error(f"Error al cerrar apertura: {e}")
+            con.rollback()
+            return False
         finally:
             cur.close()
             con.close()
