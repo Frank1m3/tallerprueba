@@ -136,3 +136,13 @@ def guardar_presupuesto():
     except Exception as e:
         current_app.logger.error(f"Error guardando presupuesto: {e}")
         return jsonify({'success': False, 'error': str(e)})
+    
+
+    # ================================
+# Detalle del presupuesto
+# ================================
+@presumod.route('/presupuesto-detalle/<int:id>')
+def presupuesto_detalle(id):
+    dao = PresupuestoCompraDao()
+    presupuesto = dao.obtener_por_id(id)
+    return render_template('presupuesto_detalle.html', presupuesto=presupuesto)

@@ -3,281 +3,369 @@
 {% block titulo %}Registrar Presupuesto{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4" style="max-width:1400px;">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">REGISTRAR PRESUPUESTO</h4>
+<style>
+  :root {
+    --mp-navy:#1a237e; --mp-navy-2:#283593; --mp-blue:#1565c0;
+    --mp-success:#16a34a; --mp-warn:#d97706; --mp-danger:#dc2626;
+    --mp-muted:#6b7280; --mp-border:#e8eaf6; --mp-bg:#f5f6fb;
+    --mp-surface:#ffffff; --mp-radius:16px;
+  }
+
+  .mp-wrap { max-width:1400px; }
+
+  /* ---- Header ---- */
+  .mp-page-head { display:flex; align-items:center; gap:.85rem; margin-bottom:1.4rem; }
+  .mp-page-icon {
+    width:48px; height:48px; border-radius:14px;
+    background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue));
+    display:grid; place-items:center; color:#fff; font-size:1.15rem;
+    box-shadow:0 6px 18px rgba(26,35,126,.3);
+  }
+  .mp-page-head h1 { font-size:1.4rem; font-weight:800; color:var(--mp-navy); margin:0; line-height:1.1; }
+  .mp-page-head p  { margin:0; font-size:.85rem; color:var(--mp-muted); }
+
+  /* ---- Cards ---- */
+  .mp-card {
+    background:var(--mp-surface); border:1px solid var(--mp-border);
+    border-radius:var(--mp-radius); box-shadow:0 4px 20px rgba(26,35,126,.07);
+    margin-bottom:1.3rem; overflow:visible;
+  }
+  .mp-card-head {
+    display:flex; align-items:center; gap:.55rem;
+    padding:.85rem 1.4rem; border-bottom:1px solid var(--mp-border);
+    font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mp-navy);
+  }
+  .mp-card-head .ic {
+    width:28px; height:28px; border-radius:8px; display:grid; place-items:center;
+    color:#fff; font-size:.75rem; background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue));
+  }
+  .mp-card-head.green .ic { background:linear-gradient(135deg,#15803d,#22c55e); }
+  .mp-card-head.amber .ic { background:linear-gradient(135deg,#b45309,#f59e0b); }
+  .mp-card-body { padding:1.3rem 1.4rem; }
+
+  /* ---- Labels e inputs ---- */
+  .mp-label { font-size:.72rem; font-weight:800; color:#5b6472; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; display:block; }
+  .mp-card .form-control {
+    font-size:.9rem; border:1.5px solid var(--mp-border); border-radius:11px;
+    padding:.5rem .85rem; color:#1f2937; background:#fbfcff; transition:border-color .18s, box-shadow .18s, background .18s;
+  }
+  .mp-card .form-control:focus {
+    border-color:var(--mp-blue); background:#fff;
+    box-shadow:0 0 0 4px rgba(21,101,192,.12); outline:none;
+  }
+  .mp-card .form-control[readonly] { background:#eef1f8; color:var(--mp-muted); }
+  .nro-field { font-weight:800; color:var(--mp-navy) !important; letter-spacing:.02em; }
+
+  /* ---- Buscador (picker) ---- */
+  .picker { position:relative; }
+  .picker-input { padding-right:2.3rem !important; }
+  .picker-icon { position:absolute; right:.85rem; top:50%; transform:translateY(-50%); color:#aab1c4; font-size:.82rem; pointer-events:none; transition:color .18s; }
+  .picker-input:focus + .picker-icon { color:var(--mp-blue); }
+  .picker.is-selected .picker-input { border-color:var(--mp-blue); background:#f3f7ff; font-weight:600; color:var(--mp-navy); }
+  .picker.is-selected .picker-icon { color:var(--mp-success); }
+  .picker-menu {
+    position:absolute; z-index:60; left:0; right:0; top:100%; margin-top:5px;
+    background:#fff; border:1px solid var(--mp-border); border-radius:12px;
+    box-shadow:0 12px 34px rgba(26,35,126,.16); max-height:250px; overflow:auto; display:none;
+    animation:mpDrop .14s ease;
+  }
+  @keyframes mpDrop { from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;} }
+  .picker-menu.show { display:block; }
+  .picker-item { padding:.6rem .9rem; font-size:.87rem; cursor:pointer; border-left:3px solid transparent; transition:background .12s, border-color .12s; }
+  .picker-item:hover { background:#eef2ff; border-left-color:var(--mp-blue); color:var(--mp-navy); }
+  .picker-empty { padding:.7rem .9rem; color:#9aa1b4; font-size:.83rem; text-align:center; }
+
+  /* ---- Botón lupa mercadería ---- */
+  .btn-mp-lupa {
+    background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue)) !important;
+    color:#fff !important; border:none !important; border-radius:0 11px 11px 0 !important;
+  }
+  .btn-mp-lupa:hover { opacity:.9; }
+
+  /* ---- Tabla detalle ---- */
+  #tbl_detalle { margin:0; }
+  #tbl_detalle thead th {
+    background:#eef1fb; color:var(--mp-navy); font-size:.73rem; font-weight:800;
+    text-transform:uppercase; letter-spacing:.04em; border:none; padding:.7rem .8rem;
+  }
+  #tbl_detalle tbody td { font-size:.87rem; vertical-align:middle; border-color:#f0f2f9; }
+  #tbl_detalle tbody tr:hover td { background:#f7f9ff; }
+  #tbl_detalle tfoot th { background:#eef1fb; color:var(--mp-navy); font-size:.95rem; font-weight:800; border:none; padding:.75rem .8rem; }
+  #total { color:var(--mp-blue); }
+  .mp-card .btn-sm.btn-primary { background:var(--mp-blue); border-color:var(--mp-blue); border-radius:7px; }
+  .mp-card .btn-sm.btn-danger  { border-radius:7px; }
+
+  /* ---- Botones ---- */
+  .btn-mp { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.3rem; border-radius:11px; font-size:.88rem; font-weight:700; border:none; cursor:pointer; transition:transform .15s, box-shadow .15s, opacity .15s; text-decoration:none; }
+  .btn-mp:hover { transform:translateY(-2px); }
+  .btn-mp-add  { background:linear-gradient(135deg,#15803d,#22c55e); color:#fff; box-shadow:0 4px 14px rgba(22,163,74,.28); }
+  .btn-mp-save { background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue)); color:#fff; box-shadow:0 4px 16px rgba(26,35,126,.32); }
+  .btn-mp-exit { background:#eef1f8; color:#475067; }
+  .mp-footer { display:flex; justify-content:flex-end; gap:.75rem; padding:1rem 1.4rem; border-top:1px solid var(--mp-border); background:#fbfcff; border-radius:0 0 var(--mp-radius) var(--mp-radius); }
+
+  /* ---- Modal ---- */
+  #modalMercaderia .modal-content { border:none; border-radius:16px; overflow:hidden; }
+  #modalMercaderia .modal-header { background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue)); border:none; }
+  #tbl_busqueda_mercaderia thead th { background:#eef1fb; color:var(--mp-navy); font-size:.75rem; text-transform:uppercase; letter-spacing:.03em; border:none; }
+  #tbl_busqueda_mercaderia tbody tr:hover td { background:#f7f9ff; }
+</style>
+
+<div class="container-fluid px-4 mp-wrap">
+
+  <div class="mp-page-head">
+    <div class="mp-page-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+    <div>
+      <h1>Registrar Presupuesto</h1>
+      <p>Cargá la cotización del proveedor y su detalle</p>
     </div>
-    <div class="card-body">
-      <form id="form_presupuesto" enctype="multipart/form-data">
-        <!-- Cabecera del presupuesto -->
-        <div class="row mb-3">
+  </div>
+
+  <form id="form_presupuesto" enctype="multipart/form-data">
+
+    <!-- Cabecera -->
+    <div class="mp-card">
+      <div class="mp-card-head"><span class="ic"><i class="fas fa-clipboard-list"></i></span> Datos del presupuesto</div>
+      <div class="mp-card-body">
+        <div class="row g-3">
+
           <div class="col-md-2">
-            <label>Nro Presupuesto</label>
-            <input type="text" id="txt_nro_presupuesto" class="form-control" readonly>
+            <label class="mp-label">Nro Presupuesto</label>
+            <input type="text" id="txt_nro_presupuesto" class="form-control nro-field" readonly>
           </div>
+
           <div class="col-md-2">
-            <label>Fecha Emisión</label>
+            <label class="mp-label">Fecha Emisión</label>
             <input type="date" id="txt_fecha" class="form-control">
           </div>
+
           <div class="col-md-2">
-            <label>Fecha Vencimiento</label>
+            <label class="mp-label">Fecha Vencimiento</label>
             <input type="date" id="txt_fecha_aprob" class="form-control">
           </div>
-          <div class="col-md-2">
-            <label>Proveedor</label>
-            <select id="cbo_proveedor" class="form-control">
-              <option value="">Seleccione</option>
-              {% for p in proveedores %}
-              <option value="{{ p.id_proveedor }}">{{ p.nombre_proveedor }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label>Sucursal</label>
-            <select id="cbo_sucursal" class="form-control">
-              <option value="">Seleccione</option>
-              {% for s in sucursales %}
-              <option value="{{ s.id_sucursal }}">{{ s.descripcion }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label>Funcionario</label>
-            <select id="cbo_funcionario" class="form-control">
-              <option value="">Seleccione</option>
-              {% for f in funcionarios %}
-              <option value="{{ f.fun_id }}">{{ f.nombre_completo }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
 
-        <div class="row mb-3">
-     <div class="col-md-3">
-  <label>Estado</label>
-  <input type="text" id="cbo_estado" name="estado" class="form-control" value="PENDIENTE" readonly>
-</div>
-
-          <div class="col-md-5">
-            <label for="file_presupuesto" class="form-label">Adjuntar Presupuesto de Proveedor</label>
-            <input type="file" name="archivo" id="file_presupuesto" class="form-control" accept=".pdf,.xlsx,.xls,.txt">
-            <small class="form-text text-muted">Formatos permitidos: PDF, XLSX, XLS, TXT</small>
-          </div>
-        </div>
-
-        <!-- Mercadería -->
-        <div class="row mb-3 align-items-end">
+          <!-- Proveedor -->
           <div class="col-md-3">
-            <label>Mercadería</label>
+            <label class="mp-label">Proveedor</label>
+            <div class="picker" id="pick_proveedor">
+              <input type="text" class="form-control picker-input" placeholder="Buscar proveedor..." autocomplete="off">
+              <i class="fas fa-search picker-icon"></i>
+              <input type="hidden" id="cbo_proveedor">
+              <div class="picker-menu"></div>
+            </div>
+          </div>
+
+          <!-- Sucursal -->
+          <div class="col-md-3">
+            <label class="mp-label">Sucursal</label>
+            <div class="picker" id="pick_sucursal">
+              <input type="text" class="form-control picker-input" placeholder="Buscar sucursal..." autocomplete="off">
+              <i class="fas fa-search picker-icon"></i>
+              <input type="hidden" id="cbo_sucursal">
+              <div class="picker-menu"></div>
+            </div>
+          </div>
+
+          <!-- Funcionario -->
+          <div class="col-md-3 mt-3">
+            <label class="mp-label">Funcionario</label>
+            <div class="picker" id="pick_funcionario">
+              <input type="text" class="form-control picker-input" placeholder="Buscar funcionario..." autocomplete="off">
+              <i class="fas fa-search picker-icon"></i>
+              <input type="hidden" id="cbo_funcionario">
+              <div class="picker-menu"></div>
+            </div>
+          </div>
+
+          <div class="col-md-2 mt-3">
+            <label class="mp-label">Estado</label>
+            <input type="text" id="cbo_estado" name="estado" class="form-control" value="PENDIENTE" readonly>
+          </div>
+
+          <div class="col-md-5 mt-3">
+            <label class="mp-label">Adjuntar Presupuesto de Proveedor</label>
+            <input type="file" name="archivo" id="file_presupuesto" class="form-control" accept=".pdf,.xlsx,.xls,.txt">
+            <small class="form-text text-muted">Formatos: PDF, XLSX, XLS, TXT</small>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Mercadería -->
+    <div class="mp-card">
+      <div class="mp-card-head green"><span class="ic"><i class="fas fa-box-open"></i></span> Agregar mercadería</div>
+      <div class="mp-card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="mp-label">Mercadería</label>
             <div class="input-group">
-              <input type="text" id="txt_mercaderia" class="form-control" placeholder="Ingrese código o barra">
-              <button type="button" class="btn btn-secondary" id="btn_buscar_mercaderia">
-                <i class="fas fa-search"></i>
-              </button>
+              <input type="text" id="txt_mercaderia" class="form-control" placeholder="Código o barra" style="border-radius:11px 0 0 11px;">
+              <button type="button" class="btn btn-mp-lupa" id="btn_buscar_mercaderia"><i class="fas fa-search"></i></button>
             </div>
           </div>
           <div class="col-md-3">
-            <label>Descripción</label>
-            <input type="text" id="txt_descripcion" class="form-control" placeholder="Descripción" readonly>
+            <label class="mp-label">Descripción</label>
+            <input type="text" id="txt_descripcion" class="form-control" readonly>
           </div>
           <div class="col-md-2">
-            <label>Stock Actual</label>
+            <label class="mp-label">Stock</label>
             <input type="number" id="txt_stock" class="form-control" readonly>
           </div>
           <div class="col-md-2">
-            <label>Cantidad</label>
+            <label class="mp-label">Cantidad</label>
             <input type="number" id="txt_cantidad" class="form-control" min="1">
           </div>
           <div class="col-md-2">
-            <label>Precio</label>
+            <label class="mp-label">Precio</label>
             <input type="number" id="txt_precio" class="form-control" step="0.01" min="0">
           </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-12 d-flex justify-content-end">
-            <button type="button" id="btn_agregar" class="btn btn-success" style="min-width:150px;">AGREGAR</button>
-          </div>
-        </div>
-      </form>
-
-      <!-- Modal para búsqueda de mercadería -->
-      <div class="modal fade" id="modalMercaderia" tabindex="-1" role="dialog" aria-labelledby="modalMercaderiaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-              <h5 class="modal-title">Buscar Mercadería</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-              <input type="text" id="txt_buscar_mercaderia" class="form-control mb-3" placeholder="Ingrese descripción o barra">
-              <table id="tbl_busqueda_mercaderia" class="table table-bordered table-hover text-center">
-                <thead>
-                  <tr>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Barra</th>
-                    <th>Stock</th>
-                    <th>Precio</th>
-                    <th>Seleccionar</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
+          <div class="col-12 d-flex justify-content-end mt-2">
+            <button type="button" id="btn_agregar" class="btn-mp btn-mp-add" style="min-width:150px;"><i class="fas fa-plus"></i> Agregar</button>
           </div>
         </div>
       </div>
+    </div>
+  </form>
 
-      <!-- Detalle -->
-      <div class="row mb-3">
-        <div class="col-12">
-          <div class="table-responsive">
-            <table id="tbl_detalle" class="table table-bordered table-hover text-center table-striped align-middle">
-              <thead class="thead-light">
-                <tr>
-                  <th>Código</th>
-                  <th>Mercadería</th>
-                  <th>Stock</th>
-                  <th>Cantidad</th>
-                  <th>Precio</th>
-                  <th>Subtotal</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-              <tfoot>
-                <tr>
-                  <th colspan="5" class="text-end">TOTAL</th>
-                  <th id="total">0.00</th>
-                  <th></th>
-                </tr>
-              </tfoot>
-            </table>
+  <!-- Modal búsqueda mercadería (Bootstrap 4) -->
+  <div class="modal fade" id="modalMercaderia" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header text-white">
+          <h5 class="modal-title"><i class="fas fa-box-open mr-2"></i>Buscar Mercadería</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend"><span class="input-group-text bg-light border-0"><i class="fas fa-search text-primary"></i></span></div>
+            <input type="text" id="txt_buscar_mercaderia" class="form-control bg-light border-0" placeholder="Descripción, código o barra">
           </div>
+          <table id="tbl_busqueda_mercaderia" class="table table-hover text-center">
+            <thead><tr><th>Código</th><th>Descripción</th><th>Barra</th><th>Stock</th><th>Precio</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
-
-      <!-- Botones -->
-      <div class="row mt-3">
-        <div class="col d-flex justify-content-end">
-          <button type="button" id="btn_guardar" class="btn btn-primary mr-2">GUARDAR</button>
-          <button type="button" id="btn_modificar" class="btn btn-warning mr-2">MODIFICAR</button>
-          <button type="button" id="btn_anular" class="btn btn-danger mr-2">ANULAR</button>
-          <button type="button" id="btn_salir" class="btn btn-secondary">SALIR</button>
-        </div>
-      </div>
-
     </div>
   </div>
+
+  <!-- Detalle -->
+  <div class="mp-card">
+    <div class="mp-card-head amber"><span class="ic"><i class="fas fa-list-ul"></i></span> Detalle del presupuesto</div>
+    <div style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_detalle" class="table table-hover text-center align-middle">
+          <thead><tr><th>Código</th><th>Mercadería</th><th>Stock</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th><th>Acciones</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><th colspan="5" class="text-right">TOTAL</th><th id="total">0.00</th><th></th></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="mp-footer">
+      <button type="button" id="btn_salir" class="btn-mp btn-mp-exit"><i class="fas fa-arrow-left"></i> Salir</button>
+      <button type="button" id="btn_guardar" class="btn-mp btn-mp-save"><i class="fas fa-save"></i> Guardar</button>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block js %}
-
+<script id="data-proveedores" type="application/json">{{ proveedores | tojson }}</script>
+<script id="data-sucursales" type="application/json">{{ sucursales | tojson }}</script>
+<script id="data-funcionarios" type="application/json">{{ funcionarios | tojson }}</script>
 <script>
 $(function(){
-  // ==============================
-  // Variables y tabla DataTable
-  // ==============================
   let detalle = [];
-  let archivoSubido = null; 
 
+  // ===================== Buscadores (pickers) =====================
+  const DATA_PROV = JSON.parse(document.getElementById('data-proveedores').textContent).map(p => ({ id: p.id_proveedor, text: p.nombre_proveedor }));
+  const DATA_SUC  = JSON.parse(document.getElementById('data-sucursales').textContent).map(s => ({ id: s.id_sucursal, text: s.descripcion }));
+  const DATA_FUN  = JSON.parse(document.getElementById('data-funcionarios').textContent).map(f => ({ id: f.fun_id, text: f.nombre_completo }));
+
+  function initPicker(rootSel, data){
+    const root = $(rootSel);
+    const input = root.find('.picker-input');
+    const hidden = root.find('input[type=hidden]');
+    const menu = root.find('.picker-menu');
+
+    function render(filter){
+      const f = (filter || '').toLowerCase();
+      const items = data.filter(d => (d.text || '').toLowerCase().includes(f));
+      menu.empty();
+      if(items.length === 0){ menu.append('<div class="picker-empty">Sin resultados</div>'); return; }
+      items.forEach(d => menu.append(`<div class="picker-item" data-id="${d.id}">${d.text}</div>`));
+    }
+
+    input.on('focus', function(){ render($(this).val()); menu.addClass('show'); });
+    input.on('input', function(){ hidden.val(''); root.removeClass('is-selected'); render($(this).val()); menu.addClass('show'); });
+    menu.on('click', '.picker-item', function(){
+      hidden.val($(this).data('id'));
+      input.val($(this).text());
+      menu.removeClass('show');
+      root.addClass('is-selected');
+    });
+    $(document).on('click', function(e){ if(!$.contains(root[0], e.target)) menu.removeClass('show'); });
+  }
+
+  initPicker('#pick_proveedor', DATA_PROV);
+  initPicker('#pick_sucursal',  DATA_SUC);
+  initPicker('#pick_funcionario', DATA_FUN);
+
+  // ===================== Tabla =====================
   let tabla = $('#tbl_detalle').DataTable({
-    paging: true,
-    info: true,
-    searching: true,
-    ordering: true,
-    columnDefs: [
-      { targets: -1, orderable: false },           // La columna de acciones no se ordena
-      { targets: [2,3,4,5], className: 'text-right' } // Alineación derecha para números
-    ],
-    columns: [
-      { data: 'codigo' },
-      { data: 'descripcion' },
-      { data: 'stock' },
-      { data: 'cantidad' },
-      { data: 'precio' },
-      { data: 'subtotal' },
-      { data: 'acciones' }
+    paging:true, info:true, searching:true, ordering:true,
+    columnDefs:[ { targets:-1, orderable:false }, { targets:[2,3,4,5], className:'text-right' } ],
+    columns:[
+      {data:'codigo'}, {data:'descripcion'}, {data:'stock'},
+      {data:'cantidad'}, {data:'precio'}, {data:'subtotal'}, {data:'acciones'}
     ]
   });
 
-  // ==============================
-  // Función para actualizar total
-  // ==============================
   function actualizarTotal(){
-    let total = detalle.reduce((acc, item) => acc + item.subtotal, 0);
+    let total = detalle.reduce((acc, it) => acc + it.subtotal, 0);
     $('#total').text(total.toFixed(2));
   }
 
-  // ==============================
-  // Cargar siguiente código de presupuesto
-  // ==============================
+  // ===================== Código siguiente =====================
   $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/siguiente-codigo', res => {
     if(res.success) $('#txt_nro_presupuesto').val(res.siguiente_codigo);
   });
 
-  // ==============================
-  // Token CSRF
-  // ==============================
   const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
-  // ==============================
-  // Subida de archivo
-  // ==============================
+  // ===================== Subir archivo =====================
   $('#file_presupuesto').on('change', function(){
     let file = this.files[0];
     if(!file) return;
-    let formData = new FormData();
-    formData.append('archivo', file);
-    formData.append('csrf_token', csrfToken);
-
+    let fd = new FormData();
+    fd.append('archivo', file);
+    fd.append('csrf_token', csrfToken);
     $.ajax({
-      url: '/gestionar-compras/registrar-presupuesto/subir-archivo',
-      type: 'POST',
-      data: formData,
-      processData: false,
-      contentType: false,
-      success: function(res){
-        if(res.success){
-          archivoSubido = res.nombre;
-          Swal.fire('Archivo subido', file.name, 'success');
-        } else {
-          Swal.fire('Error', res.error || 'No se pudo subir archivo', 'error');
-          archivoSubido = null;
-          $('#file_presupuesto').val('');
-        }
+      url:'/gestionar-compras/registrar-presupuesto/subir-archivo', type:'POST',
+      data:fd, processData:false, contentType:false,
+      success:function(res){
+        if(res.success){ Swal.fire('Archivo subido', file.name, 'success'); }
+        else { Swal.fire('Error', res.error || 'No se pudo subir', 'error'); $('#file_presupuesto').val(''); }
       },
-      error: function(xhr){
-        let msg = xhr.responseJSON ? xhr.responseJSON.error : 'Error al subir archivo';
-        Swal.fire('Error', msg, 'error');
-        archivoSubido = null;
-        $('#file_presupuesto').val('');
-      }
+      error:function(xhr){ Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.error) || 'Error al subir', 'error'); $('#file_presupuesto').val(''); }
     });
   });
 
-  // ==============================
-  // Autocompletar por código numérico
-  // ==============================
+  // ===================== Buscar mercadería por código =====================
   $('#txt_mercaderia').on('change', function(){
     let valor = $(this).val();
     if(!valor) return;
-    $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/buscar-mercaderia', {
-      filtro: valor, 
-      id_sucursal: $('#cbo_sucursal').val()
-    }, function(res){
+    $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/buscar-mercaderia', { filtro:valor, id_sucursal:$('#cbo_sucursal').val() }, function(res){
       if(res.success){
-        let prod = res.data.find(p => String(p.item_code) === String(valor) || 
-                                     (p.cod_barras && p.cod_barras.some(c => String(c).includes(String(valor)))) ||
-                                     p.descripcion.toLowerCase().includes(String(valor).toLowerCase()));
+        let prod = res.data.find(p => String(p.item_code) === String(valor) ||
+          (p.barras && p.barras.some(c => String(c).includes(String(valor)))) ||
+          p.descripcion.toLowerCase().includes(String(valor).toLowerCase()));
         if(prod){
           $('#txt_stock').val(prod.stock);
           $('#txt_precio').val(prod.precio_unitario);
           $('#txt_descripcion').val(prod.descripcion);
-          $('#txt_mercaderia').data('id_item', prod.id_item).data('desc', prod.descripcion);
+          $('#txt_mercaderia').data('id_item', prod.id_item).val(prod.item_code);
         } else {
           Swal.fire('Error','Producto no encontrado','error');
           $('#txt_stock,#txt_precio,#txt_descripcion').val('');
@@ -286,9 +374,7 @@ $(function(){
     });
   });
 
-  // ==============================
-  // Búsqueda modal
-  // ==============================
+  // ===================== Modal mercadería =====================
   $('#btn_buscar_mercaderia').click(function(){
     $('#modalMercaderia').modal('show');
     $('#txt_buscar_mercaderia').val('').trigger('input');
@@ -296,35 +382,18 @@ $(function(){
 
   $('#txt_buscar_mercaderia').on('input', function(){
     let filtro = $(this).val().toLowerCase();
-    $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/buscar-mercaderia', {
-      id_sucursal: $('#cbo_sucursal').val(),
-      filtro: filtro
-    }, function(res){
+    $.getJSON('/api/v1/gestionar-compras/registrar-presupuesto/buscar-mercaderia', { id_sucursal:$('#cbo_sucursal').val(), filtro:filtro }, function(res){
       if(res.success){
-        let tbody = $('#tbl_busqueda_mercaderia tbody');
-        tbody.empty();
+        let tbody = $('#tbl_busqueda_mercaderia tbody'); tbody.empty();
         res.data.forEach(p => {
-          // Se agregó búsqueda por código (item_code)
-          if(p.descripcion.toLowerCase().includes(filtro) || 
-             (p.cod_barras && p.cod_barras.some(c => String(c).includes(filtro))) ||
-             String(p.item_code).toLowerCase().includes(filtro)) {
-            let barras = p.cod_barras ? p.cod_barras.join(', ') : '';
-            tbody.append(`
-              <tr>
-                <td>${p.item_code}</td>
-                <td>${p.descripcion}</td>
-                <td>${barras}</td>
-                <td>${p.stock}</td>
-                <td>${p.precio_unitario}</td>
-                <td>
-                  <button class="btn btn-sm btn-primary btn-seleccionar"
-                    data-id="${p.id_item}" data-codigo="${p.item_code}"
-                    data-desc="${p.descripcion}" data-stock="${p.stock}"
-                    data-precio="${p.precio_unitario}">Seleccionar</button>
-                </td>
-              </tr>
-            `);
-          }
+          let barras = p.barras ? p.barras.join(', ') : '';
+          tbody.append(`<tr>
+            <td>${p.item_code}</td><td>${p.descripcion}</td><td>${barras}</td>
+            <td>${p.stock}</td><td>${p.precio_unitario}</td>
+            <td><button class="btn btn-sm btn-primary btn-seleccionar"
+              data-id="${p.id_item}" data-codigo="${p.item_code}" data-desc="${p.descripcion}"
+              data-stock="${p.stock}" data-precio="${p.precio_unitario}">Seleccionar</button></td>
+          </tr>`);
         });
       }
     });
@@ -332,18 +401,14 @@ $(function(){
 
   $('#tbl_busqueda_mercaderia').on('click', '.btn-seleccionar', function(){
     let btn = $(this);
-    $('#txt_mercaderia').val(btn.data('codigo'))
-      .data('id_item', btn.data('id'))
-      .data('desc', btn.data('desc'));
+    $('#txt_mercaderia').val(btn.data('codigo')).data('id_item', btn.data('id'));
     $('#txt_descripcion').val(btn.data('desc'));
     $('#txt_stock').val(btn.data('stock'));
     $('#txt_precio').val(btn.data('precio'));
     $('#modalMercaderia').modal('hide');
   });
 
-  // ==============================
-  // Agregar detalle al presupuesto
-  // ==============================
+  // ===================== Agregar detalle =====================
   $('#btn_agregar').click(function(){
     let id = $('#txt_mercaderia').data('id_item');
     let cod = $('#txt_mercaderia').val();
@@ -352,74 +417,54 @@ $(function(){
     let cant = parseFloat($('#txt_cantidad').val());
     let precio = parseFloat($('#txt_precio').val());
 
-    if(!id || !cant || !precio) return Swal.fire('Error','Complete todos los campos','error');
+    if(!id || !cant || !precio) return Swal.fire('Error','Complete mercadería, cantidad y precio','error');
+    if(detalle.some(d => String(d.codigo) === String(cod))) return Swal.fire('Atención','Esa mercadería ya fue agregada','warning');
 
     let subtotal = cant * precio;
-    detalle.push({id_item: id, codigo: cod, descripcion: desc, stock, cantidad: cant, precio, subtotal});
+    detalle.push({id_item:id, codigo:cod, descripcion:desc, stock, cantidad:cant, precio, subtotal});
 
     tabla.row.add({
-      codigo: cod,
-      descripcion: desc,
-      stock: stock,
-      cantidad: cant,
-      precio: precio.toFixed(2),
-      subtotal: subtotal.toFixed(2),
-      acciones: `<button class="btn btn-sm btn-primary btn-edit">Editar</button>
-                 <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
+      codigo:cod, descripcion:desc, stock:stock, cantidad:cant,
+      precio:precio.toFixed(2), subtotal:subtotal.toFixed(2),
+      acciones:`<button class="btn btn-sm btn-primary btn-edit">Editar</button>
+                <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
     }).draw();
-
     actualizarTotal();
-
-    // Limpiar campos
-    $('#txt_mercaderia,#txt_descripcion,#txt_stock,#txt_cantidad,#txt_precio')
-      .val('').removeData('id_item').removeData('desc');
+    $('#txt_mercaderia,#txt_descripcion,#txt_stock,#txt_cantidad,#txt_precio').val('').removeData('id_item');
   });
 
-  // ==============================
-  // Editar / eliminar detalle
-  // ==============================
   $('#tbl_detalle').on('click','.btn-del', function(){
     let idx = tabla.row($(this).parents('tr')).index();
-    detalle.splice(idx, 1);
+    detalle.splice(idx,1);
     tabla.row($(this).parents('tr')).remove().draw();
     actualizarTotal();
   });
 
   $('#tbl_detalle').on('click','.btn-edit', function(){
-    let idx = tabla.row($(this).parents('tr')).index();
+    let row = $(this).parents('tr');
+    let idx = tabla.row(row).index();
     let fila = detalle[idx];
-
-    Swal.fire({
-      title: 'Modificar cantidad',
-      input: 'number',
-      inputValue: fila.cantidad,
-      showCancelButton: true,
-      confirmButtonText: 'Actualizar',
-      preConfirm: (v) => { if(v <= 0) return false; return v; }
+    Swal.fire({ title:'Modificar cantidad', input:'number', inputValue:fila.cantidad, showCancelButton:true, confirmButtonText:'Actualizar',
+      preConfirm:(v)=>{ if(v<=0){ Swal.showValidationMessage('Cantidad inválida'); return false; } return v; }
     }).then(r => {
       if(r.isConfirmed){
         fila.cantidad = parseFloat(r.value);
         fila.subtotal = fila.cantidad * fila.precio;
-        tabla.row(idx).data({
-          codigo: fila.codigo,
-          descripcion: fila.descripcion,
-          stock: fila.stock,
-          cantidad: fila.cantidad,
-          precio: fila.precio.toFixed(2),
-          subtotal: fila.subtotal.toFixed(2),
-          acciones: `<button class="btn btn-sm btn-primary btn-edit">Editar</button>
-                     <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
+        tabla.row(row).data({
+          codigo:fila.codigo, descripcion:fila.descripcion, stock:fila.stock,
+          cantidad:fila.cantidad, precio:fila.precio.toFixed(2), subtotal:fila.subtotal.toFixed(2),
+          acciones:`<button class="btn btn-sm btn-primary btn-edit">Editar</button>
+                    <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
         }).draw(false);
         actualizarTotal();
       }
     });
   });
 
-  // ==============================
-  // Guardar presupuesto
-  // ==============================
+  // ===================== Guardar =====================
   $('#btn_guardar').click(function(){
     if(detalle.length === 0) return Swal.fire('Error','Debe agregar mercaderías','error');
+    if(!$('#cbo_proveedor').val()) return Swal.fire('Error','Seleccione un proveedor','warning');
 
     let payload = new FormData();
     payload.append('cod_presupuesto', $('#txt_nro_presupuesto').val());
@@ -430,10 +475,7 @@ $(function(){
     payload.append('fun_id', $('#cbo_funcionario').val());
     payload.append('estado', $('#cbo_estado').val());
     payload.append('detalles', JSON.stringify(detalle.map(d => ({
-      item_code: String(d.codigo),
-      descripcion: d.descripcion,
-      cantidad: d.cantidad,
-      precio_unitario: d.precio
+      item_code:String(d.codigo), descripcion:d.descripcion, cantidad:d.cantidad, precio_unitario:d.precio
     }))));
     payload.append('csrf_token', csrfToken);
 
@@ -441,18 +483,12 @@ $(function(){
     if(fileInput.files[0]) payload.append('archivo', fileInput.files[0]);
 
     $.ajax({
-      url: '/gestionar-compras/registrar-presupuesto/guardar-presupuesto',
-      method: 'POST',
-      data: payload,
-      processData: false,
-      contentType: false,
+      url:'/gestionar-compras/registrar-presupuesto/guardar-presupuesto', method:'POST',
+      data:payload, processData:false, contentType:false,
       success: r => {
         if(r.success){
           Swal.fire('Éxito','Presupuesto guardado','success');
-          detalle = [];
-          tabla.clear().draw();
-          actualizarTotal();
-          archivoSubido = null;
+          detalle = []; tabla.clear().draw(); actualizarTotal();
           $('#file_presupuesto').val('');
         } else Swal.fire('Error', r.error || 'No se pudo guardar', 'error');
       },
@@ -460,14 +496,7 @@ $(function(){
     });
   });
 
-  // ==============================
-  // Botón salir
-  // ==============================
   $('#btn_salir').click(()=> window.location.href='/');
 });
 </script>
-
-
-
-
 {% endblock %}

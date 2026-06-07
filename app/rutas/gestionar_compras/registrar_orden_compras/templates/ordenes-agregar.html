@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% block titulo %}Generar Orden de Compra{% endblock %}
+{% block contenido %}
+<div class="container mt-4" style="max-width:1400px;">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white"><h4 class="mb-0">ORDEN DE COMPRA</h4></div>
+    <div class="card-body">
+
+      <!-- Encabezado -->
+      <div class="row mb-3">
+        <div class="col-md-2">
+          <label>Nro Orden</label>
+          <input type="text" class="form-control" value="AUTO" readonly>
+        </div>
+        <div class="col-md-3">
+          <label>Origen</label>
+          <div><input type="radio" name="tipo_oc" id="rb_sin" value="SIN" checked> <label for="rb_sin">Sin Presupuesto</label></div>
+          <div><input type="radio" name="tipo_oc" id="rb_con" value="CON"> <label for="rb_con">Desde Presupuesto</label></div>
+        </div>
+        <div class="col-md-3">
+          <label>Cód. Presupuesto</label>
+          <input type="text" id="txt_cod_presupuesto" class="form-control" placeholder="Enter para cargar" readonly>
+          <input type="hidden" id="id_pre_compra_cab">
+        </div>
+        <div class="col-md-2">
+          <label>Fecha Emisión</label>
+          <input type="date" id="txt_fecha" class="form-control">
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label>Funcionario</label>
+          <select id="cbo_funcionario" class="form-control">
+            <option value="">Seleccione</option>
+            {% for f in funcionarios %}<option value="{{ f['fun_id'] }}">{{ f['nombre_completo'] }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label>Sucursal</label>
+          <select id="cbo_sucursal" class="form-control">
+            <option value="">Seleccione</option>
+            {% for s in sucursales %}<option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label>Proveedor</label>
+          <select id="cbo_proveedor" class="form-control">
+            <option value="">Seleccione</option>
+            {% for p in proveedores %}<option value="{{ p['id_proveedor'] }}">{{ p['nombre'] }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Selección de producto -->
+      <div class="row mb-3 align-items-end">
+        <div class="col-md-4">
+          <label>Producto</label>
+          <select id="cbo_producto" class="form-control">
+            <option value="">Seleccione</option>
+            {% for i in productos %}
+            <option value="{{ i.id_item }}"
+                    data-codigo="{{ i.item_code }}"
+                    data-nombre="{{ i.nombre }}"
+                    data-proveedor-id="{{ i.id_proveedor }}"
+                    data-proveedor-nombre="{{ i.proveedor_nombre }}"
+                    data-precio="{{ i.precio_unitario }}"
+                    data-stock="{{ i.stock }}">{{ i.item_code }} - {{ i.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label>Stock</label>
+          <input type="number" id="txt_stock" class="form-control" readonly>
+        </div>
+        <div class="col-md-2">
+          <label>Cantidad</label>
+          <input type="number" id="txt_cantidad" min="1" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label>Precio</label>
+          <input type="number" id="txt_precio" min="0" step="0.01" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <button type="button" id="btn_agregar" class="btn btn-success btn-block">AGREGAR</button>
+        </div>
+      </div>
+
+      <!-- Detalle -->
+      <div class="table-responsive mb-3">
+        <table id="tbl_detalle" class="table table-bordered table-hover text-center table-striped align-middle">
+          <thead class="thead-light">
+            <tr><th>Código</th><th>Producto</th><th>Proveedor</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th><th>Acciones</th></tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot><tr><th colspan="5" class="text-right">TOTAL</th><th id="total">0.00</th><th></th></tr></tfoot>
+        </table>
+      </div>
+
+      <div class="row mt-3"><div class="col d-flex justify-content-end">
+        <button type="button" id="btn_grabar" class="btn btn-primary mr-2">GRABAR</button>
+        <button type="button" id="btn_cancelar" class="btn btn-warning mr-2">CANCELAR</button>
+        <a href="{{ url_for('ocmod.ordenes_index') }}" class="btn btn-danger">SALIR</a>
+      </div></div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+$(document).ready(function(){
+    let detalle = [];
+    let tabla = $('#tbl_detalle').DataTable({
+        paging:true, info:true, searching:false, ordering:false,
+        columns:[
+            {data:'codigo'},{data:'producto'},{data:'proveedor'},
+            {data:'cantidad'},{data:'precio'},{data:'subtotal'},{data:'acciones'}
+        ]
+    });
+
+    function actualizarTotal(){
+        let total = detalle.reduce((s,d)=>s+d.subtotal,0);
+        $('#total').text(total.toFixed(2));
+    }
+
+    // Origen: con / sin presupuesto
+    $('input[name="tipo_oc"]').change(function(){
+        if($('#rb_con').is(':checked')){
+            $('#txt_cod_presupuesto').prop('readonly', false).focus();
+        } else {
+            $('#txt_cod_presupuesto').prop('readonly', true).val('');
+            $('#id_pre_compra_cab').val('');
+            $('#cbo_funcionario,#cbo_proveedor').prop('disabled', false);
+        }
+    });
+
+    // Cargar presupuesto al presionar Enter
+    $('#txt_cod_presupuesto').keypress(function(e){
+        if(e.which===13){
+            e.preventDefault();
+            let cod = $(this).val();
+            if(!cod) return Swal.fire('Error','Ingrese el código del presupuesto','error');
+            $.getJSON(`/api/v1/gestionar-compras/registrar-orden-compras/presupuesto/${cod}`, function(res){
+                if(res.success && res.data){
+                    const p = res.data;
+                    $('#id_pre_compra_cab').val(p.id_pre_compra_cab);
+                    $('#cbo_funcionario').val(p.fun_id);
+                    $('#cbo_proveedor').val(p.id_proveedor);
+                    $('#cbo_funcionario,#cbo_proveedor').prop('disabled', true);
+                    detalle = []; tabla.clear().draw();
+                    p.detalle.forEach(d=>{
+                        if(!d.id_item){ return; } // item del presupuesto no existe en item
+                        let cantidad = parseFloat(d.cantidad)||0;
+                        let precio = parseFloat(d.precio_unitario)||0;
+                        let subtotal = cantidad*precio;
+                        detalle.push({ id_item:d.id_item, codigo:d.item_code, producto:d.item_descripcion,
+                            proveedor:d.proveedor||'', id_proveedor:d.id_proveedor, cantidad, precio, subtotal });
+                        tabla.row.add({
+                            codigo:d.item_code, producto:d.item_descripcion, proveedor:d.proveedor||'',
+                            cantidad, precio:precio.toFixed(2), subtotal:subtotal.toFixed(2),
+                            acciones:`<button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+                        }).draw();
+                    });
+                    actualizarTotal();
+                } else Swal.fire('Error', res.error||'Presupuesto no encontrado','error');
+            });
+        }
+    });
+
+    // Al elegir producto, completar stock/precio
+    $('#cbo_producto').change(function(){
+        let op = $(this).find('option:selected');
+        $('#txt_stock').val(op.data('stock')||0);
+        $('#txt_precio').val((parseFloat(op.data('precio'))||0).toFixed(2));
+    });
+
+    // Agregar producto manual
+    $('#btn_agregar').click(function(){
+        let op = $('#cbo_producto option:selected');
+        let id_item = op.val();
+        let codigo = op.data('codigo');
+        let producto = op.data('nombre');
+        let proveedor = op.data('proveedor-nombre')||'';
+        let id_proveedor = op.data('proveedor-id')||$('#cbo_proveedor').val();
+        let cantidad = parseFloat($('#txt_cantidad').val());
+        let precio = parseFloat($('#txt_precio').val());
+
+        if(!id_item || !cantidad || !precio){
+            return Swal.fire("Error","Complete producto, cantidad y precio","error");
+        }
+        // evitar duplicados
+        if(detalle.some(d=>d.id_item==id_item)){
+            return Swal.fire("Atención","Ese producto ya está en el detalle","warning");
+        }
+
+        let subtotal = cantidad*precio;
+        detalle.push({ id_item, codigo, producto, proveedor, id_proveedor, cantidad, precio, subtotal });
+        tabla.row.add({
+            codigo, producto, proveedor, cantidad,
+            precio:precio.toFixed(2), subtotal:subtotal.toFixed(2),
+            acciones:`<button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+        }).draw();
+        actualizarTotal();
+        $('#cbo_producto').val(''); $('#txt_stock,#txt_cantidad,#txt_precio').val('');
+    });
+
+    // Eliminar fila
+    $('#tbl_detalle tbody').on('click','.btn-eliminar', function(){
+        let idx = tabla.row($(this).parents('tr')).index();
+        detalle.splice(idx,1);
+        tabla.row($(this).parents('tr')).remove().draw();
+        actualizarTotal();
+    });
+
+    // Grabar
+    $('#btn_grabar').click(function(){
+        if(detalle.length===0) return Swal.fire("Error","Debe agregar al menos un producto","error");
+        let fun_id = $('#cbo_funcionario').val();
+        let id_sucursal = $('#cbo_sucursal').val();
+        let id_proveedor = $('#cbo_proveedor').val() || (detalle[0] ? detalle[0].id_proveedor : null);
+        let fecha_emision = $('#txt_fecha').val();
+
+        if(!fun_id || !id_sucursal || !id_proveedor){
+            return Swal.fire("Error","Complete funcionario, sucursal y proveedor","error");
+        }
+
+        let payload = {
+            id_pre_compra_cab: $('#id_pre_compra_cab').val() || null,
+            fun_id, id_sucursal, id_proveedor,
+            fecha_emision: fecha_emision || null,
+            estado: 'PENDIENTE',
+            detalle_orden: detalle.map(d=>({
+                id_item: d.id_item,
+                cantidad: d.cantidad,
+                precio_unitario: d.precio,
+                id_proveedor: d.id_proveedor
+            }))
+        };
+
+        $.ajax({
+            url:'/api/v1/gestionar-compras/registrar-orden-compras/ordenes',
+            method:'POST', contentType:'application/json', data:JSON.stringify(payload),
+            success:function(res){
+                if(res.success){
+                    Swal.fire("Éxito","Orden N° "+res.id_orden_compra_cab+" registrada","success");
+                    detalle=[]; tabla.clear().draw(); actualizarTotal();
+                    $('#rb_sin').prop('checked',true);
+                    $('#txt_cod_presupuesto').prop('readonly',true).val('');
+                    $('#id_pre_compra_cab').val('');
+                    $('#cbo_funcionario,#cbo_proveedor').prop('disabled',false).val('');
+                    $('#cbo_sucursal').val(''); $('#txt_fecha').val('');
+                } else Swal.fire("Error", res.error,"error");
+            },
+            error:function(){ Swal.fire("Error","Ocurrió un error","error"); }
+        });
+    });
+
+    $('#btn_cancelar').click(()=> location.reload());
+});
+</script>
+{% endblock %}

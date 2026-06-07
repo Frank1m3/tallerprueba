@@ -160,3 +160,24 @@ def detalle_solicitud(nro_solicitud):
     except Exception as e:
         app.logger.error(f"Error al obtener detalle de solicitud {nro_solicitud}: {str(e)}")
         return jsonify(success=False, error=str(e))
+    
+    # ================================
+# Cambiar estado del presupuesto (aprobar / rechazar)
+# ================================
+@presuapi.route('/presupuestos/<int:id>/estado', methods=['PUT'])
+@csrf.exempt
+def cambiar_estado_presupuesto(id):
+    try:
+        data = request.get_json() or {}
+        nuevo = (data.get('estado') or '').upper()
+        if nuevo not in ('APROBADO', 'RECHAZADO'):
+            return jsonify(success=False, error='Estado inválido'), 400
+
+        dao = PresupuestoCompraDao()
+        ok, msg = dao.cambiar_estado(id, nuevo)
+        if ok:
+            return jsonify(success=True), 200
+        return jsonify(success=False, error=msg or 'No se pudo actualizar'), 400
+    except Exception as e:
+        app.logger.error(f"Error al cambiar estado presupuesto {id}: {e}")
+        return jsonify(success=False, error='Error interno'), 500

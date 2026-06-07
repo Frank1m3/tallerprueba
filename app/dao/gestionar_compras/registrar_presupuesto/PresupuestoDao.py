@@ -188,3 +188,91 @@ class PresupuestoCompraDao:
             })
 
         return {'success': True, 'detalles': detalles}
+    # ================================
+    # Obtener presupuesto completo por ID (cabecera + detalle)
+    # ================================
+    def obtener_por_id(self, id_pre_compra_cab):
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("""
+                SELECT c.id_pre_compra_cab, c.cod_presupuesto, c.fecha_emision,
+                       c.fecha_vencimiento, c.condicion_compra, c.estado, c.archivo,
+                       c.id_proveedor, p.prov_nombre,
+                       c.fun_id, f.nombres || ' ' || f.apellidos
+                FROM presupuesto_compra_cab c
+                LEFT JOIN proveedor p ON p.id_proveedor = c.id_proveedor
+                LEFT JOIN funcionarios f ON f.fun_id = c.fun_id
+                WHERE c.id_pre_compra_cab = %s
+            """, (id_pre_compra_cab,))
+            cab = cur.fetchone()
+            if not cab:
+                return None
+
+            pres = {
+                'id': cab[0],
+                'cod_presupuesto': cab[1],
+                'fecha_emision': cab[2].strftime("%Y-%m-%d") if cab[2] else None,
+                'fecha_vencimiento': cab[3].strftime("%Y-%m-%d") if cab[3] else None,
+                'condicion_compra': cab[4] or '',
+                'estado': cab[5],
+                'archivo': cab[6],
+                'id_proveedor': cab[7],
+                'proveedor': cab[8] or '',
+                'fun_id': cab[9],
+                'funcionario': cab[10] or '',
+                'detalles': [],
+                'total': 0.0
+            }
+
+            cur.execute("""
+                SELECT d.item_code, i.descripcion, d.cantidad, d.precio_unitario
+                FROM presupuesto_compra_det d
+                LEFT JOIN item i ON i.item_code = d.item_code
+                WHERE d.id_pre_compra_cab = %s
+                ORDER BY d.item_code
+            """, (id_pre_compra_cab,))
+            total = 0.0
+            for r in cur.fetchall():
+                cant = float(r[2]); pu = float(r[3]); sub = cant * pu
+                total += sub
+                pres['detalles'].append({
+                    'item_code': r[0],
+                    'descripcion': r[1] or '',
+                    'cantidad': cant,
+                    'precio_unitario': pu,
+                    'subtotal': sub
+                })
+            pres['total'] = total
+            return pres
+        except Exception as e:
+            app.logger.error(f"Error obtener presupuesto por id: {e}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Cambiar estado (solo desde PENDIENTE)
+    # ================================
+    def cambiar_estado(self, id_pre_compra_cab, nuevo_estado):
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT estado FROM presupuesto_compra_cab WHERE id_pre_compra_cab = %s", (id_pre_compra_cab,))
+            fila = cur.fetchone()
+            if not fila:
+                return False, 'No existe el presupuesto'
+            if fila[0] != 'PENDIENTE':
+                return False, f'El presupuesto ya está {fila[0]}'
+            cur.execute("UPDATE presupuesto_compra_cab SET estado = %s WHERE id_pre_compra_cab = %s",
+                        (nuevo_estado, id_pre_compra_cab))
+            con.commit()
+            return True, None
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error cambiar estado presupuesto: {e}")
+            return False, str(e)
+        finally:
+            cur.close()
+            con.close()

@@ -144,11 +144,13 @@ from app.rutas.gestionar_compras.registrar_pedido_compras.registrar_pedidos_comp
 from app.rutas.gestionar_compras.registrar_solicitud_compras.registrar_solicitud_compras_routes import solmod
 from app.rutas.gestionar_compras.registrar_presupuesto.registrar_presupuesto_routes         import presumod
 from app.rutas.gestionar_compras.registrar_recepcion_compras.recepcion_mercaderia_routes    import rm_mod
+from app.rutas.gestionar_compras.registrar_orden_compras.registrar_orden_compras_routes     import ocmod
 
 app.register_blueprint(pdcmod,   url_prefix=f'{modulo_compras}/registrar-pedido-compras')
 app.register_blueprint(solmod,   url_prefix=f'{modulo_compras}/registrar-solicitud-compras')
 app.register_blueprint(presumod, url_prefix=f'{modulo_compras}/registrar-presupuesto')
 app.register_blueprint(rm_mod,   url_prefix=f'{modulo_compras}/registrar-recepcion-compras')
+app.register_blueprint(ocmod,    url_prefix=f'{modulo_compras}/registrar-orden-compras')
 
 # ================================
 # Gestionar Compras - APIs
@@ -157,11 +159,13 @@ from app.rutas.gestionar_compras.registrar_pedido_compras.registrar_pedido_compr
 from app.rutas.gestionar_compras.registrar_solicitud_compras.registrar_solicitud_compras_api import scapi
 from app.rutas.gestionar_compras.registrar_presupuesto.registrar_presupuesto_api            import presuapi
 from app.rutas.gestionar_compras.registrar_recepcion_compras.recepcion_mercaderia_api       import rm_api
+from app.rutas.gestionar_compras.registrar_orden_compras.registrar_orden_compras_api        import ocapi
 
 app.register_blueprint(pdcapi,    url_prefix=f'{api_v1}{modulo_compras}/registrar-pedido-compras')
 app.register_blueprint(scapi,     url_prefix=f'{api_v1}{modulo_compras}/registrar-solicitud-compras')
 app.register_blueprint(presuapi,  url_prefix=f'{api_v1}{modulo_compras}/registrar-presupuesto')
 app.register_blueprint(rm_api,    url_prefix=f'{api_v1}{modulo_compras}/recepcion-mercaderias')
+app.register_blueprint(ocapi,     url_prefix=f'{api_v1}{modulo_compras}/registrar-orden-compras')
 
 # ================================
 # Cierre - Rutas y APIs
