@@ -1,116 +1,93 @@
 {% extends 'base.html' %}
 
-{% block titulo %}
-Listar Presupuestos de Compra
-{% endblock %}
+{% block titulo %}Presupuestos de Compra{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">PRESUPUESTOS</h4>
- </div>
-    <!-- Tarjeta con tabla -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-    
-            <a href="{{ url_for('presumod.presupuesto_agregar') }}" target="_blank" class="btn btn-primary btn-sm">
-                Agregar Presupuesto
-            </a>
-        </div>
-        <div class="card-body">
-            <table class="table table-striped" id="tbl_presupuestos">
-                <thead>
-                    <tr>
-                        <th>Proveedor</th>
-                        <th>Fecha Emisión</th>
-                        <th>Estado</th>
-                        <th>Archivo</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+<style>
+  .pi-head { display:flex; align-items:center; gap:.8rem; margin:1.2rem 0 1.3rem; }
+  .pi-icon { width:46px; height:46px; border-radius:13px; background:linear-gradient(135deg,#1a237e,#1565c0); display:grid; place-items:center; color:#fff; font-size:1.1rem; box-shadow:0 6px 18px rgba(26,35,126,.3); }
+  .pi-head h1 { font-size:1.35rem; font-weight:800; color:#1a237e; margin:0; }
+  .pi-card { background:#fff; border:1px solid #e8eaf6; border-radius:16px; box-shadow:0 4px 20px rgba(26,35,126,.07); }
+  .pi-card .card-header { background:#fbfcff; border-bottom:1px solid #e8eaf6; border-radius:16px 16px 0 0; display:flex; justify-content:flex-end; padding:.9rem 1.2rem; }
+  .pi-card .card-body { padding:1.2rem 1.4rem; }
+  #tbl_presupuestos thead th { background:#eef1fb; color:#1a237e; font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; border:none; }
+  #tbl_presupuestos tbody tr:hover td { background:#f7f9ff; }
+  .btn-nuevo { background:linear-gradient(135deg,#1a237e,#1565c0); border:none; border-radius:10px; font-weight:600; }
+  .badge-estado { font-size:.74rem; font-weight:700; padding:.35em .7em; border-radius:20px; }
+</style>
 
-    <!-- Alerta -->
-    <div class="row mt-4 d-none" id="rowAlerta">
-        <div class="col-md-12">
-            <div class="alert alert-success">
-                <strong>Registro Exitoso!</strong>
-                <div class="row" id="mostrarAlerta"></div>
-            </div>
-        </div>
+<div class="container-fluid px-4" style="max-width:1300px;">
+  <div class="pi-head">
+    <div class="pi-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+    <h1>Presupuestos de Compra</h1>
+  </div>
+
+  <div class="pi-card">
+    <div class="card-header">
+      <a href="{{ url_for('presumod.presupuesto_agregar') }}" class="btn btn-nuevo btn-sm text-white">
+        <i class="fas fa-plus mr-1"></i> Agregar Presupuesto
+      </a>
     </div>
+    <div class="card-body">
+      <table class="table table-hover w-100" id="tbl_presupuestos">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Proveedor</th>
+            <th>Fecha Emisión</th>
+            <th>Estado</th>
+            <th>Archivo</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block js %}
 <script>
 $(document).ready(function(){
+  const DETALLE_BASE = "/gestionar-compras/registrar-presupuesto/presupuesto-detalle/";
 
-    // Inicializar DataTable
-    const tabla = $('#tbl_presupuestos').DataTable({
-        language: {
-            url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
-        },
-        ajax: '/api/v1/gestionar-compras/registrar-presupuesto/presupuestos',
-        columns: [
-            { data: 'proveedor' },
-            { data: 'fecha_emision' },
-            { data: 'estado' },
-            { 
-                data: 'archivo',
-                render: function(data){
-                    if(data){
-                        return `<a href="{{ url_for('static', filename='') }}${data}" target="_blank" class="btn btn-sm btn-success">Ver PDF</a>`;
-                    }
-                    return '';
-                }
-            },
-            { 
-                data: null,
-                orderable: false,
-                className: 'text-center',
-                render: function(row){
-                    return `<button type="button" class="btn btn-danger btn-sm btn-eliminar" data-id="${row.id_pre_compra_cab}">Eliminar</button>`;
-                }
-            }
-        ],
-        order: [[1,'desc']] // Ordenar por Fecha Emisión descendente
-    });
+  function badgeEstado(estado){
+    const map = { PENDIENTE:'warning', APROBADO:'success', RECHAZADO:'danger', ANULADO:'secondary' };
+    const c = map[estado] || 'secondary';
+    return `<span class="badge badge-${c} badge-estado">${estado || '-'}</span>`;
+  }
 
-    // Botón eliminar
-    $('#tbl_presupuestos tbody').on('click', '.btn-eliminar', function(){
-        const id = $(this).data('id');
-        Swal.fire({
-            title: "¿Desea eliminar este presupuesto?",
-            showCancelButton: true,
-            confirmButtonText: "Sí",
-            cancelButtonText: "No"
-        }).then((result)=>{
-            if(result.isConfirmed){
-                fetch(`/api/v1/gestionar-compras/registrar-presupuesto/eliminar/${id}`, {
-                    method: 'DELETE',
-                    headers: {'Content-Type':'application/json'}
-                })
-                .then(resp => resp.json())
-                .then(data => {
-                    if(data.success){
-                        tabla.ajax.reload(null, false);
-                        Swal.fire("Eliminado","El presupuesto ha sido eliminado.","success");
-                    } else {
-                        Swal.fire("Error", data.error || "No se pudo eliminar","error");
-                    }
-                })
-                .catch(err => {
-                    Swal.fire("Error","Ocurrió un error al eliminar.","error");
-                });
-            }
-        });
-    });
-
+  $('#tbl_presupuestos').DataTable({
+    ajax: {
+      url: '/api/v1/gestionar-compras/registrar-presupuesto/presupuestos',
+      dataSrc: 'data'
+    },
+    columns: [
+      { data: 'cod_presupuesto' },
+      { data: 'proveedor' },
+      { data: 'fecha_emision' },
+      { data: 'estado', render: badgeEstado },
+      {
+        data: 'archivo',
+        render: function(data){
+          if(data){
+            return `<a href="{{ url_for('static', filename='') }}${data}" target="_blank" class="btn btn-sm btn-outline-success">Ver PDF</a>`;
+          }
+          return '<span class="text-muted">—</span>';
+        }
+      },
+      {
+        data: null, orderable: false, className: 'text-center',
+        render: function(row){
+          return `<a href="${DETALLE_BASE}${row.id_pre_compra_cab}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye mr-1"></i> Ver detalle
+                  </a>`;
+        }
+      }
+    ],
+    order: [[0,'desc']]
+  });
 });
 </script>
 {% endblock %}

@@ -13,32 +13,45 @@
     <link href="{{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='vendor/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
+    <!-- Bootstrap 5 CSS CDN -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     {% block css %}{% endblock %}
 
 <style>
 /* ============================================================
-   TOKENS GLOBALES
+   TOKENS GLOBALES Y DISEÑO DE SISTEMA
    ============================================================ */
 :root {
   --gv-font:        'Plus Jakarta Sans', sans-serif;
-  --gv-sidebar-bg:  #0f172a;
-  --gv-sidebar-w:   230px;
-  --gv-accent:      #3b82f6;
-  --gv-accent-d:    #2563eb;
-  --gv-green:       #22c55e;
-  --gv-amber:       #f59e0b;
-  --gv-border:      #e5e7eb;
-  --gv-text:        #111827;
-  --gv-muted:       #6b7280;
-  --gv-surface:     #ffffff;
-  --gv-bg:          #f1f5f9;
-  --gv-radius:      10px;
+  --gv-sidebar-bg:  linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  --gv-sidebar-w:   240px;
+  
+  /* Paleta Premium */
+  --gv-accent:      #3b82f6; /* Azul brillante */
+  --gv-accent-glow: rgba(59, 130, 246, 0.15);
+  --gv-accent-d:    #1d4ed8;
+  --gv-green:       #10b981; /* Esmeralda */
+  --gv-green-glow:  rgba(16, 185, 129, 0.1);
+  --gv-amber:       #f59e0b; /* Ámbar */
+  --gv-amber-glow:  rgba(245, 158, 11, 0.1);
+  
+  /* Superficies y Bordes */
+  --gv-border:      #e2e8f0;
+  --gv-text:        #0f172a;
+  --gv-muted:       #64748b;
+  --gv-surface:     rgba(255, 255, 255, 0.85);
+  --gv-bg:          #f8fafc;
+  --gv-radius:      12px;
+  
+  /* Sombras Multicapa Finas */
+  --gv-shadow-sm:   0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --gv-shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --gv-shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
 }
 
 /* ============================================================
-   BASE
+   BASE & SCROLLBAR
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -46,184 +59,235 @@ body {
   font-family: var(--gv-font) !important;
   background: var(--gv-bg) !important;
   color: var(--gv-text) !important;
-  font-size: .9rem;
+  font-size: .88rem;
+  letter-spacing: -0.01em;
+}
+
+/* Scrollbar Personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* ============================================================
-   SIDEBAR
+   SIDEBAR (MENÚ LATERAL)
    ============================================================ */
 #accordionSidebar {
   background: var(--gv-sidebar-bg) !important;
   width: var(--gv-sidebar-w) !important;
   min-height: 100vh;
   border-right: none !important;
-  box-shadow: 4px 0 24px rgba(0,0,0,.18);
+  box-shadow: 6px 0 30px rgba(2, 6, 23, 0.25);
   padding-bottom: 2rem;
 }
 
-/* Brand */
+/* Brand Area */
 .sidebar-brand {
-  padding: 1.4rem 1rem !important;
-  border-bottom: 1px solid rgba(255,255,255,.07) !important;
-  background: rgba(255,255,255,.03);
+  padding: 1.6rem 1.2rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(255, 255, 255, 0.01);
 }
 .sidebar-brand-text {
-  font-size: 1rem !important;
+  font-size: 0.95rem !important;
   font-weight: 800 !important;
-  letter-spacing: .04em;
+  letter-spacing: .06em;
   color: #fff !important;
 }
 .sidebar-brand-text sup {
   font-size: .55rem;
-  font-weight: 600;
-  letter-spacing: .08em;
+  font-weight: 700;
   color: var(--gv-accent);
-  vertical-align: super;
+  margin-left: 2px;
 }
 .sidebar-brand-icon img {
   border-radius: 8px;
-  filter: drop-shadow(0 0 6px rgba(59,130,246,.4));
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
 }
 
-/* Dividers */
+/* Divididores del Sidebar */
 .sidebar-divider {
-  border-top: 1px solid rgba(255,255,255,.06) !important;
-  margin: .5rem 1rem !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  margin: .75rem 1.2rem !important;
 }
 
-/* Section headings */
+/* Encabezados de Sección */
 .sidebar-heading {
-  font-size: .62rem !important;
-  font-weight: 800 !important;
+  font-size: .65rem !important;
+  font-weight: 700 !important;
   letter-spacing: .12em !important;
-  color: rgba(255,255,255,.32) !important;
-  text-transform: uppercase;
-  padding: 1.1rem 1.1rem .35rem !important;
-  display: block;
+  color: rgba(255, 255, 255, 0.35) !important;
+  padding: 1.2rem 1.4rem .4rem !important;
 }
 
-/* Nav links */
+/* Enlaces del Nav */
 .nav-item .nav-link {
-  color: rgba(255,255,255,.62) !important;
-  font-size: .82rem !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  font-size: .84rem !important;
   font-weight: 600 !important;
-  padding: .6rem 1.1rem !important;
-  border-radius: 8px !important;
-  margin: .1rem .6rem !important;
-  transition: background .18s, color .18s !important;
+  padding: .7rem 1.2rem !important;
+  border-radius: var(--gv-radius) !important;
+  margin: .15rem .8rem !important;
+  transition: all .2s ease !important;
   display: flex !important;
   align-items: center !important;
-  gap: .55rem !important;
+  gap: .7rem !important;
+  position: relative;
 }
 .nav-item .nav-link i {
   width: 18px;
   text-align: center;
-  font-size: .85rem;
-  opacity: .7;
-  transition: opacity .18s;
-  flex-shrink: 0;
+  font-size: .9rem;
+  opacity: .65;
+  transition: all .2s ease;
 }
-.nav-item .nav-link:hover,
-.nav-item .nav-link:focus {
-  background: rgba(255,255,255,.08) !important;
+.nav-item .nav-link:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
   color: #fff !important;
 }
-.nav-item .nav-link:hover i { opacity: 1; }
+.nav-item .nav-link:hover i {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Enlace Activo / Desplegado */
 .nav-item .nav-link[aria-expanded="true"] {
-  background: rgba(59,130,246,.18) !important;
-  color: var(--gv-accent) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #fff !important;
 }
-.nav-item .nav-link[aria-expanded="true"] i { opacity: 1; color: var(--gv-accent); }
+.nav-item .nav-link[aria-expanded="true"] i {
+  opacity: 1;
+  color: var(--gv-accent);
+}
+/* Indicador lineal del enlace activo */
+.nav-item .nav-link[aria-expanded="true"]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 3px;
+  background: var(--gv-accent);
+  border-radius: 0 4px 4px 0;
+}
 
-/* Collapse inner panels */
+/* ============================================================
+   SUBMENÚS (COLLAPSE INNER PANELS)
+   ============================================================ */
 .collapse-inner {
-  background: rgba(255,255,255,.04) !important;
-  border-radius: 8px !important;
-  margin: .15rem .6rem !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-radius: 10px !important;
+  margin: 0.2rem 0.8rem 0.6rem !important;
   padding: .4rem !important;
-  border: 1px solid rgba(255,255,255,.06);
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
+/* Unificación Estética de Submenús por Módulo */
 .bg-warning.collapse-inner {
-  background: rgba(245,158,11,.08) !important;
-  border-color: rgba(245,158,11,.2) !important;
+  border-left: 3px solid var(--gv-amber) !important;
+  background: rgba(245, 158, 11, 0.03) !important;
 }
 .bg-success.collapse-inner {
-  background: rgba(34,197,94,.08) !important;
-  border-color: rgba(34,197,94,.2) !important;
+  border-left: 3px solid var(--gv-green) !important;
+  background: rgba(16, 185, 129, 0.03) !important;
 }
 .bg-info.collapse-inner {
-  background: rgba(59,130,246,.08) !important;
-  border-color: rgba(59,130,246,.2) !important;
+  border-left: 3px solid var(--gv-accent) !important;
+  background: rgba(59, 130, 246, 0.03) !important;
 }
 
+/* Elementos del Submenú */
 .collapse-item {
-  font-size: .79rem !important;
-  font-weight: 600 !important;
-  color: rgba(255,255,255,.55) !important;
-  padding: .45rem .75rem !important;
+  font-size: .8rem !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  padding: .5rem .8rem !important;
   border-radius: 6px !important;
   display: block;
-  transition: background .15s, color .15s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none !important;
 }
 .collapse-item:hover {
-  background: rgba(255,255,255,.1) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
   color: #fff !important;
+  padding-left: 1.1rem !important; /* Efecto deslizamiento horizontal */
 }
 .collapse-item.active {
   background: var(--gv-accent) !important;
   color: #fff !important;
+  font-weight: 600 !important;
 }
 
-/* Section label dentro de un collapse-inner */
+/* Secciones internas de Submenús */
 .collapse-section {
   font-size: .6rem;
   font-weight: 800;
-  letter-spacing: .1em;
+  letter-spacing: .08em;
   text-transform: uppercase;
-  color: rgba(255,255,255,.3);
-  padding: .5rem .75rem .25rem;
+  color: rgba(255, 255, 255, 0.25);
+  padding: .6rem .8rem .3rem;
   display: block;
 }
 
-/* Sidebar toggler */
+/* Toggler del Sidebar */
 #sidebarToggle {
-  background: rgba(255,255,255,.1) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   border-radius: 50% !important;
-  color: rgba(255,255,255,.5) !important;
-  width: 28px; height: 28px;
+  color: rgba(255, 255, 255, 0.4) !important;
+  width: 30px; height: 30px;
   display: grid; place-items: center;
+  transition: all 0.2s ease;
 }
-#sidebarToggle:hover { background: rgba(255,255,255,.2) !important; }
+#sidebarToggle:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
 
 /* ============================================================
-   TOPBAR
+   TOPBAR (BARRA SUPERIOR)
    ============================================================ */
 .topbar {
-  height: 58px !important;
+  height: 64px !important;
   background: var(--gv-surface) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--gv-border) !important;
-  box-shadow: 0 1px 0 var(--gv-border) !important;
+  box-shadow: var(--gv-shadow-sm) !important;
   padding: 0 1.5rem !important;
 }
 .topbar .navbar-nav .nav-link {
   color: var(--gv-muted) !important;
   font-size: .84rem !important;
   font-weight: 600 !important;
-  padding: .4rem .65rem !important;
+  padding: .5rem .75rem !important;
   border-radius: 8px !important;
-  transition: background .15s, color .15s !important;
+  transition: all 0.15s ease !important;
 }
-.topbar .navbar-nav .nav-link:hover { background: var(--gv-bg) !important; color: var(--gv-text) !important; }
+.topbar .navbar-nav .nav-link:hover {
+  background: #f1f5f9 !important;
+  color: var(--gv-text) !important;
+}
 
-.topbar-divider { border-color: var(--gv-border) !important; margin: .4rem .75rem !important; }
+.topbar-divider {
+  border-color: var(--gv-border) !important;
+  margin: .4rem .75rem !important;
+}
 
-/* Usuario pill */
+/* Pill del Perfil de Usuario */
 .img-profile {
   width: 32px !important;
   height: 32px !important;
-  border: 2px solid var(--gv-border);
+  border: 2px solid #f1f5f9;
+  box-shadow: var(--gv-shadow-sm);
 }
 .text-gray-600 {
   color: var(--gv-text) !important;
@@ -231,128 +295,190 @@ body {
   font-size: .82rem !important;
 }
 
-/* Page title chip */
+/* Breadcrumb / Título Superior */
 .topbar-page-title {
   font-size: .82rem;
   font-weight: 700;
   color: var(--gv-muted);
   display: flex;
   align-items: center;
-  gap: .4rem;
-  letter-spacing: .01em;
+  gap: .5rem;
 }
-.topbar-page-title .sep { color: var(--gv-border); }
-.topbar-page-title .current { color: var(--gv-text); }
+.topbar-page-title i {
+  color: var(--gv-muted);
+}
+.topbar-page-title .sep {
+  color: #cbd5e1;
+}
+.topbar-page-title .current {
+  color: var(--gv-text);
+  background: #f1f5f9;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
 
-/* Dropdown */
+/* ============================================================
+   DROPDOWNS PREMIUM (ANIMADOS)
+   ============================================================ */
 .dropdown-menu {
   border: 1px solid var(--gv-border) !important;
   border-radius: var(--gv-radius) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,.1) !important;
+  box-shadow: var(--gv-shadow-lg) !important;
   padding: .4rem !important;
-  min-width: 180px;
+  min-width: 190px;
 }
+/* Animación de entrada suave */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dropdown-menu.show {
+  animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .dropdown-item {
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   font-size: .82rem !important;
-  font-weight: 500 !important;
-  padding: .45rem .75rem !important;
+  font-weight: 550 !important;
+  padding: .5rem .8rem !important;
   color: var(--gv-text) !important;
+  transition: all 0.15s ease;
 }
-.dropdown-item:hover { background: var(--gv-bg) !important; }
-.dropdown-divider { border-color: var(--gv-border) !important; margin: .35rem 0 !important; }
-.dropdown-item.text-danger { color: #dc2626 !important; }
+.dropdown-item:hover {
+  background: #f1f5f9 !important;
+  padding-left: 1rem !important;
+}
+.dropdown-divider {
+  border-color: var(--gv-border) !important;
+  margin: .4rem 0 !important;
+}
+.dropdown-item.text-danger {
+  color: #ef4444 !important;
+}
+.dropdown-item.text-danger:hover {
+  background: #fef2f2 !important;
+}
 
 /* ============================================================
-   CONTENT AREA
+   CONTENT AREA & CARDS
    ============================================================ */
 #content-wrapper { background: var(--gv-bg) !important; }
 #content { background: var(--gv-bg) !important; }
-.container-fluid { padding: 0 1.5rem 2rem !important; }
+.container-fluid { padding: 0 1.5rem 2.5rem !important; }
 
-/* ============================================================
-   FOOTER
-   ============================================================ */
-.sticky-footer {
-  background: var(--gv-surface) !important;
-  border-top: 1px solid var(--gv-border) !important;
-  padding: .75rem 0 !important;
-}
-.sticky-footer .copyright {
-  font-size: .77rem !important;
-  color: var(--gv-muted) !important;
-  font-weight: 500 !important;
-}
-
-/* ============================================================
-   SCROLL TO TOP
-   ============================================================ */
-.scroll-to-top {
-  background: var(--gv-accent) !important;
-  border-radius: 50% !important;
-  width: 36px !important; height: 36px !important;
-  display: grid !important; place-items: center !important;
-  box-shadow: 0 4px 12px rgba(59,130,246,.35) !important;
-}
-.scroll-to-top:hover { background: var(--gv-accent-d) !important; }
-
-/* ============================================================
-   CARDS Y TABLAS GLOBALES
-   ============================================================ */
 .card {
   border: 1px solid var(--gv-border) !important;
   border-radius: var(--gv-radius) !important;
-  box-shadow: 0 1px 6px rgba(0,0,0,.05) !important;
+  box-shadow: var(--gv-shadow-md) !important;
+  background: #ffffff !important;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease;
+}
+.card:hover {
+  box-shadow: var(--gv-shadow-lg) !important;
 }
 .card-header {
   border-bottom: 1px solid var(--gv-border) !important;
-  background: #f8fafc !important;
+  background: #ffffff !important;
   font-weight: 700 !important;
-  font-size: .85rem !important;
+  font-size: .88rem !important;
+  padding: 1rem 1.25rem !important;
+  color: var(--gv-text) !important;
 }
 
-/* DataTables */
+/* ============================================================
+   TABLAS & DATATABLES
+   ============================================================ */
 .dataTables_wrapper .dataTables_filter input,
 .dataTables_wrapper .dataTables_length select {
   border: 1px solid var(--gv-border) !important;
-  border-radius: 6px !important;
-  padding: .3rem .65rem !important;
+  border-radius: 8px !important;
+  padding: .4rem .8rem !important;
   font-size: .82rem !important;
   font-family: var(--gv-font) !important;
+  outline: none;
+  transition: border-color 0.2s ease;
 }
-.dataTables_wrapper .dataTables_info { font-size: .78rem !important; color: var(--gv-muted) !important; }
+.dataTables_wrapper .dataTables_filter input:focus,
+.dataTables_wrapper .dataTables_length select:focus {
+  border-color: var(--gv-accent) !important;
+}
+.dataTables_wrapper .dataTables_info {
+  font-size: .8rem !important;
+  color: var(--gv-muted) !important;
+}
 .dataTables_paginate .paginate_button {
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   font-size: .8rem !important;
   font-family: var(--gv-font) !important;
+  padding: 0.4rem 0.8rem !important;
 }
 .dataTables_paginate .paginate_button.current,
 .dataTables_paginate .paginate_button.current:hover {
   background: var(--gv-accent) !important;
   color: #fff !important;
   border-color: var(--gv-accent) !important;
+  box-shadow: 0 4px 10px var(--gv-accent-glow) !important;
 }
 .dataTables_paginate .paginate_button:hover {
-  background: var(--gv-bg) !important;
+  background: #e2e8f0 !important;
   color: var(--gv-text) !important;
-  border-color: var(--gv-border) !important;
+  border-color: transparent !important;
 }
 
 table.dataTable thead th {
-  font-size: .76rem !important;
+  font-size: .78rem !important;
   font-weight: 700 !important;
   text-transform: uppercase;
-  letter-spacing: .05em;
-  color: #374151 !important;
-  background: #f1f5f9 !important;
+  letter-spacing: .06em;
+  color: var(--gv-muted) !important;
+  background: #f8fafc !important;
   border-bottom: 2px solid var(--gv-border) !important;
+  padding: 0.8rem 1rem !important;
 }
 table.dataTable tbody td {
-  font-size: .86rem !important;
+  font-size: .85rem !important;
   vertical-align: middle !important;
-  border-bottom: 1px solid #f3f4f6 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 0.9rem 1rem !important;
 }
-table.dataTable tbody tr:hover td { background: #f8faff !important; }
+table.dataTable tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* ============================================================
+   FOOTER & BACK TO TOP
+   ============================================================ */
+.sticky-footer {
+  background: #ffffff !important;
+  border-top: 1px solid var(--gv-border) !important;
+  padding: 1rem 0 !important;
+}
+.sticky-footer .copyright {
+  font-size: .78rem !important;
+  color: var(--gv-muted) !important;
+  font-weight: 500 !important;
+}
+
+.scroll-to-top {
+  background: var(--gv-accent) !important;
+  border-radius: 50% !important;
+  width: 40px !important; height: 40px !important;
+  display: grid !important; place-items: center !important;
+  box-shadow: 0 4px 14px var(--gv-accent-glow) !important;
+  transition: all 0.2s ease !important;
+}
+.scroll-to-top:hover {
+  background: var(--gv-accent-d) !important;
+  transform: translateY(-2px);
+}
 </style>
 
 </head>
@@ -548,7 +674,7 @@ table.dataTable tbody tr:hover td { background: #f8faff !important; }
               </a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="{{ url_for('login.logout') }}"
-                 style="color:#dc2626 !important">
+                 style="color:#ef4444 !important">
                 <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2"></i> Cerrar sesión
               </a>
             </div>
@@ -587,6 +713,7 @@ table.dataTable tbody tr:hover td { background: #f8faff !important; }
 
 <!-- JS -->
 <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
+
 <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/jquery-easing/jquery.easing.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/sb-admin-2.min.js') }}"></script>

@@ -4,6 +4,9 @@ from app.conexion.Conexion import Conexion
 
 class VentaDao:
 
+    # id de la forma de pago "efectivo" en la tabla formas_pago
+    ID_EFECTIVO = 1
+
     # ================================
     # Buscar producto por código de barra o nombre
     # ================================
@@ -18,7 +21,7 @@ class VentaDao:
             t.descripcion AS tipo_impuesto,
             COALESCE(s.cantidad, 0) AS stock
         FROM item i
-        LEFT JOIN tipo_impuesto t ON t.id_tipo_impuesto::text = i.id_tipo_impuesto
+        LEFT JOIN tipo_impuesto t ON t.id_tipo_impuesto = i.id_tipo_impuesto
         LEFT JOIN stock s ON s.id_item = i.id_item
         LEFT JOIN barras b ON b.id_item = i.id_item
         WHERE (
@@ -53,7 +56,63 @@ class VentaDao:
             con.close()
 
     # ================================
-    # Buscar cliente por RUC o cédula
+    # Listar productos (catálogo / lupa) ordenados A-Z
+    # Si recibe termino, filtra; si no, trae los primeros 500.
+    # ================================
+    def listarProductos(self, termino=''):
+        base = """
+        SELECT DISTINCT
+            i.id_item,
+            i.item_code,
+            i.descripcion,
+            i.precio_unitario,
+            i.id_tipo_impuesto,
+            t.descripcion AS tipo_impuesto,
+            COALESCE(s.cantidad, 0) AS stock
+        FROM item i
+        LEFT JOIN tipo_impuesto t ON t.id_tipo_impuesto = i.id_tipo_impuesto
+        LEFT JOIN stock s ON s.id_item = i.id_item
+        LEFT JOIN barras b ON b.id_item = i.id_item
+        """
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            if termino:
+                sql = base + """
+                WHERE (
+                    LOWER(i.descripcion) LIKE LOWER(%s)
+                    OR i.item_code = %s
+                    OR b.cod_barra = %s
+                )
+                ORDER BY i.descripcion ASC
+                LIMIT 500
+                """
+                like = f"%{termino}%"
+                cur.execute(sql, (like, termino, termino))
+            else:
+                sql = base + " ORDER BY i.descripcion ASC LIMIT 500"
+                cur.execute(sql)
+
+            filas = cur.fetchall()
+            return [{
+                "id_item":          f[0],
+                "item_code":        f[1],
+                "descripcion":      f[2],
+                "precio_unitario":  float(f[3]) if f[3] else 0.0,
+                "id_tipo_impuesto": f[4],
+                "tipo_impuesto":    f[5] or '',
+                "stock":            float(f[6])
+            } for f in filas]
+        except Exception as e:
+            app.logger.error(f"Error al listar productos: {e}")
+            return []
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Buscar cliente por nombre, RUC/cédula o teléfono
     # ================================
     def buscarCliente(self, termino):
         sql = """
@@ -61,6 +120,7 @@ class VentaDao:
         FROM cliente
         WHERE LOWER(clie_nombre) LIKE LOWER(%s)
            OR clie_ci LIKE %s
+           OR clie_telefono LIKE %s
         ORDER BY clie_nombre
         LIMIT 10
         """
@@ -69,7 +129,7 @@ class VentaDao:
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(sql, (like, like))
+            cur.execute(sql, (like, like, like))
             filas = cur.fetchall()
             return [{
                 "id_cliente":      f[0],
@@ -190,26 +250,46 @@ class VentaDao:
                     WHERE id_item = %s
                 """, (det['cantidad'], det['id_item']))
 
-            # 4. Registrar cobro
+            # 4. Registrar cobro  (ahora con id_venta_cab para el arqueo)
             cur.execute("""
                 INSERT INTO cobro_cab
-                    (monto_cobrado, fecha_cobro, referencia)
-                VALUES (%s, CURRENT_DATE, %s)
+                    (monto_cobrado, fecha_cobro, referencia, id_venta_cab)
+                VALUES (%s, CURRENT_DATE, %s, %s)
                 RETURNING id_cobro_cab
-            """, (datos['total_venta'], f"VENTA-{id_venta_cab}"))
+            """, (datos['total_venta'], f"VENTA-{id_venta_cab}", id_venta_cab))
             id_cobro_cab = cur.fetchone()[0]
 
             # 5. Detalle de cobro por forma de pago
+            #    Se registra el monto NETO aplicado a la venta (sin el vuelto),
+            #    para que el arqueo de efectivo cuadre con lo que queda en caja.
+            total_venta = float(datos['total_venta'])
+            acumulado   = 0.0
+
             for pago in datos['pagos']:
+                id_forma = pago['id_forma_cobro']
+                recibido = float(pago.get('monto', 0) or 0)
+
+                # Lo que falta cubrir del total al llegar a este pago
+                restante = max(0.0, total_venta - acumulado)
+
+                # Nunca se aplica más que lo que resta del total.
+                # En efectivo, el excedente es el vuelto y no entra a caja.
+                monto_aplicado = min(recibido, restante)
+                acumulado += monto_aplicado
+
+                # No registrar filas de monto 0 (p. ej. un efectivo que solo dio vuelto)
+                if monto_aplicado <= 0:
+                    continue
+
                 cur.execute("""
                     INSERT INTO cobro_det
                         (id_cobro_cab, id_forma_cobro, id_cliente, monto_cobrado)
                     VALUES (%s, %s, %s, %s)
                 """, (
                     id_cobro_cab,
-                    pago['id_forma_cobro'],
+                    id_forma,
                     datos.get('id_cliente'),
-                    pago['monto']
+                    monto_aplicado
                 ))
 
                 if pago.get('es_tarjeta') and pago.get('nro_tarjeta'):
@@ -217,7 +297,7 @@ class VentaDao:
                         INSERT INTO cobro_tarjeta
                             (id_cobro_cab, numero_tarjeta, monto)
                         VALUES (%s, %s, %s)
-                    """, (id_cobro_cab, pago['nro_tarjeta'], pago['monto']))
+                    """, (id_cobro_cab, pago['nro_tarjeta'], monto_aplicado))
 
             cur.execute("COMMIT")
             return id_venta_cab
@@ -273,11 +353,11 @@ class VentaDao:
                        t.descripcion AS tipo_impuesto
                 FROM venta_det d
                 LEFT JOIN item i ON i.item_code = d.item_code
-                LEFT JOIN tipo_impuesto t ON t.id_tipo_impuesto::text = i.id_tipo_impuesto
+                LEFT JOIN tipo_impuesto t ON t.id_tipo_impuesto = i.id_tipo_impuesto
                 WHERE d.id_venta_cab = %s
             """, (id_venta_cab,))
             for f in cur.fetchall():
-                cant  = float(f[2])
+                cant   = float(f[2])
                 precio = float(f[3])
                 venta['detalle'].append({
                     "item_code":       f[0],
@@ -359,7 +439,7 @@ class VentaDao:
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute("SELECT id_entidad_emisora, descrpcion FROM entidad_emisora ORDER BY descrpcion")
+            cur.execute("SELECT id_entidad_emisora, descripcion FROM entidad_emisora ORDER BY descripcion")
             return [{"id": f[0], "descripcion": f[1]} for f in cur.fetchall()]
         except Exception as e:
             app.logger.error(f"Error al obtener entidades emisoras: {e}")

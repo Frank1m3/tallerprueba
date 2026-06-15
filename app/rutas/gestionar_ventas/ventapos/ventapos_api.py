@@ -174,3 +174,19 @@ def getVentas():
         return jsonify({'success': True, 'data': ventas}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': 'Error interno.'}), 500
+    
+
+@ventaapi.route('/ventas/clientes/crear_rapido', methods=['POST'])
+def crearClienteRapido():
+    data = request.get_json() or {}
+    if not data.get('cedula') or not data.get('nombre_completo'):
+        return jsonify({'success': False, 'error': 'Cédula y nombre son obligatorios.'}), 400
+    dao = VentaDao()
+    try:
+        cliente = dao.crearClienteRapido(data)   # debe devolver el dict del cliente creado
+        if cliente:
+            return jsonify({'success': True, 'data': cliente}), 201
+        return jsonify({'success': False, 'error': 'No se pudo registrar.'}), 500
+    except Exception as e:
+        app.logger.error(f"Error crear cliente: {e}")
+        return jsonify({'success': False, 'error': 'Error interno.'}), 500

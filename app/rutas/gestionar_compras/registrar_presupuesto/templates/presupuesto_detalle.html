@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Detalle del Presupuesto{% endblock %}
+
+{% block contenido %}
+<style>
+  :root { --mp-navy:#1a237e; --mp-blue:#1565c0; --mp-border:#e8eaf6; --mp-muted:#6b7280; }
+  .mp-wrap { max-width:1000px; }
+  .mp-head { display:flex; align-items:center; gap:.85rem; margin:1.2rem 0 1.3rem; }
+  .mp-head .ic { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue)); display:grid; place-items:center; color:#fff; font-size:1.15rem; box-shadow:0 6px 18px rgba(26,35,126,.3); }
+  .mp-head h1 { font-size:1.35rem; font-weight:800; color:var(--mp-navy); margin:0; }
+  .mp-head .cod { font-size:.85rem; color:var(--mp-muted); }
+  .badge-estado { font-size:.8rem; font-weight:800; padding:.4em .9em; border-radius:20px; margin-left:.6rem; }
+  .mp-card { background:#fff; border:1px solid var(--mp-border); border-radius:16px; box-shadow:0 4px 20px rgba(26,35,126,.07); margin-bottom:1.3rem; }
+  .mp-card-head { display:flex; align-items:center; gap:.55rem; padding:.85rem 1.4rem; border-bottom:1px solid var(--mp-border); font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mp-navy); }
+  .mp-card-head .ic { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; color:#fff; font-size:.72rem; background:linear-gradient(135deg,var(--mp-navy),var(--mp-blue)); }
+  .mp-card-head.amber .ic { background:linear-gradient(135deg,#b45309,#f59e0b); }
+  .mp-card-body { padding:1.3rem 1.4rem; }
+  .dato-label { font-size:.7rem; font-weight:800; color:#8a93a6; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.15rem; }
+  .dato-valor { font-size:.95rem; color:#1f2937; font-weight:600; }
+  .dato-valor.muted { color:#9aa1b4; font-weight:400; font-style:italic; }
+  #tbl_det thead th { background:#eef1fb; color:var(--mp-navy); font-size:.73rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; border:none; padding:.7rem .8rem; }
+  #tbl_det tbody td { font-size:.88rem; vertical-align:middle; border-color:#f0f2f9; }
+  #tbl_det tfoot th { background:#eef1fb; color:var(--mp-navy); font-size:.98rem; font-weight:800; border:none; padding:.75rem .8rem; }
+  #tbl_det tfoot .tot { color:var(--mp-blue); }
+  .mp-actions { display:flex; justify-content:flex-end; gap:.75rem; padding:1.1rem 1.4rem; border-top:1px solid var(--mp-border); background:#fbfcff; border-radius:0 0 16px 16px; }
+  .btn-mp { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.4rem; border-radius:11px; font-size:.9rem; font-weight:700; border:none; cursor:pointer; transition:transform .15s, box-shadow .15s, opacity .15s; text-decoration:none; }
+  .btn-mp:hover { transform:translateY(-2px); }
+  .btn-aprobar { background:linear-gradient(135deg,#15803d,#22c55e); color:#fff; box-shadow:0 4px 14px rgba(22,163,74,.3); }
+  .btn-rechazar { background:linear-gradient(135deg,#b91c1c,#ef4444); color:#fff; box-shadow:0 4px 14px rgba(220,38,38,.28); }
+  .btn-volver { background:#eef1f8; color:#475067; }
+  .estado-msg { font-size:.88rem; color:var(--mp-muted); align-self:center; margin-right:auto; }
+</style>
+
+{% if not presupuesto %}
+  <div class="container-fluid px-4 mp-wrap">
+    <div class="alert alert-warning mt-4">No se encontró el presupuesto solicitado.</div>
+    <a href="{{ url_for('presumod.presupuesto_index') }}" class="btn btn-secondary">Volver</a>
+  </div>
+{% else %}
+<div class="container-fluid px-4 mp-wrap">
+
+  <div class="mp-head">
+    <div class="ic"><i class="fas fa-file-invoice-dollar"></i></div>
+    <div>
+      <h1>
+        Presupuesto {{ presupuesto.cod_presupuesto }}
+        {% set badge = {'PENDIENTE':'warning','APROBADO':'success','RECHAZADO':'danger','ANULADO':'secondary'} %}
+        <span class="badge badge-{{ badge.get(presupuesto.estado,'secondary') }} badge-estado" id="lbl_estado">{{ presupuesto.estado }}</span>
+      </h1>
+      <span class="cod">Emitido el {{ presupuesto.fecha_emision or '—' }}</span>
+    </div>
+  </div>
+
+  <!-- Datos -->
+  <div class="mp-card">
+    <div class="mp-card-head"><span class="ic"><i class="fas fa-clipboard-list"></i></span> Datos del presupuesto</div>
+    <div class="mp-card-body">
+      <div class="row g-3">
+        <div class="col-md-4"><div class="dato-label">Proveedor</div><div class="dato-valor">{{ presupuesto.proveedor or '—' }}</div></div>
+        <div class="col-md-4"><div class="dato-label">Funcionario</div><div class="dato-valor">{{ presupuesto.funcionario or '—' }}</div></div>
+        <div class="col-md-4"><div class="dato-label">Condición de compra</div><div class="dato-valor {{ '' if presupuesto.condicion_compra else 'muted' }}">{{ presupuesto.condicion_compra or 'Sin especificar' }}</div></div>
+        <div class="col-md-4"><div class="dato-label">Fecha emisión</div><div class="dato-valor">{{ presupuesto.fecha_emision or '—' }}</div></div>
+        <div class="col-md-4"><div class="dato-label">Fecha vencimiento</div><div class="dato-valor {{ '' if presupuesto.fecha_vencimiento else 'muted' }}">{{ presupuesto.fecha_vencimiento or 'Sin vencimiento' }}</div></div>
+        <div class="col-md-4">
+          <div class="dato-label">Archivo adjunto</div>
+          <div class="dato-valor">
+            {% if presupuesto.archivo %}
+              <a href="{{ url_for('static', filename='') }}{{ presupuesto.archivo }}" target="_blank" class="btn btn-sm btn-outline-success"><i class="fas fa-file-pdf mr-1"></i> Ver archivo</a>
+            {% else %}
+              <span class="muted">Sin adjunto</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="mp-card">
+    <div class="mp-card-head amber"><span class="ic"><i class="fas fa-list-ul"></i></span> Ítems del presupuesto</div>
+    <div style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_det" class="table table-hover text-center align-middle mb-0">
+          <thead><tr><th>Código</th><th class="text-left">Mercadería</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            {% for d in presupuesto.detalles %}
+            <tr>
+              <td><code>{{ d.item_code }}</code></td>
+              <td class="text-left">{{ d.descripcion }}</td>
+              <td>{{ '%.2f'|format(d.cantidad) }}</td>
+              <td>{{ '{:,.2f}'.format(d.precio_unitario) }}</td>
+              <td>{{ '{:,.2f}'.format(d.subtotal) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted py-4">Este presupuesto no tiene ítems cargados.</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr><th colspan="4" class="text-right">TOTAL</th><th class="tot">₲ {{ '{:,.2f}'.format(presupuesto.total) }}</th></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="mp-actions">
+      {% if presupuesto.estado == 'PENDIENTE' %}
+        <button type="button" id="btn_rechazar" class="btn-mp btn-rechazar"><i class="fas fa-times"></i> Rechazar</button>
+        <button type="button" id="btn_aprobar" class="btn-mp btn-aprobar"><i class="fas fa-check"></i> Aprobar</button>
+      {% else %}
+        <span class="estado-msg">Este presupuesto ya fue <b>{{ presupuesto.estado }}</b> y no puede cambiarse.</span>
+      {% endif %}
+      <a href="{{ url_for('presumod.presupuesto_index') }}" class="btn-mp btn-volver"><i class="fas fa-arrow-left"></i> Volver</a>
+    </div>
+  </div>
+
+</div>
+
+
+{% endif %}
+{% endblock %}
+
+{% block js %}
+{% if presupuesto %}
+<script>
+$(function(){
+  const ID = {{ presupuesto.id }};
+  const API = `/api/v1/gestionar-compras/registrar-presupuesto/presupuestos/${ID}/estado`;
+
+  function cambiarEstado(nuevo, titulo, color){
+    Swal.fire({
+      title: titulo,
+      text: nuevo === 'APROBADO'
+        ? 'El presupuesto quedará aprobado y disponible para generar la Orden de Compra.'
+        : 'El presupuesto quedará rechazado.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, continuar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: color
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      fetch(API, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ estado: nuevo })
+      })
+      .then(res => res.json())
+      .then(d => {
+        if(d.success){
+          Swal.fire({ title:'Listo', text:`Presupuesto ${nuevo.toLowerCase()}.`, icon:'success', timer:1600, showConfirmButton:false })
+            .then(() => window.location.reload());
+        } else {
+          Swal.fire('Error', d.error || 'No se pudo actualizar.', 'error');
+        }
+      })
+      .catch(() => Swal.fire('Error','Error de servidor.','error'));
+    });
+  }
+
+  $('#btn_aprobar').on('click',  () => cambiarEstado('APROBADO', '¿Aprobar este presupuesto?', '#16a34a'));
+  $('#btn_rechazar').on('click', () => cambiarEstado('RECHAZADO', '¿Rechazar este presupuesto?', '#dc2626'));
+});
+</script>
+{% endif %}
+{% endblock %}
