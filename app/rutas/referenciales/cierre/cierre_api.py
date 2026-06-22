@@ -35,7 +35,7 @@ def getCierre(id_cierre):
 
 
 # ================================
-# GET total de ventas de una apertura
+# GET total de ventas de una apertura (para el modal Nuevo Cierre)
 # GET /api/v1/cierres/total-ventas/<id_apertura>
 # ================================
 @cierreapi.route('/cierres/total-ventas/<int:id_apertura>', methods=['GET'])
@@ -64,8 +64,9 @@ def getTotalVentas(id_apertura):
 
 
 # ================================
-# POST crear cierre desde apertura activa
+# POST registrar cierre desde apertura activa
 # Espera: { id_apertura, observacion? }
+# ACTUALIZA la fila que creó el trigger (no inserta otra).
 # ================================
 @cierreapi.route('/cierres', methods=['POST'])
 def addCierre():
@@ -83,38 +84,28 @@ def addCierre():
         if apertura.get('estado') != 'activo':
             return jsonify({'success': False, 'error': 'La apertura no está activa.'}), 400
 
-        totales       = dao.getTotalVentasPorApertura(int(data['id_apertura']))
-        monto_final   = totales['total_ventas']
-        monto_inicial = float(apertura.get('monto_inicial', 0))
-        diferencia    = monto_final - monto_inicial
-
-        id_cierre = dao.guardarCierre(
-            id_apertura   = apertura['id_apertura'],
-            monto_final   = monto_final,
-            monto_inicial = monto_inicial,
-            diferencia    = diferencia,
-            observacion   = data.get('observacion', ''),
-            nro_turno     = apertura.get('nro_turno'),
-            cajero        = apertura.get('cajero', ''),
-            fiscal        = apertura.get('fiscal', ''),
-            hora_apertura = apertura.get('registro')
+        res = dao.registrarCierre(
+            id_apertura = int(data['id_apertura']),
+            observacion = data.get('observacion', '')
         )
 
-        if id_cierre:
-            return jsonify({
-                'success':      True,
-                'id_cierre':    id_cierre,
-                'monto_final':  monto_final,
-                'monto_inicial':monto_inicial,
-                'diferencia':   diferencia,
-                'cant_ventas':  totales['cant_ventas'],
-                'error':        None
-            }), 201
+        if 'error' in res:
+            return jsonify({'success': False, 'error': res['error']}), 400
 
-        return jsonify({'success': False, 'error': 'No se pudo registrar el cierre.'}), 500
+        return jsonify({
+            'success':      True,
+            'id_cierre':    res['id_cierre'],
+            'monto_final':  res['monto_final'],
+            'monto_inicial':res['monto_inicial'],
+            'total_ventas': res.get('total_ventas', 0),
+            'diferencia':   res['diferencia'],
+            'cant_ventas':  res['cant_ventas'],
+            'hubo_arqueo':  res.get('hubo_arqueo', False),
+            'error':        None
+        }), 201
 
     except Exception as e:
-        app.logger.error(f"Error al guardar cierre: {e}")
+        app.logger.error(f"Error al registrar cierre: {e}")
         return jsonify({'success': False, 'error': 'Error interno.'}), 500
 
 

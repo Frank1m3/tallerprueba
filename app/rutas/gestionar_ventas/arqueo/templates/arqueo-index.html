@@ -423,11 +423,13 @@ div.dataTables_wrapper div.dataTables_length select {
 const CSRFToken = "{{ csrf_token() }}";
 
 // IDs de formas de pago en la BD
-const ID_EFECTIVO = 1;
-const ID_CHEQUE   = 3;
-const ID_DEBITO   = 4;
-const ID_CREDITO  = 5;
-const ID_QR       = 999; // virtual
+const ID_EFECTIVO   = 1;
+const ID_CHEQUE     = 3;
+const ID_DEBITO     = 4;
+const ID_CREDITO    = 5;
+const ID_QR         = 6;   // QR real en formas_pago
+const ID_CREDITO_CC = 7;   // Crédito (Cuenta Corriente)  → "Otros"
+const ID_VALE       = 8;   // Vale o Cupón                → "Otros"
 
 function fmt(n){ return '₲ ' + parseFloat(n||0).toLocaleString('es-PY',{minimumFractionDigits:0}); }
 
@@ -478,6 +480,7 @@ $('#btnNuevoArqueo').on('click', function(){
   // Limpiar estado
   aperturaActual = null;
   totalesSistema = {};
+  delete totalesSistema['__fondo__'];
   $('#selApertura').val('');
   $('#aperturaInfo').removeClass('visible');
   $('.forma-input').val('');
@@ -526,27 +529,36 @@ $('#btnCargarApertura').on('click', function(){
       $('#infoMontoInicial').text(fmt(aperturaActual.monto_inicial));
       $('#aperturaInfo').addClass('visible');
 
-      // Cargar totales del sistema
+      // Cargar totales del sistema (todas las formas)
       totalesSistema = {};
       if(data.totales){
         data.totales.forEach(t=>{ totalesSistema[t.id_forma]=t.total; });
       }
 
+      const totalOtros = (totalesSistema[ID_CREDITO_CC]||0) + (totalesSistema[ID_VALE]||0);
+
+      // El efectivo esperado en caja = fondo inicial + ventas en efectivo
+      const fondoInicial = parseFloat(aperturaActual.monto_inicial) || 0;
+      const efectivoSistema = (totalesSistema[ID_EFECTIVO]||0) + fondoInicial;
+
       // Mostrar en los campos del sistema
-      $('#sisEfectivo').text(fmt(totalesSistema[ID_EFECTIVO]||0));
+      $('#sisEfectivo').text(fmt(efectivoSistema) + ' (incl. fondo)');
       $('#sisCredito').text(fmt(totalesSistema[ID_CREDITO]||0));
       $('#sisDebito').text(fmt(totalesSistema[ID_DEBITO]||0));
       $('#sisCheque').text(fmt(totalesSistema[ID_CHEQUE]||0));
-      $('#sisQR').text(fmt(0));     // QR virtual, siempre 0 en sistema
-      $('#sisOtros').text(fmt(0));  // Otros no mapeados
+      $('#sisQR').text(fmt(totalesSistema[ID_QR]||0));
+      $('#sisOtros').text(fmt(totalOtros));
 
-      // Pre-rellenar inputs con valores del sistema (puede editar)
-      $('#inpEfectivo').val(totalesSistema[ID_EFECTIVO]||0);
+      // Pre-rellenar inputs con valores del sistema (el cajero puede ajustarlos)
+      $('#inpEfectivo').val(efectivoSistema);
       $('#inpCredito').val(totalesSistema[ID_CREDITO]||0);
       $('#inpDebito').val(totalesSistema[ID_DEBITO]||0);
       $('#inpCheque').val(totalesSistema[ID_CHEQUE]||0);
-      $('#inpQR').val(0);
-      $('#inpOtros').val(0);
+      $('#inpQR').val(totalesSistema[ID_QR]||0);
+      $('#inpOtros').val(totalOtros);
+
+      // Guardar el fondo para el cálculo del total del sistema
+      totalesSistema['__fondo__'] = fondoInicial;
 
       actualizarResumen();
       $('#btnGuardarArqueo').prop('disabled', false);
@@ -559,7 +571,9 @@ $('#btnCargarApertura').on('click', function(){
 // Actualizar resumen en tiempo real
 // ============================================================
 function getTotalSistema(){
-  return Object.values(totalesSistema).reduce((s,v)=>s+v,0);
+  // Suma las ventas por forma + el fondo inicial (guardado como '__fondo__').
+  // Object.values ya incluye '__fondo__', así que sumamos todo directo.
+  return Object.values(totalesSistema).reduce((s,v)=>s+(parseFloat(v)||0),0);
 }
 
 function getTotalArqueo(){
@@ -676,18 +690,16 @@ $('#tblArqueos').on('click','.btn-ver-detalle',function(){
             <thead>
               <tr style="background:#f1f5f9">
                 <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;border-bottom:2px solid #e5e7eb">Forma de Pago</th>
-                <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Sistema</th>
                 <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Contado</th>
-                <th style="padding:.45rem .75rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:right;border-bottom:2px solid #e5e7eb">Diferencia</th>
               </tr>
             </thead>
             <tbody>
-              ${filaDetalle('Efectivo',       a.total_sistema>0?(a.total_efectivo):0, a.total_efectivo)}
-              ${filaDetalle('Tarjeta Crédito',a.total_tarjeta_credito, a.total_tarjeta_credito)}
-              ${filaDetalle('Tarjeta Débito', a.total_tarjeta_debito,  a.total_tarjeta_debito)}
-              ${filaDetalle('Cheque',         a.total_cheque, a.total_cheque)}
-              ${filaDetalle('QR',             0, a.total_qr)}
-              ${filaDetalle('Otros',          0, a.total_otros)}
+              ${filaDetalle('Efectivo',        a.total_efectivo)}
+              ${filaDetalle('Tarjeta Crédito', a.total_tarjeta_credito)}
+              ${filaDetalle('Tarjeta Débito',  a.total_tarjeta_debito)}
+              ${filaDetalle('Cheque',          a.total_cheque)}
+              ${filaDetalle('QR',              a.total_qr)}
+              ${filaDetalle('Otros',           a.total_otros)}
             </tbody>
           </table>
 
@@ -712,15 +724,10 @@ $('#tblArqueos').on('click','.btn-ver-detalle',function(){
     });
 });
 
-function filaDetalle(nombre, sistema, contado){
-  const d = contado - sistema;
-  const color = d>0?'#16a34a':d<0?'#dc2626':'#6b7280';
-  const prefix = d>0?'+':'';
+function filaDetalle(nombre, contado){
   return `<tr>
     <td style="padding:.4rem .75rem;font-size:.84rem;font-weight:600">${nombre}</td>
-    <td style="padding:.4rem .75rem;font-size:.84rem;text-align:right;color:#6b7280">${fmt(sistema)}</td>
     <td style="padding:.4rem .75rem;font-size:.84rem;text-align:right;font-weight:700">${fmt(contado)}</td>
-    <td style="padding:.4rem .75rem;font-size:.84rem;text-align:right;font-weight:700;color:${color}">${prefix}${fmt(Math.abs(d))}</td>
   </tr>`;
 }
 

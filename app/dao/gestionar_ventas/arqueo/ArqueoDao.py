@@ -4,18 +4,6 @@ from app.conexion.Conexion import Conexion
 
 class ArqueoDao:
 
-    # Mapeo id forma_pago -> columna de arqueo_caja
-    MAPEO_ARQUEO = {
-        1: 'total_efectivo',          # efectivo
-        3: 'total_cheque',            # cheque
-        4: 'total_tarjeta_debito',    # tarjeta débito
-        5: 'total_tarjeta_credito',   # tarjeta crédito
-        6: 'total_qr',                # QR
-        7: 'total_otros',             # Crédito (Cuenta Corriente)
-        8: 'total_otros',             # Vale o Cupón
-    }
-    ID_EFECTIVO = 1
-
     # ================================
     # Aperturas activas
     # ================================
@@ -47,9 +35,8 @@ class ArqueoDao:
             cur.close(); con.close()
 
     # ================================
-    # Resumen de ventas por forma de pago de una apertura  (CORREGIDO)
-    # Une por v.id_apertura. Lista TODAS las formas (total 0 si no hubo).
-    # Requiere FK cobro_cab.id_venta_cab.
+    # Resumen de ventas por forma de pago de una apertura  (por id_apertura)
+    # Lista TODAS las formas (total 0 si no hubo). Requiere FK cobro_cab.id_venta_cab.
     # ================================
     def getResumenVentasPorApertura(self, id_apertura):
         sql = """
@@ -111,64 +98,31 @@ class ArqueoDao:
             cur.close(); con.close()
 
     # ================================
-    # FINALIZAR ARQUEO (transaccional)
-    #   - calcula esperado por forma desde el sistema
-    #   - guarda arqueo_caja con el contado por forma + totales
-    #   - cierra la apertura (estado='cerrado')
-    #   - cierra la fila de 'cierres' que dejó abierta el trigger
-    #
-    # conteos = [{ "id_forma": int, "monto_contado": float }, ...]
+    # GUARDAR ARQUEO  (NO cierra el turno)
+    #   - inserta el arqueo (datos ya mapeados que envía la página),
+    #     incluida la diferencia si la hubo.
+    #   - NO toca 'aperturas' ni 'cierres': el turno se cierra
+    #     desde el formulario de Cierre de Caja.
+    #   - Se puede arquear varias veces durante el turno.
     # ================================
-    def finalizarArqueo(self, id_apertura, conteos, observacion=''):
+    def guardarArqueo(self, datos):
         conexion = Conexion(); con = conexion.getConexion(); cur = con.cursor()
         try:
             cur.execute("BEGIN")
 
-            # 1) Apertura activa + datos del turno
+            # Validar que la apertura siga activa (no arquear un turno ya cerrado)
             cur.execute("""
-                SELECT a.nro_turno, a.monto_inicial,
-                       UPPER(f2.nombres || ' ' || f2.apellidos) AS cajero,
-                       UPPER(f1.nombres || ' ' || f1.apellidos) AS fiscal
-                FROM aperturas a
-                LEFT JOIN funcionarios f1 ON f1.fun_id = a.clave_fiscal
-                LEFT JOIN funcionarios f2 ON f2.fun_id = a.cajero
-                WHERE a.id_apertura = %s AND a.estado = 'activo'
-                FOR UPDATE
-            """, (id_apertura,))
-            ap = cur.fetchone()
-            if not ap:
+                SELECT estado FROM aperturas WHERE id_apertura = %s
+            """, (datos['id_apertura'],))
+            row = cur.fetchone()
+            if not row:
                 cur.execute("ROLLBACK")
-                return {"error": "La apertura no existe o no está activa."}
-            nro_turno     = ap[0]
-            monto_inicial = float(ap[1] or 0)
-            cajero        = ap[2] or ''
-            fiscal        = ap[3] or ''
+                return {"error": "Apertura no encontrada."}
+            if row[0] != 'activo':
+                cur.execute("ROLLBACK")
+                return {"error": "El turno ya no está activo; no se puede arquear."}
 
-            # 2) Esperado por forma (ventas del turno)
-            cur.execute("""
-                SELECT cd.id_forma_cobro, COALESCE(SUM(cd.monto_cobrado), 0)
-                FROM venta_cab v
-                JOIN cobro_cab cc ON cc.id_venta_cab = v.id_venta_cab
-                JOIN cobro_det cd ON cd.id_cobro_cab = cc.id_cobro_cab
-                WHERE v.id_apertura = %s AND v.estado = 'PAGADO'
-                GROUP BY cd.id_forma_cobro
-            """, (id_apertura,))
-            esperado = {r[0]: float(r[1]) for r in cur.fetchall()}
-            total_sistema_ventas = sum(esperado.values())
-
-            # 3) Contado del cajero, mapeado a columnas de arqueo_caja
-            contado = {int(c['id_forma']): float(c.get('monto_contado', 0) or 0) for c in conteos}
-            cols = {v: 0.0 for v in set(self.MAPEO_ARQUEO.values())}
-            for id_forma, monto in contado.items():
-                col = self.MAPEO_ARQUEO.get(id_forma, 'total_otros')
-                cols[col] += monto
-
-            total_arqueo  = sum(contado.values())
-            # Lo esperado físico incluye el fondo inicial (en efectivo)
-            total_sistema = total_sistema_ventas + monto_inicial
-            diferencia    = total_arqueo - total_sistema
-
-            # 4) Insertar arqueo
+            # Insertar arqueo (con su diferencia)
             cur.execute("""
                 INSERT INTO arqueo_caja (
                     id_apertura, nro_turno, cajero, fiscal, monto_inicial,
@@ -181,46 +135,24 @@ class ArqueoDao:
                     %s, %s, %s,
                     %s, %s, %s,
                     %s, %s, %s,
-                    %s, 'finalizado'
+                    %s, %s
                 ) RETURNING id_arqueo
             """, (
-                id_apertura, nro_turno, cajero, fiscal, monto_inicial,
-                cols['total_efectivo'], cols['total_tarjeta_credito'], cols['total_tarjeta_debito'],
-                cols['total_cheque'], cols['total_qr'], cols['total_otros'],
-                total_sistema, total_arqueo, diferencia,
-                observacion
+                datos['id_apertura'], datos['nro_turno'], datos['cajero'],
+                datos['fiscal'], datos['monto_inicial'],
+                datos['total_efectivo'], datos['total_tarjeta_credito'], datos['total_tarjeta_debito'],
+                datos['total_cheque'], datos['total_qr'], datos['total_otros'],
+                datos['total_sistema'], datos['total_arqueo'], datos['diferencia'],
+                datos.get('observacion', ''), datos.get('estado', 'finalizado')
             ))
             id_arqueo = cur.fetchone()[0]
 
-            # 5) Cerrar la apertura (no dispara el trigger de 'anulado')
-            cur.execute("""
-                UPDATE aperturas
-                SET estado = 'cerrado', fec_cierre_turno = NOW()
-                WHERE id_apertura = %s AND estado = 'activo'
-            """, (id_apertura,))
-
-            # 6) Cerrar la fila de 'cierres' que creó el trigger al abrir
-            cur.execute("""
-                UPDATE cierres
-                SET estado = 'cerrado',
-                    monto_final = %s,
-                    diferencia  = %s,
-                    observacion = COALESCE(observacion, '') || %s
-                WHERE id_apertura = %s AND estado = 'abierto'
-            """, (total_arqueo, diferencia, f' | Arqueo #{id_arqueo}', id_apertura))
-
             cur.execute("COMMIT")
-            return {
-                "id_arqueo": id_arqueo,
-                "total_sistema": total_sistema,
-                "total_arqueo": total_arqueo,
-                "diferencia": diferencia,
-                "monto_inicial": monto_inicial
-            }
+            return {"id_arqueo": id_arqueo}
         except Exception as e:
             cur.execute("ROLLBACK")
-            app.logger.error(f"Error al finalizar arqueo: {e}")
-            return {"error": "Error interno al finalizar el arqueo."}
+            app.logger.error(f"Error al guardar arqueo: {e}")
+            return {"error": "Error interno al guardar el arqueo."}
         finally:
             cur.close(); con.close()
 

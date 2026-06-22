@@ -91,36 +91,84 @@ class CierreDao:
             con.close()
 
     # ================================
-    # Guardar cierre
+    # Registrar cierre: ACTUALIZA la fila que creó el trigger al abrir.
+    # Trae la diferencia del ÚLTIMO arqueo del turno (si lo hubo).
     # ================================
-    def guardarCierre(self, id_apertura, monto_final, monto_inicial,
-                      diferencia=None, observacion=None,
-                      nro_turno=None, cajero=None, fiscal=None,
-                      hora_apertura=None):
-        sql = """
-        INSERT INTO cierres
-            (id_apertura, monto_final, monto_inicial, diferencia,
-             observacion, estado, nro_turno, cajero, fiscal, hora_apertura)
-        VALUES
-            (%s, %s, %s, %s,
-             %s, 'abierto', %s, %s, %s, %s)
-        RETURNING id_cierre
-        """
+    def registrarCierre(self, id_apertura, observacion=None):
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
-            cur.execute(sql, (
-                id_apertura, monto_final, monto_inicial, diferencia,
-                observacion, nro_turno, cajero, fiscal, hora_apertura
-            ))
-            id_cierre = cur.fetchone()[0]
-            con.commit()
-            return id_cierre
+            cur.execute("BEGIN")
+
+            # 1) Buscar la fila de cierre creada por el trigger (estado 'abierto')
+            cur.execute("""
+                SELECT id_cierre, monto_inicial
+                FROM cierres
+                WHERE id_apertura = %s AND estado = 'abierto'
+                FOR UPDATE
+            """, (id_apertura,))
+            row = cur.fetchone()
+            if not row:
+                cur.execute("ROLLBACK")
+                return {"error": "No hay un cierre abierto para este turno (¿ya fue cerrado?)."}
+            id_cierre     = row[0]
+            monto_inicial = float(row[1]) if row[1] is not None else 0.0
+
+            # 2) Total de ventas del turno (por id_apertura, exacto)
+            cur.execute("""
+                SELECT COALESCE(SUM(v.total_venta), 0), COUNT(v.id_venta_cab)
+                FROM venta_cab v
+                WHERE v.id_apertura = %s AND v.estado = 'PAGADO'
+            """, (id_apertura,))
+            r = cur.fetchone()
+            total_ventas = float(r[0]) if r[0] else 0.0
+            cant_ventas  = int(r[1]) if r[1] else 0
+
+            # 3) Último arqueo del turno (el más reciente), si lo hubo
+            cur.execute("""
+                SELECT total_arqueo, diferencia
+                FROM arqueo_caja
+                WHERE id_apertura = %s
+                ORDER BY id_arqueo DESC
+                LIMIT 1
+            """, (id_apertura,))
+            arq = cur.fetchone()
+            if arq:
+                total_arqueo = float(arq[0]) if arq[0] is not None else 0.0
+                diferencia   = float(arq[1]) if arq[1] is not None else 0.0
+                hubo_arqueo  = True
+            else:
+                total_arqueo = total_ventas
+                diferencia   = 0.0          # sin arqueo no hay faltante/sobrante medido
+                hubo_arqueo  = False
+
+            # monto_final = lo realmente contado en el arqueo; si no hubo, las ventas
+            monto_final = total_arqueo
+
+            # 4) Actualizar la fila del trigger (NO insertar otra)
+            cur.execute("""
+                UPDATE cierres
+                SET monto_final = %s,
+                    diferencia  = %s,
+                    observacion = %s
+                WHERE id_cierre = %s
+            """, (monto_final, diferencia, observacion, id_cierre))
+
+            cur.execute("COMMIT")
+            return {
+                "id_cierre":    id_cierre,
+                "monto_final":  monto_final,
+                "monto_inicial":monto_inicial,
+                "total_ventas": total_ventas,
+                "diferencia":   diferencia,
+                "cant_ventas":  cant_ventas,
+                "hubo_arqueo":  hubo_arqueo
+            }
         except Exception as e:
-            con.rollback()
-            app.logger.error(f"Error al guardar cierre: {e}")
-            return None
+            cur.execute("ROLLBACK")
+            app.logger.error(f"Error al registrar cierre: {e}")
+            return {"error": "Error interno al registrar el cierre."}
         finally:
             cur.close()
             con.close()
@@ -135,7 +183,6 @@ class CierreDao:
         try:
             cur.execute("BEGIN")
 
-            # Obtener id_apertura del cierre
             cur.execute("""
                 SELECT id_apertura FROM cierres
                 WHERE id_cierre = %s AND estado = 'abierto'
@@ -147,14 +194,12 @@ class CierreDao:
 
             id_apertura = row[0]
 
-            # Cerrar el cierre
             cur.execute("""
                 UPDATE cierres
                 SET estado = 'cerrado'
                 WHERE id_cierre = %s AND estado = 'abierto'
             """, (id_cierre,))
 
-            # Cerrar la apertura asociada
             cur.execute("""
                 UPDATE aperturas
                 SET estado = 'cerrado', fec_cierre_turno = NOW()
@@ -174,7 +219,6 @@ class CierreDao:
 
     # ================================
     # Obtener total de ventas de una apertura
-    # Usa id_apertura directo en venta_cab (exacto, sin depender de fechas)
     # ================================
     def getTotalVentasPorApertura(self, id_apertura):
         sql = """

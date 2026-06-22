@@ -435,7 +435,6 @@ body {
             <button class="btn btn-outline-warning" id="btnDescuento"><i class="fas fa-percent"></i> Desc. <kbd>F5</kbd></button>
             <button class="btn btn-outline-primary" id="btnHistorial"><i class="fas fa-history"></i> Hist. <kbd>F8</kbd></button>
             <button class="btn btn-outline-secondary" id="btnReporteCaja"><i class="fas fa-cash-register"></i> Caja</button>
-            <button class="btn btn-outline-dark" id="btnCerrarCaja"><i class="fas fa-store-slash"></i> Cerrar Caja</button>
             <button class="btn btn-outline-danger" id="btnLimpiar"><i class="fas fa-trash-alt"></i> Limpiar</button>
             <button class="btn btn-success" id="btnCobrar" disabled><i class="fas fa-coins"></i> COBRAR <kbd>F10</kbd></button>
           </div>
@@ -768,56 +767,6 @@ body {
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="window.print();"><i class="fas fa-print"></i> Imprimir</button>
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL ARQUEO Y CIERRE DE CAJA ===== -->
-<div class="modal fade" id="modalArqueo" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold"><i class="fas fa-store-slash"></i> Arqueo y Cierre de Caja</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="d-flex flex-wrap gap-3 mb-3" style="font-size:.85rem;">
-          <div><span class="text-muted">Turno:</span> <strong id="arqTurno">—</strong></div>
-          <div><span class="text-muted">Cajero:</span> <strong id="arqCajero">—</strong></div>
-          <div><span class="text-muted">Fondo inicial:</span> <strong id="arqFondo">₲ 0</strong></div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead>
-              <tr>
-                <th>Forma de pago</th>
-                <th class="text-end">Esperado (sistema)</th>
-                <th class="text-end" style="width:160px;">Contado</th>
-                <th class="text-end">Diferencia</th>
-              </tr>
-            </thead>
-            <tbody id="arqTbody"></tbody>
-            <tfoot>
-              <tr class="fw-bold border-top">
-                <td>TOTAL</td>
-                <td class="text-end" id="arqTotalEsp">₲ 0</td>
-                <td class="text-end" id="arqTotalCont">₲ 0</td>
-                <td class="text-end" id="arqDifTotal">₲ 0</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <div class="mt-2">
-          <label class="form-label fw-bold" style="font-size:.8rem;">Observación (opcional)</label>
-          <textarea class="form-control" id="arqObs" rows="2" placeholder="Notas del cierre…"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
-        <button type="button" class="btn btn-dark fw-bold" id="btnFinalizarArqueo"><i class="fas fa-lock"></i> Confirmar Cierre</button>
       </div>
     </div>
   </div>
@@ -1655,115 +1604,6 @@ function mostrarReporteCaja() {
   modalReporte.show();
 }
 $('btnReporteCaja').addEventListener('click', mostrarReporteCaja);
-
-/* ============================================================
-   ARQUEO Y CIERRE DE CAJA
-   ============================================================ */
-const modalArqueo = new bootstrap.Modal($('modalArqueo'));
-let arqueoFilas = [];
-
-function difClase(n) { return n > 0 ? 'text-success' : (n < 0 ? 'text-danger' : 'text-dark'); }
-
-async function abrirArqueo() {
-  const idAp = state.aperturaActiva?.id_apertura;
-  if (!idAp) { toast('No hay turno activo para cerrar', 'warning'); return; }
-  try {
-    const r = await fetch('/api/v1/arqueos/resumen/' + idAp);
-    const d = await r.json();
-    if (!d.success) { Swal.fire({ title: 'No se pudo cargar', text: d.error || '', icon: 'error' }); return; }
-    const data = d.data;
-    const fondo = data.monto_inicial || 0;
-    // El efectivo esperado incluye el fondo inicial
-    arqueoFilas = data.detalle.map(f => ({
-      id_forma: f.id_forma,
-      forma_pago: f.forma_pago,
-      esperado: f.total + (f.id_forma === ID_EFECTIVO ? fondo : 0),
-      contado: 0
-    }));
-    $('arqTurno').innerText = '#' + (data.nro_turno || '—');
-    $('arqCajero').innerText = data.cajero || '—';
-    $('arqFondo').innerText = fmt(fondo);
-    $('arqObs').value = '';
-    renderArqueo();
-    modalArqueo.show();
-  } catch (e) {
-    Swal.fire({ title: 'Error de red', text: 'No se pudo cargar el arqueo.', icon: 'error' });
-  }
-}
-function renderArqueo() {
-  $('arqTbody').innerHTML = arqueoFilas.map((f, i) => `
-    <tr>
-      <td>${esc(f.forma_pago)}${f.id_forma === ID_EFECTIVO ? ' <small class="text-muted">(incl. fondo)</small>' : ''}</td>
-      <td class="text-end" style="font-variant-numeric:tabular-nums">${fmt(f.esperado)}</td>
-      <td><input type="number" class="form-control form-control-sm text-end arq-contado" data-idx="${i}" value="" min="0" step="any" placeholder="0"></td>
-      <td class="text-end arq-dif ${difClase(-f.esperado)}" id="arqDif-${i}" style="font-variant-numeric:tabular-nums">${fmt(-f.esperado)}</td>
-    </tr>`).join('');
-  recalcArqueo();
-}
-$('arqTbody').addEventListener('input', (e) => {
-  if (!e.target.classList.contains('arq-contado')) return;
-  const i = parseInt(e.target.dataset.idx);
-  arqueoFilas[i].contado = parseFloat(e.target.value) || 0;
-  const dif = arqueoFilas[i].contado - arqueoFilas[i].esperado;
-  const cell = $('arqDif-' + i);
-  cell.innerText = fmt(dif);
-  cell.className = 'text-end arq-dif ' + difClase(dif);
-  recalcArqueo();
-});
-function recalcArqueo() {
-  const tEsp = arqueoFilas.reduce((s, f) => s + f.esperado, 0);
-  const tCont = arqueoFilas.reduce((s, f) => s + f.contado, 0);
-  const dif = tCont - tEsp;
-  $('arqTotalEsp').innerText = fmt(tEsp);
-  $('arqTotalCont').innerText = fmt(tCont);
-  $('arqDifTotal').innerText = fmt(dif);
-  $('arqDifTotal').className = 'text-end ' + difClase(dif);
-}
-$('btnFinalizarArqueo').addEventListener('click', async () => {
-  const idAp = state.aperturaActiva?.id_apertura;
-  if (!idAp) return;
-  const confirm = await Swal.fire({
-    title: '¿Cerrar el turno?',
-    text: 'Se registrará el arqueo y el turno quedará cerrado.',
-    icon: 'warning', showCancelButton: true,
-    confirmButtonText: 'Sí, cerrar', cancelButtonText: 'Cancelar', confirmButtonColor: '#1f2937'
-  });
-  if (!confirm.isConfirmed) return;
-
-  const btn = $('btnFinalizarArqueo');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Cerrando…';
-  try {
-    const r = await fetch('/api/v1/arqueos/finalizar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRFToken },
-      body: JSON.stringify({
-        id_apertura: idAp,
-        observacion: $('arqObs').value.trim(),
-        conteos: arqueoFilas.map(f => ({ id_forma: f.id_forma, monto_contado: f.contado }))
-      })
-    });
-    const d = await r.json();
-    if (d.success) {
-      modalArqueo.hide();
-      const dif = d.data.diferencia;
-      await Swal.fire({
-        title: 'Caja cerrada',
-        html: `Total sistema: <strong>${fmt(d.data.total_sistema)}</strong><br>` +
-              `Total arqueado: <strong>${fmt(d.data.total_arqueo)}</strong><br>` +
-              `Diferencia: <strong class="${difClase(dif)}">${fmt(dif)}</strong>`,
-        icon: Math.abs(dif) < 1 ? 'success' : 'warning'
-      });
-      limpiarVenta();
-      bloquearPOS();   // ya no hay turno activo
-    } else {
-      Swal.fire({ title: 'Error', text: d.error || 'No se pudo cerrar la caja.', icon: 'error' });
-    }
-  } catch (e) {
-    Swal.fire({ title: 'Error de red', text: 'No se pudo cerrar la caja.', icon: 'error' });
-  } finally {
-    btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Confirmar Cierre';
-  }
-});
-$('btnCerrarCaja').addEventListener('click', abrirArqueo);
 
 /* ============================================================
    ATAJOS GLOBALES
