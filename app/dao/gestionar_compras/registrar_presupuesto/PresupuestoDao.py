@@ -36,8 +36,8 @@ class PresupuestoCompraDao:
         """
         sql_det = """
             INSERT INTO presupuesto_compra_det
-            (id_pre_compra_cab, item_code, cantidad, precio_unitario)
-            VALUES (%s,%s,%s,%s)
+            (id_pre_compra_cab, id_item, item_code, cantidad, precio_unitario)
+            VALUES (%s,%s,%s,%s,%s)
         """
         con = Conexion().getConexion()
         cur = con.cursor()
@@ -56,8 +56,15 @@ class PresupuestoCompraDao:
             id_cab = cur.fetchone()[0]
 
             for d in dto.detalles:
+                cur.execute(
+                    "SELECT id_item FROM item WHERE UPPER(TRIM(item_code)) = UPPER(TRIM(%s))",
+                    (d.item_code,)
+                )
+                row_item = cur.fetchone()
+                id_item = row_item[0] if row_item else None
                 cur.execute(sql_det, (
                     id_cab,
+                    id_item,
                     d.item_code,
                     d.cantidad,
                     d.precio_unitario

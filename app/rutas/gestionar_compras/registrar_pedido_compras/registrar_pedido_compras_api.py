@@ -55,7 +55,7 @@ def get_productos():
         productos_formateados = []
         for p in productos:
             productos_formateados.append({
-                'id_item': p.get('item_code'),
+                'id_item': p.get('id_item'),
                 'item_code': p.get('item_code'),
                 'codigo': p.get('item_code'),
                 'producto': p.get('nombre'),
@@ -103,9 +103,11 @@ def crear_pedido():
         for d in detalle_raw:
             if not d.get('id_proveedor'):
                 return jsonify(success=False, error=f'Falta id_proveedor para {d.get("item_descripcion") or d.get("producto","")}'), 400
+            if not d.get('id_item'):
+                return jsonify(success=False, error=f'Falta id_item para {d.get("item_descripcion") or d.get("producto","")}'), 400
 
             detalle_objs.append(PedidoDeCompraDetalleDto(
-                id_item=d.get('item_code'),
+                id_item=d.get('id_item'),
                 item_code=d.get('item_code'),
                 item_descripcion=d.get('item_descripcion') or d.get('producto',''),
                 cant_pedido=d.get('cant_pedido'),

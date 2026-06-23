@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block titulo %}Órdenes de Compra{% endblock %}
+{% block contenido %}
+<div class="container mt-4">
+    <h3>Órdenes de Compra</h3>
+    <div class="card shadow">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Listado</span>
+            <a href="{{ url_for('ocmod.ordenes_agregar') }}" class="btn btn-primary btn-sm" target="_blank">Generar OC</a>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered" id="tbl_ordenes" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>N°</th><th>Fecha</th><th>Proveedor</th>
+                        <th>Sucursal</th><th>Funcionario</th><th>Estado</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+$(document).ready(function(){
+    const tabla = $('#tbl_ordenes').DataTable({
+        language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+        ajax: { url: '/api/v1/gestionar-compras/registrar-orden-compras/ordenes', dataSrc: 'data' },
+        columns: [
+            { data: 'nro_orden', defaultContent: '' },
+            { data: 'fecha_emision' },
+            { data: 'proveedor_nombre' },
+            { data: 'sucursal' },
+            { data: 'funcionario' },
+            { data: 'estado', render: e => {
+                const badge = e === 'ANULADO' ? 'danger' : (e === 'PENDIENTE' ? 'warning' : 'success');
+                return `<span class="badge badge-${badge}">${e || '—'}</span>`;
+            }},
+            { data: null, orderable:false, className:'text-center', render: row =>
+                `<button class="btn btn-info btn-sm ver" data-id="${row.id_orden_compra_cab}">Ver</button>
+                 <button class="btn btn-danger btn-sm anular" data-id="${row.id_orden_compra_cab}">Anular</button>`
+            }
+        ],
+        order: [[0,'desc']]
+    });
+
+    $('#tbl_ordenes').on('click','.ver', function(){
+        window.open('/gestionar-compras/registrar-orden-compras/ordenes/detalle/' + $(this).data('id'), '_blank');
+    });
+
+    $('#tbl_ordenes').on('click','.anular', function(){
+        const id = $(this).data('id');
+        Swal.fire({ title:'¿Anular esta orden?', icon:'warning', showCancelButton:true, confirmButtonText:'Sí, anular', cancelButtonText:'Cancelar' })
+        .then(result => {
+            if(result.isConfirmed){
+                fetch('/api/v1/gestionar-compras/registrar-orden-compras/ordenes/' + id, { method:'DELETE', headers:{'Content-Type':'application/json'} })
+                .then(r=>r.json()).then(data=>{
+                    if(data.success){ Swal.fire('Orden anulada','','success'); tabla.ajax.reload(null,false); }
+                    else Swal.fire('Error', data.error || 'No se pudo anular','error');
+                }).catch(()=>Swal.fire('Error','Ocurrió un error','error'));
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -10,41 +10,57 @@ class PedidoDeComprasDao:
     # Obtener todos los productos (items) con stock real y proveedor
     # ------------------------------
     def obtener_productos(self, id_sucursal=None, id_deposito=None):
-        query = """
+        base = """
         SELECT
+            i.id_item,
             i.item_code,
             i.descripcion,
-            COALESCE(s.cantidad,0) AS stock,
-            COALESCE(i.precio_unitario,0) AS precio_unitario,
+            COALESCE(s.cantidad, 0) AS stock,
+            COALESCE(i.precio_unitario, 0) AS precio_unitario,
             i.id_proveedor,
             p.prov_nombre
         FROM item i
         LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
         LEFT JOIN stock s ON s.id_item = i.id_item
-        """ + (" AND s.id_sucursal = %s AND s.id_deposito = %s" if id_sucursal and id_deposito else "") + """
-        WHERE i.activo = TRUE
-        ORDER BY i.descripcion
         """
         conexion = Conexion()
         con = conexion.getConexion()
         cur = con.cursor()
         try:
             if id_sucursal and id_deposito:
+                query = """
+                SELECT
+                    i.id_item,
+                    i.item_code,
+                    i.descripcion,
+                    COALESCE(s.cantidad, 0) AS stock,
+                    COALESCE(i.precio_unitario, 0) AS precio_unitario,
+                    i.id_proveedor,
+                    p.prov_nombre
+                FROM item i
+                LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
+                LEFT JOIN stock s ON s.id_item = i.id_item
+                    AND s.id_sucursal = %s AND s.id_deposito = %s
+                WHERE i.activo = TRUE
+                ORDER BY i.descripcion
+                """
                 cur.execute(query, (id_sucursal, id_deposito))
             else:
+                query = base + """
+                WHERE i.activo = TRUE
+                ORDER BY i.descripcion
+                """
                 cur.execute(query)
             filas = cur.fetchall()
-            productos = []
-            for f in filas:
-                productos.append({
-                    'item_code': f[0],
-                    'nombre': f[1],
-                    'stock': float(f[2]),
-                    'precio_unitario': float(f[3]),
-                    'id_proveedor': f[4],
-                    'proveedor_nombre': f[5] if f[5] else ''
-                })
-            return productos
+            return [{
+                'id_item': f[0],
+                'item_code': f[1],
+                'nombre': f[2],
+                'stock': float(f[3]),
+                'precio_unitario': float(f[4]),
+                'id_proveedor': f[5],
+                'proveedor_nombre': f[6] if f[6] else ''
+            } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al obtener productos: {str(e)}")
             return []
@@ -62,18 +78,20 @@ class PedidoDeComprasDao:
         try:
             # Convertimos id_item a string porque item_code es varchar
             cur.execute("""
-                SELECT i.item_code, i.descripcion, i.id_proveedor, p.prov_nombre
+                SELECT i.id_item, i.item_code, i.descripcion, i.id_proveedor, p.prov_nombre
                 FROM item i
                 LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
-                WHERE i.item_code = %s
-            """, (str(id_item),))
+                WHERE i.id_item = %s OR i.item_code = %s
+                LIMIT 1
+            """, (id_item, str(id_item),))
             fila = cur.fetchone()
             if fila:
                 return {
-                    'item_code': fila[0],
-                    'nombre': fila[1],
-                    'id_proveedor': fila[2],
-                    'proveedor_nombre': fila[3] if fila[3] else ''
+                    'id_item': fila[0],
+                    'item_code': fila[1],
+                    'nombre': fila[2],
+                    'id_proveedor': fila[3],
+                    'proveedor_nombre': fila[4] if fila[4] else ''
                 }
             return None
         except Exception as e:
@@ -136,6 +154,95 @@ class PedidoDeComprasDao:
             con.close()
 
     # ------------------------------
+<<<<<<< Updated upstream
+=======
+    # Obtener un pedido completo por ID (incluye detalle)
+    # ------------------------------
+    def obtener_pedido_por_id(self, id_pedido):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            # Cabecera
+            cur.execute("""
+                SELECT
+                    pdc.id_pedido_compra_cab,
+                    pdc.nro_pedido,
+                    pdc.fecha_pedido,
+                    f.fun_id,
+                    CONCAT(f.nombres,' ',f.apellidos) AS funcionario,
+                    s.descripcion AS sucursal,
+                    d.descripcion AS deposito,
+                    pdc.id_proveedor,
+                    prov.prov_nombre,
+                    pdc.tipo_factura,
+                    COALESCE(pdc.estado,'') AS estado
+                FROM pedido_compra_cab pdc
+                LEFT JOIN funcionarios f ON f.fun_id = pdc.id_funcionario
+                LEFT JOIN sucursal s ON s.id_sucursal = pdc.id_sucursal
+                LEFT JOIN deposito d ON d.id_deposito = pdc.id_deposito
+                LEFT JOIN proveedor prov ON prov.id_proveedor = pdc.id_proveedor
+                WHERE pdc.id_pedido_compra_cab = %s
+            """, (id_pedido,))
+            fila = cur.fetchone()
+
+            if not fila:
+                return None
+
+            pedido = {
+                'id_pedido_compra_cab': fila[0],
+                'nro_pedido': fila[1],
+                'fecha_pedido': fila[2].strftime("%Y-%m-%d") if fila[2] else None,
+                'fun_id': fila[3],
+                'funcionario': fila[4],
+                'sucursal': fila[5],
+                'deposito': fila[6] if fila[6] else '',
+                'id_proveedor': fila[7],
+                'proveedor_nombre': fila[8] if fila[8] else '',
+                'tipo_factura': fila[9] if fila[9] else '',
+                'estado': fila[10],
+                'detalle': []
+            }
+
+            # Detalle
+            cur.execute("""
+                SELECT
+                    d.id_pedido_compra_det,
+                    d.id_item,
+                    d.item_code,
+                    d.item_descripcion,
+                    d.unidad_med,
+                    d.cant_pedido,
+                    d.costo_unitario,
+                    d.tipo_impuesto
+                FROM pedido_compra_det d
+                WHERE d.id_pedido_compra_cab = %s
+                ORDER BY d.id_pedido_compra_det
+            """, (pedido['id_pedido_compra_cab'],))
+            filas_detalle = cur.fetchall()
+            for f in filas_detalle:
+                pedido['detalle'].append({
+                    'id_pedido_compra_det': f[0],
+                    'id_item': f[1],
+                    'item_code': f[2],
+                    'item_descripcion': f[3],
+                    'unidad_med': f[4],
+                    'cant_pedido': float(f[5]),
+                    'costo_unitario': float(f[6]),
+                    'tipo_impuesto': f[7]
+                })
+
+            return pedido
+
+        except Exception as e:
+            app.logger.error(f"Error al obtener pedido ID {id_pedido}: {str(e)}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ------------------------------
+>>>>>>> Stashed changes
     # Agregar nuevo pedido
     # ------------------------------
     def agregar(self, pedido_dto: PedidoDeComprasDto) -> bool:
@@ -147,8 +254,8 @@ class PedidoDeComprasDao:
         """
         insert_detalle = """
         INSERT INTO pedido_compra_det
-        (id_pedido_compra_cab, nro_pedido, item_code, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        (id_pedido_compra_cab, nro_pedido, id_item, item_code, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         conexion = Conexion()
         con = conexion.getConexion()
@@ -172,6 +279,7 @@ class PedidoDeComprasDao:
                 cur.execute(insert_detalle, (
                     id_pedido_cab,
                     nro_pedido,
+                    det.id_item,
                     det.item_code,
                     det.item_descripcion,
                     det.unidad_med,
@@ -275,6 +383,7 @@ class PedidoDeComprasDao:
 
             query_detalle = """
             SELECT
+                i.id_item,
                 i.item_code,
                 i.descripcion AS item_descripcion,
                 sd.cantidad,
@@ -292,13 +401,14 @@ class PedidoDeComprasDao:
             filas_detalle = cur.fetchall()
             for f in filas_detalle:
                 solicitud['detalle'].append({
-                    'item_code': f[0],
-                    'item_descripcion': f[1],
-                    'cant_pedido': float(f[2]),
-                    'costo_unitario': float(f[3]),
-                    'stock': float(f[4]),
-                    'id_proveedor': f[5],
-                    'proveedor': f[6] if f[6] else ''
+                    'id_item': f[0],
+                    'item_code': f[1],
+                    'item_descripcion': f[2],
+                    'cant_pedido': float(f[3]),
+                    'costo_unitario': float(f[4]),
+                    'stock': float(f[5]),
+                    'id_proveedor': f[6],
+                    'proveedor': f[7] if f[7] else ''
                 })
 
             return solicitud

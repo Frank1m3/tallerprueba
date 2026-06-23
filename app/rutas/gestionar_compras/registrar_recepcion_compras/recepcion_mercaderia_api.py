@@ -9,25 +9,30 @@ api_v1 = "/api/v1"
 modulo_compras = "/gestionar-compras"
 rm_api = Blueprint('rm_api', __name__, url_prefix=f'{api_v1}{modulo_compras}/recepcion-mercaderias')
 
-# ================================
-# Obtener pedido por número
-# ================================
-@rm_api.route('/pedido/<nro_pedido>', methods=['GET'])
-def get_pedido(nro_pedido):
+
+@rm_api.route('/orden/<nro_orden>', methods=['GET'])
+def get_orden(nro_orden):
     try:
         dao = RecepcionDao()
+<<<<<<< Updated upstream
         pedido = dao.obtener_pedido_por_nro(nro_pedido)
         if not pedido:
             return jsonify({'success': False, 'error': 'Pedido no encontrado'}), 404
         return jsonify({'success': True, 'data': pedido})
 
+=======
+        orden = dao.obtener_orden_por_nro(nro_orden)
+        if not orden:
+            return jsonify({'success': False, 'error': 'Orden de compra no encontrada'}), 404
+        if isinstance(orden, dict) and orden.get('error'):
+            return jsonify({'success': False, 'error': orden['error']}), 400
+        return jsonify({'success': True, 'data': orden})
+>>>>>>> Stashed changes
     except Exception as e:
-        app.logger.error(f"Error al obtener pedido {nro_pedido}: {str(e)}")
+        app.logger.error(f"Error al obtener orden {nro_orden}: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
 
-# ================================
-# Crear nueva recepción
-# ================================
+
 @rm_api.route('/recepciones', methods=['POST'])
 @csrf.exempt
 def crear_recepcion():
@@ -37,8 +42,11 @@ def crear_recepcion():
             return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
 
         id_funcionario = data.get('id_funcionario')
+        id_orden = data.get('id_orden_compra_cab')
         if not id_funcionario:
             return jsonify({'success': False, 'error': 'El id_funcionario es obligatorio'}), 400
+        if not id_orden:
+            return jsonify({'success': False, 'error': 'La orden de compra es obligatoria'}), 400
 
         detalle_objs = []
         for d in data.get('detalles', []):
@@ -48,11 +56,18 @@ def crear_recepcion():
                 return jsonify({'success': False, 'error': 'id_pedido_det es obligatorio para cada detalle'}), 400
 
             detalle_objs.append(RecepcionDetalleDto(
+<<<<<<< Updated upstream
                 id_pedido_det=id_pedido_det,
                 item_code=d.get('item_code'),
+=======
+                id_orden_compra_det=d.get('id_orden_compra_det'),
+                id_item=d.get('id_item'),
+                item_code=d.get('item_code', ''),
+>>>>>>> Stashed changes
                 descripcion=d.get('descripcion', ''),
                 cantidad_pedida=float(d.get('cantidad_pedida', 0)),
-                cantidad_recibida=float(d.get('cantidad_recibida', 0))
+                cantidad_recibida=float(d.get('cantidad_recibida', 0)),
+                costo_unitario=float(d.get('costo_unitario', 0))
             ))
 
         fecha_raw = data.get('fecha_recepcion')
@@ -65,7 +80,7 @@ def crear_recepcion():
             id_sucursal=data.get('id_sucursal'),
             id_deposito=data.get('id_deposito'),
             id_proveedor=data.get('id_proveedor'),
-            id_pedido=data.get('id_pedido'),
+            id_orden_compra_cab=id_orden,
             detalle_recepcion=detalle_objs
         )
 
@@ -74,37 +89,30 @@ def crear_recepcion():
 
         if exito:
             return jsonify({'success': True}), 201
-        else:
-            return jsonify({'success': False, 'error': 'No se pudo registrar la recepción'}), 500
+        return jsonify({'success': False, 'error': 'No se pudo registrar la recepción'}), 500
 
     except Exception as e:
         app.logger.error(f"Error al crear recepción: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
 
-# ================================
-# Confirmar recepción
-# ================================
+
 @rm_api.route('/recepciones/<int:id_recepcion>/confirmar', methods=['PUT'])
 @csrf.exempt
 def confirmar_recepcion(id_recepcion):
     try:
         dao = RecepcionDao()
-        exito = dao.confirmar_recepcion(id_recepcion)
-        return jsonify({'success': exito})
+        return jsonify({'success': dao.confirmar_recepcion(id_recepcion)})
     except Exception as e:
         app.logger.error(f"Error al confirmar recepción {id_recepcion}: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
 
-# ================================
-# Anular recepción
-# ================================
+
 @rm_api.route('/recepciones/<int:id_recepcion>/anular', methods=['PUT'])
 @csrf.exempt
 def anular_recepcion(id_recepcion):
     try:
         dao = RecepcionDao()
-        exito = dao.anular_recepcion(id_recepcion)
-        return jsonify({'success': exito})
+        return jsonify({'success': dao.anular_recepcion(id_recepcion)})
     except Exception as e:
         app.logger.error(f"Error al anular recepción {id_recepcion}: {str(e)}")
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500

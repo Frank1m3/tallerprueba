@@ -37,12 +37,189 @@
         <!-- Sidebar -->
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
+<<<<<<< Updated upstream
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
                 <div class="sidebar-brand-icon rotate">
                     <img src="{{ url_for('static', filename='img/GV.PNG') }}" alt="Descripción de la imagen" width="50">
                 </div>
                 <div class="sidebar-brand-text mx-3">GRANVIA<sup>SYS</sup></div>
+=======
+    <!-- Brand -->
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
+      <div class="sidebar-brand-icon rotate">
+        <img src="{{ url_for('static', filename='img/GV.PNG') }}" alt="GranVia" width="38">
+      </div>
+      <div class="sidebar-brand-text mx-3">GRANVIA<sup>SYS</sup></div>
+    </a>
+
+    <hr class="sidebar-divider my-0">
+
+    <!-- Dashboard -->
+    <li class="nav-item">
+      <a class="nav-link" href="#">
+        <i class="fas fa-fw fa-tachometer-alt"></i>
+        <span>TALLER</span>
+      </a>
+    </li>
+
+    <hr class="sidebar-divider">
+
+    <!-- ============================================
+         REFERENCIALES (agrupadas por módulo)
+         ============================================ -->
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseRef"
+         aria-expanded="false" aria-controls="collapseRef">
+        <i class="fas fa-fw fa-layer-group"></i>
+        <span>Referenciales</span>
+      </a>
+      <div id="collapseRef" class="collapse" aria-labelledby="headingRef" data-parent="#accordionSidebar">
+        <div class="collapse-inner">
+
+          <span class="collapse-section">Generales</span>
+          <a class="collapse-item" href="{{ url_for('ciudad.ciudadIndex') }}">Ciudad</a>
+          <a class="collapse-item" href="{{ url_for('pais.paisIndex') }}">País</a>
+          <a class="collapse-item" href="{{ url_for('nacionalidad.nacionalidadIndex') }}">Nacionalidad</a>
+          <a class="collapse-item" href="{{ url_for('persona.personaIndex') }}">Personas</a>
+          <a class="collapse-item" href="{{ url_for('sexo.sexoIndex') }}">Sexo</a>
+          <a class="collapse-item" href="{{ url_for('sucursal.sucursalIndex') }}">Sucursales</a>
+          <a class="collapse-item" href="{{ url_for('deposito.depositoIndex') }}">Depósitos</a>
+
+          <span class="collapse-section">Compras</span>
+          <a class="collapse-item" href="{{ url_for('proveedor.proveedorIndex') }}">Proveedores</a>
+          <a class="collapse-item" href="{{ url_for('item.itemIndex') }}">Items / Productos</a>
+          <a class="collapse-item" href="{{ url_for('tipoitem.tipoItemIndex') }}">Tipo de Item</a>
+          <a class="collapse-item" href="{{ url_for('grupo.grupoIndex') }}">Grupos</a>
+          <a class="collapse-item" href="{{ url_for('marca.marcaIndex') }}">Marcas</a>
+          <a class="collapse-item" href="{{ url_for('unidadmedida.unidadMedidaIndex') }}">Unidad de Medida</a>
+          <a class="collapse-item" href="{{ url_for('tipoimpuesto.tipoImpuestoIndex') }}">Tipo de Impuesto</a>
+          <a class="collapse-item" href="{{ url_for('moneda.monedaIndex') }}">Monedas</a>
+          <a class="collapse-item" href="{{ url_for('formapago.formasPagoIndex') }}">Formas de Pago</a>
+
+          <span class="collapse-section">Ventas</span>
+          <a class="collapse-item" href="{{ url_for('cliente.clienteIndex') }}">Clientes</a>
+          <a class="collapse-item" href="{{ url_for('marcatarjeta.marcaTarjetaIndex') }}">Marcas de Tarjeta</a>
+          <a class="collapse-item" href="{{ url_for('entidademisora.entidadEmisoraIndex') }}">Entidades Emisoras</a>
+
+          <span class="collapse-section">Producción</span>
+          <a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>
+          <a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>
+          <a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>
+
+        </div>
+      </div>
+    </li>
+
+    <!-- ============================================
+         MÓDULO VENTA
+         ============================================ -->
+    <span class="sidebar-heading">Módulo de Venta</span>
+
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseCaja"
+         aria-expanded="false" aria-controls="collapseCaja">
+        <i class="fas fa-fw fa-cash-register"></i>
+        <span>Caja</span>
+      </a>
+      <div id="collapseCaja" class="collapse" aria-labelledby="headingCaja" data-parent="#accordionSidebar">
+        <div class="collapse-inner bg-warning">
+          <a class="collapse-item" href="{{ url_for('apertura.aperturaIndex') }}">Apertura</a>
+          <a class="collapse-item" href="{{ url_for('ventamod.ventaPos') }}">Punto de Venta</a>
+          <a class="collapse-item" href="{{ url_for('arqueomod.arqueo_index') }}">Arqueo de Caja</a>
+          <a class="collapse-item" href="{{ url_for('cierre.cierreIndex') }}">Cierre</a>
+        </div>
+      </div>
+    </li>
+
+    <!-- ============================================
+         MÓDULO COMPRA
+         ============================================ -->
+    <span class="sidebar-heading">Módulo de Compra</span>
+
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseCompras"
+         aria-expanded="false" aria-controls="collapseCompras">
+        <i class="fas fa-fw fa-shopping-cart"></i>
+        <span>Gestionar Compras</span>
+      </a>
+      <div id="collapseCompras" class="collapse" aria-labelledby="headingCompras" data-parent="#accordionSidebar">
+        <div class="collapse-inner bg-success">
+          <a class="collapse-item" href="{{ url_for('solmod.solicitud_index') }}">Solicitud de Compra</a>
+          <a class="collapse-item" href="{{ url_for('presumod.presupuesto_index') }}">Presupuesto</a>
+          <a class="collapse-item" href="{{ url_for('pdcmod.pedidos_index') }}">Pedido de Compra</a>
+          <a class="collapse-item" href="{{ url_for('ocmod.ordenes_index') }}">Orden de Compra</a>
+          <a class="collapse-item" href="{{ url_for('rm_mod.recepcion_mercaderia') }}">Recepción Mercaderías</a>
+        </div>
+      </div>
+    </li>
+
+    <!-- ============================================
+         MÓDULO PRODUCCIÓN
+         ============================================ -->
+    <span class="sidebar-heading">Módulo de Producción</span>
+
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseProd"
+         aria-expanded="false" aria-controls="collapseProd">
+        <i class="fas fa-fw fa-industry"></i>
+        <span>Producción</span>
+      </a>
+      <div id="collapseProd" class="collapse" aria-labelledby="headingProd" data-parent="#accordionSidebar">
+        <div class="collapse-inner bg-info">
+          <a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>
+          <a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>
+          <a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>
+        </div>
+      </div>
+    </li>
+
+    <hr class="sidebar-divider d-none d-md-block">
+
+    <div class="text-center d-none d-md-inline">
+      <button class="rounded-circle border-0" id="sidebarToggle"></button>
+    </div>
+
+  </ul>
+  <!-- End Sidebar -->
+
+  <!-- ====================================================
+       CONTENT WRAPPER
+       ==================================================== -->
+  <div id="content-wrapper" class="d-flex flex-column">
+    <div id="content">
+
+      <!-- TOPBAR -->
+      <nav class="navbar navbar-expand navbar-light topbar mb-0 static-top">
+
+        <!-- Sidebar toggle (mobile) -->
+        <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+          <i class="fa fa-bars" style="color:var(--gv-muted)"></i>
+        </button>
+
+        <!-- Breadcrumb / título de página -->
+        <div class="topbar-page-title d-none d-sm-flex">
+          <i class="fas fa-home" style="font-size:.75rem"></i>
+          <span class="sep">/</span>
+          <span class="current">{{ self.titulo() }}</span>
+        </div>
+
+        <ul class="navbar-nav ml-auto align-items-center">
+
+          <div class="topbar-divider d-none d-sm-block"></div>
+
+          <!-- Usuario -->
+          <li class="nav-item dropdown no-arrow">
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#"
+               id="userDropdown" role="button" data-toggle="dropdown"
+               aria-haspopup="true" aria-expanded="false">
+              <img class="img-profile rounded-circle"
+                   src="{{ url_for('static', filename='img/undraw_profile.svg') }}">
+              <span class="mr-2 d-none d-lg-inline text-gray-600 small">
+                {{ session['usuario_nombre'] }}
+              </span>
+              <i class="fas fa-chevron-down" style="font-size:.65rem;color:var(--gv-muted)"></i>
+>>>>>>> Stashed changes
             </a>
 
             <!-- Divider -->
