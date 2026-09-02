@@ -195,7 +195,6 @@
               <th>Sucursal</th>
               <th>Depósito</th>
               <th>Fecha</th>
-              <th>Proveedor</th>
               <th>Estado</th>
               <th class="text-center">Acciones</th>
             </tr>
@@ -236,7 +235,6 @@ $(document).ready(function(){
       { data: 'sucursal' },
       { data: 'deposito' },
       { data: 'fecha_solicitud', render: v => v ? `<span style="font-variant-numeric:tabular-nums">${v}</span>` : '—' },
-      { data: 'proveedor_nombre' },
       { data: 'estado',          render: v => estadoBadge(v) },
       {
         data: null,

@@ -135,6 +135,9 @@
 <script>
 $(document).ready(function(){
   let detalle = [];
+
+  $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar solicitante...' });
+  $('#cbo_producto').buscadorSelect({ placeholder: 'Buscar producto...' });
   function fmt(n){ return parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:2, maximumFractionDigits:2}); }
   function actualizarContador(){ $('#lbl_total_items').text(detalle.length + ' ítem' + (detalle.length!==1?'s':'') + ' agregado' + (detalle.length!==1?'s':'')); }
 
@@ -205,7 +208,7 @@ $(document).ready(function(){
     if(detalle.some(d => d.codigo === codigo)){ return Swal.fire({title:'Duplicado', text:'El producto '+codigo+' ya fue agregado.', icon:'warning', confirmButtonColor:'#1a56db'}); }
     detalle.push({id_item, codigo, producto, cantidad, stock, precio, estado:'PENDIENTE'});
     renderTabla();
-    $('#cbo_producto').val(''); $('#txt_cantidad').val(''); $('#txt_stock,#txt_precio').val('');
+    $('#cbo_producto').val('').trigger('change'); $('#txt_cantidad').val(''); $('#txt_stock,#txt_precio').val('');
   });
 
   $('#tbl_detalle tbody').on('click', '.btn-modificar', function(){

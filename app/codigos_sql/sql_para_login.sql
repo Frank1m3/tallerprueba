@@ -6,6 +6,7 @@ SELECT
     , u.fun_id
 	, u.gru_id
 	, u.usu_estado
+	, u.usu_email
     , CONCAT(p.per_nombres, ' ', p.per_apellidos)nombre_persona
 	, g.gru_des grupo
 FROM 

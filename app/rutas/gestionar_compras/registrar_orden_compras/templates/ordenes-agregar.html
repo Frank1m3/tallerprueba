@@ -111,6 +111,11 @@
 <script>
 $(document).ready(function(){
     let detalle = [];
+
+    $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar funcionario...' });
+    $('#cbo_proveedor').buscadorSelect({ placeholder: 'Buscar proveedor...' });
+    $('#cbo_producto').buscadorSelect({ placeholder: 'Buscar producto...' });
+
     let tabla = $('#tbl_detalle').DataTable({
         paging:true, info:true, searching:false, ordering:false,
         columns:[
@@ -145,8 +150,8 @@ $(document).ready(function(){
                 if(res.success && res.data){
                     const p = res.data;
                     $('#id_pre_compra_cab').val(p.id_pre_compra_cab);
-                    $('#cbo_funcionario').val(p.fun_id);
-                    $('#cbo_proveedor').val(p.id_proveedor);
+                    $('#cbo_funcionario').val(p.fun_id).trigger('change');
+                    $('#cbo_proveedor').val(p.id_proveedor).trigger('change');
                     $('#cbo_funcionario,#cbo_proveedor').prop('disabled', true);
                     detalle = []; tabla.clear().draw();
                     p.detalle.forEach(d=>{
@@ -202,7 +207,7 @@ $(document).ready(function(){
             acciones:`<button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
         }).draw();
         actualizarTotal();
-        $('#cbo_producto').val(''); $('#txt_stock,#txt_cantidad,#txt_precio').val('');
+        $('#cbo_producto').val('').trigger('change'); $('#txt_stock,#txt_cantidad,#txt_precio').val('');
     });
 
     // Eliminar fila
@@ -248,7 +253,7 @@ $(document).ready(function(){
                     $('#rb_sin').prop('checked',true);
                     $('#txt_cod_presupuesto').prop('readonly',true).val('');
                     $('#id_pre_compra_cab').val('');
-                    $('#cbo_funcionario,#cbo_proveedor').prop('disabled',false).val('');
+                    $('#cbo_funcionario,#cbo_proveedor').prop('disabled',false).val('').trigger('change');
                     $('#cbo_sucursal').val(''); $('#txt_fecha').val('');
                 } else Swal.fire("Error", res.error,"error");
             },

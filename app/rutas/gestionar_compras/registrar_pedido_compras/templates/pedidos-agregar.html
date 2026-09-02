@@ -168,6 +168,11 @@
 <script>
 $(document).ready(function(){
     let detalle = [];
+
+    $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar solicitante...' });
+    $('#cbo_proveedor_filtro').buscadorSelect({ placeholder: 'Buscar proveedor...' });
+    $('#cbo_producto').buscadorSelect({ placeholder: 'Buscar producto...' });
+
     let tabla = $('#tbl_detalle').DataTable({
         paging:true,
         info:true,
@@ -235,7 +240,7 @@ $(document).ready(function(){
                     detalle = [];
                     tabla.clear().draw();
 
-                    $('#cbo_funcionario').val(res.data.id_funcionario);
+                    $('#cbo_funcionario').val(res.data.id_funcionario).trigger('change');
                     $('#cbo_sucursal').val(res.data.id_sucursal).trigger('change');
                     setTimeout(()=> { $('#cbo_deposito').val(res.data.id_deposito); }, 300);
 
@@ -280,7 +285,7 @@ $(document).ready(function(){
                 $(this).show();
             } else $(this).hide();
         });
-        $('#cbo_producto').val('');
+        $('#cbo_producto').val('').trigger('change');
         $('#txt_stock_actual,#txt_precio_info').val('');
         $('#id_proveedor_global').val(proveedor_id || '');
     });
@@ -335,7 +340,7 @@ $(document).ready(function(){
         }).draw();
 
         actualizarTotal();
-        $('#cbo_producto').val('');
+        $('#cbo_producto').val('').trigger('change');
         $('#txt_stock_actual,#txt_cantidad,#txt_precio_info').val('');
     });
 
