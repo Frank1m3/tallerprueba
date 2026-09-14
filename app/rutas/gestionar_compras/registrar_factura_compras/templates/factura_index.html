@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block titulo %}Facturas de Compra{% endblock %}
+{% block contenido %}
+<style>
+  :root {
+    --fc-primary:#1a56db; --fc-primary-d:#1040b0; --fc-border:#e5e7eb; --fc-bg:#f9fafb; --fc-surface:#ffffff; --fc-radius:10px;
+  }
+  .fc-page-header { display:flex; align-items:center; justify-content:space-between; padding:1.5rem 0 1.25rem; border-bottom:2px solid var(--fc-border); margin-bottom:1.5rem; }
+  .fc-page-header h2 { font-size:1.35rem; font-weight:700; color:#111827; margin:0; display:flex; align-items:center; gap:.55rem; }
+  .icon-box { width:36px; height:36px; background:var(--fc-primary); border-radius:8px; display:grid; place-items:center; color:#fff; font-size:.95rem; }
+  .fc-card { background:var(--fc-surface); border:1px solid var(--fc-border); border-radius:var(--fc-radius); box-shadow:0 1px 6px rgba(0,0,0,.06); overflow:hidden; }
+  .fc-card-header { padding:.85rem 1.25rem; background:var(--fc-bg); border-bottom:1px solid var(--fc-border); }
+  .fc-card-body { padding:1.25rem; }
+  .badge-estado { display:inline-flex; align-items:center; gap:.3rem; padding:.28rem .7rem; border-radius:999px; font-size:.74rem; font-weight:700; text-transform:uppercase; }
+  .badge-pendiente { background:#fef3c7; color:#92400e; }
+  .badge-pagada { background:#d1fae5; color:#065f46; }
+  .badge-anulada { background:#fee2e2; color:#991b1b; }
+  .btn-nuevo { display:inline-flex; align-items:center; gap:.4rem; background:var(--fc-primary); color:#fff; padding:.48rem 1rem; border-radius:8px; font-size:.84rem; font-weight:600; text-decoration:none; }
+  .btn-nuevo:hover { background:var(--fc-primary-d); color:#fff; }
+</style>
+
+<div class="container-fluid px-4">
+  <div class="fc-page-header">
+    <h2><span class="icon-box"><i class="fas fa-file-invoice"></i></span> Facturas de Compra</h2>
+    <a href="{{ url_for('facmod.factura_agregar') }}" target="_blank" class="btn-nuevo"><i class="fas fa-plus"></i> Nueva Factura</a>
+  </div>
+
+  <div class="fc-card">
+    <div class="fc-card-header"><i class="fas fa-list me-1"></i> Listado de facturas registradas</div>
+    <div class="fc-card-body">
+      <div class="table-responsive">
+        <table id="tbl_facturas" class="table table-hover w-100">
+          <thead>
+            <tr>
+              <th>Nro. Factura</th>
+              <th>Proveedor</th>
+              <th>Recepción</th>
+              <th>Emisión</th>
+              <th>Vencimiento</th>
+              <th class="text-end">Monto</th>
+              <th>Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const ESTADOS = ['PENDIENTE', 'PAGADA', 'ANULADA'];
+
+  const estadoBadge = (estado) => {
+    const map = { PENDIENTE:'badge-pendiente', PAGADA:'badge-pagada', ANULADA:'badge-anulada' };
+    return `<span class="badge-estado ${map[estado] || 'badge-pendiente'}">${estado}</span>`;
+  };
+
+  const tabla = $('#tbl_facturas').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax: {
+      url: '/api/v1/gestionar-compras/registrar-factura-compras/facturas',
+      dataSrc: 'data'
+    },
+    columns: [
+      { data: 'nro_factura' },
+      { data: 'proveedor' },
+      { data: 'nro_recepcion', render: v => v ? `#${v}` : '—' },
+      { data: 'fecha_emision' },
+      { data: 'fecha_vencimiento', render: v => v || '—' },
+      { data: 'monto_total', className: 'text-end', render: v => parseFloat(v||0).toLocaleString('es-PY', {minimumFractionDigits:2}) },
+      { data: 'estado', render: estadoBadge },
+      {
+        data: null, orderable: false, className: 'text-center',
+        render: function(row){
+          return `<button class="btn btn-sm btn-outline-secondary btn-cambiar-estado" data-id="${row.id_factura}" data-estado="${row.estado}">
+                    <i class="fas fa-random mr-1"></i> Cambiar estado
+                  </button>`;
+        }
+      }
+    ],
+    order: [[0, 'desc']],
+    pageLength: 15
+  });
+
+  $('#tbl_facturas tbody').on('click', '.btn-cambiar-estado', function(){
+    const id = $(this).data('id');
+    const estadoActual = $(this).data('estado');
+    const opciones = ESTADOS.map(e => `<option value="${e}" ${e===estadoActual?'selected':''}>${e}</option>`).join('');
+    Swal.fire({
+      title: 'Cambiar estado',
+      width: 320,
+      padding: '1rem',
+      html: `<select id="swal_nuevo_estado" class="swal2-select" style="display:block;width:100%;margin:0;padding:.4rem;font-size:.85rem;border-radius:6px;border:1px solid #d1d5db">${opciones}</select>`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#1a56db',
+      preConfirm: () => document.getElementById('swal_nuevo_estado').value
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      const nuevoEstado = r.value;
+      if(nuevoEstado === estadoActual) return;
+      fetch(`/api/v1/gestionar-compras/registrar-factura-compras/facturas/${id}/estado`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ estado: nuevoEstado })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if(data.success){
+          tabla.ajax.reload(null, false);
+          Swal.fire({ title:'Listo', text:'El estado fue actualizado.', icon:'success', timer:1800, showConfirmButton:false });
+        } else {
+          Swal.fire('Error', data.error || 'No se pudo cambiar el estado', 'error');
+        }
+      })
+      .catch(() => Swal.fire('Error','Ocurrió un error al cambiar el estado.','error'));
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -129,7 +129,8 @@ def crear_pedido():
             fecha_necesaria = data.get('fecha_necesaria'),
             id_proveedor = id_proveedor_cab,
             detalle_pedido = detalle_objs,
-            tipo_factura = data.get('tipo_factura')
+            tipo_factura = data.get('tipo_factura'),
+            id_pre_compra_cab = data.get('id_pre_compra_cab')
         )
 
         dao = PedidoDeComprasDao()
@@ -171,6 +172,41 @@ def get_solicitud_por_nro(nro_solicitud):
         return jsonify(success=False, error='Ocurrió un error interno.'), 500
 
 # =================================
+# Obtener presupuesto por código (para cargar el pedido "Desde Presupuesto")
+# =================================
+@pdcapi.route('/presupuesto/<string:cod_presupuesto>', methods=['GET'])
+def get_presupuesto_para_pedido(cod_presupuesto):
+    try:
+        dao = PedidoDeComprasDao()
+        presupuesto = dao.obtener_presupuesto_para_pedido(cod_presupuesto)
+        if not presupuesto:
+            return jsonify(success=False, error='Presupuesto no encontrado'), 404
+        return jsonify(success=True, data=presupuesto)
+    except Exception as e:
+        app.logger.error(f"Error al obtener presupuesto {cod_presupuesto}: {str(e)}")
+        return jsonify(success=False, error='Ocurrió un error interno.'), 500
+
+# =================================
+# Cambiar estado del pedido (libre)
+# =================================
+@pdcapi.route('/pedidos/<int:id_pedido>/estado', methods=['PUT'])
+@csrf.exempt
+def cambiar_estado_pedido(id_pedido):
+    try:
+        data = request.get_json() or {}
+        nuevo = (data.get('estado') or '').upper()
+        dao = PedidoDeComprasDao()
+        if nuevo not in dao.ESTADOS_VALIDOS:
+            return jsonify(success=False, error=f"Estado inválido. Use uno de: {', '.join(dao.ESTADOS_VALIDOS)}"), 400
+        ok, msg = dao.cambiar_estado(id_pedido, nuevo)
+        if ok:
+            return jsonify(success=True), 200
+        return jsonify(success=False, error=msg or 'No se pudo actualizar'), 400
+    except Exception as e:
+        app.logger.error(f"Error al cambiar estado de pedido {id_pedido}: {str(e)}")
+        return jsonify(success=False, error='Error interno'), 500
+
+# =================================
 # Obtener todos los pedidos
 # =================================
 @pdcapi.route('/pedidos', methods=['GET'])
@@ -189,7 +225,8 @@ def get_pedidos():
                 'deposito': p['deposito'],
                 'id_proveedor': p['id_proveedor'],
                 'proveedor_nombre': p['proveedor_nombre'],
-                'tipo_factura': p.get('tipo_factura','')
+                'tipo_factura': p.get('tipo_factura',''),
+                'estado': p.get('estado', 'PENDIENTE')
             })
         return jsonify(success=True, data=pedidos_formateados)
     except Exception as e:

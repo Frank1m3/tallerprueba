@@ -245,6 +245,33 @@ class SolicitudCompraDao:
             cur.close(); con.close()
 
     # ================================
+    # Cambiar estado (edición libre del estado, a diferencia de anular() que
+    # solo permite PENDIENTE -> ANULADO). El enum de la BD acepta también
+    # 'ANULADA', pero se deja afuera de las opciones para no tener dos
+    # variantes de "anulado" convivendo en datos nuevos.
+    # ================================
+    ESTADOS_VALIDOS = ('PENDIENTE', 'APROBADA', 'ANULADO')
+
+    def cambiar_estado(self, id_solicitud, nuevo_estado):
+        if nuevo_estado not in self.ESTADOS_VALIDOS:
+            return False
+        conexion = Conexion(); con = conexion.getConexion(); cur = con.cursor()
+        try:
+            cur.execute(
+                "UPDATE solicitud_compra_cab SET estado = %s WHERE id_solicitud = %s",
+                (nuevo_estado, id_solicitud)
+            )
+            actualizado = cur.rowcount > 0
+            con.commit()
+            return actualizado
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al cambiar estado de solicitud {id_solicitud}: {str(e)}")
+            return False
+        finally:
+            cur.close(); con.close()
+
+    # ================================
     # Anular
     # ================================
     def anular(self, id_solicitud):

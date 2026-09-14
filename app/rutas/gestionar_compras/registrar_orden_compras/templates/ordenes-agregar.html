@@ -58,15 +58,6 @@
           <label>Producto</label>
           <select id="cbo_producto" class="form-control">
             <option value="">Seleccione</option>
-            {% for i in productos %}
-            <option value="{{ i.id_item }}"
-                    data-codigo="{{ i.item_code }}"
-                    data-nombre="{{ i.nombre }}"
-                    data-proveedor-id="{{ i.id_proveedor }}"
-                    data-proveedor-nombre="{{ i.proveedor_nombre }}"
-                    data-precio="{{ i.precio_unitario }}"
-                    data-stock="{{ i.stock }}">{{ i.item_code }} - {{ i.nombre }}</option>
-            {% endfor %}
           </select>
         </div>
         <div class="col-md-2">
@@ -114,7 +105,24 @@ $(document).ready(function(){
 
     $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar funcionario...' });
     $('#cbo_proveedor').buscadorSelect({ placeholder: 'Buscar proveedor...' });
-    $('#cbo_producto').buscadorSelect({ placeholder: 'Buscar producto...' });
+    $('#cbo_producto').buscadorSelect({
+        placeholder: 'Buscar producto...',
+        remote: {
+            url: '/api/v1/item/buscar',
+            minLength: 1,
+            mapItem: function(p){
+                return {
+                    value: p.id_item,
+                    text: p.item_code + ' - ' + p.descripcion,
+                    data: {
+                        codigo: p.item_code, nombre: p.descripcion,
+                        'proveedor-id': p.id_proveedor || '', 'proveedor-nombre': p.proveedor_nombre || '',
+                        precio: p.precio_unitario, stock: p.stock
+                    }
+                };
+            }
+        }
+    });
 
     let tabla = $('#tbl_detalle').DataTable({
         paging:true, info:true, searching:false, ordering:false,
@@ -178,6 +186,12 @@ $(document).ready(function(){
         let op = $(this).find('option:selected');
         $('#txt_stock').val(op.data('stock')||0);
         $('#txt_precio').val((parseFloat(op.data('precio'))||0).toFixed(2));
+        if(op.val()){ $('#txt_cantidad').val('').focus(); }
+    });
+
+    // Enter en Cantidad = click en Agregar
+    $('#txt_cantidad').on('keydown', function(e){
+        if(e.which===13 || e.key==='Enter'){ e.preventDefault(); $('#btn_agregar').trigger('click'); }
     });
 
     // Agregar producto manual

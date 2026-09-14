@@ -134,6 +134,12 @@
           </div>
 
           <div class="col-md-2">
+            <label class="mp-label">Nro Solicitud (opcional)</label>
+            <input type="text" id="txt_nro_solicitud" class="form-control" placeholder="Enter para cargar ítems">
+            <input type="hidden" id="hidden_id_solicitud">
+          </div>
+
+          <div class="col-md-2">
             <label class="mp-label">Fecha Emisión</label>
             <input type="date" id="txt_fecha" class="form-control">
           </div>
@@ -408,6 +414,33 @@ $(function(){
     $('#modalMercaderia').modal('hide');
   });
 
+  // ===================== Cargar ítems desde una Solicitud =====================
+  $('#txt_nro_solicitud').on('keypress', function(e){
+    if(e.which !== 13) return;
+    e.preventDefault();
+    let nro = $(this).val();
+    if(!nro) return;
+    $.getJSON(`/api/v1/gestionar-compras/registrar-presupuesto/detalle-solicitud/${nro}`, function(res){
+      if(!res.success){ return Swal.fire('Error','Solicitud no encontrada','error'); }
+      $('#hidden_id_solicitud').val(res.id_solicitud);
+      detalle = []; tabla.clear().draw();
+      res.detalles.forEach(d => {
+        let cant = parseFloat(d.cantidad) || 0;
+        let precio = parseFloat(d.precio_unitario) || 0;
+        let subtotal = cant * precio;
+        detalle.push({ id_item:d.id_item, codigo:d.item_code, descripcion:d.descripcion, stock:d.stock, cantidad:cant, precio, subtotal });
+        tabla.row.add({
+          codigo:d.item_code, descripcion:d.descripcion, stock:d.stock, cantidad:cant,
+          precio:precio.toFixed(2), subtotal:subtotal.toFixed(2),
+          acciones:`<button class="btn btn-sm btn-primary btn-edit">Editar</button>
+                    <button class="btn btn-sm btn-danger btn-del">Eliminar</button>`
+        }).draw();
+      });
+      actualizarTotal();
+      Swal.fire({title:'Ítems cargados', text:`${res.detalles.length} ítem(s) de la solicitud #${nro}. Revisá los precios: son el precio de catálogo, no necesariamente el que cotiza el proveedor.`, icon:'info', timer:3500, showConfirmButton:false});
+    }).fail(() => Swal.fire('Error','Solicitud no encontrada','error'));
+  });
+
   // ===================== Agregar detalle =====================
   $('#btn_agregar').click(function(){
     let id = $('#txt_mercaderia').data('id_item');
@@ -474,6 +507,7 @@ $(function(){
     payload.append('id_sucursal', $('#cbo_sucursal').val());
     payload.append('fun_id', $('#cbo_funcionario').val());
     payload.append('estado', $('#cbo_estado').val());
+    payload.append('id_solicitud', $('#hidden_id_solicitud').val());
     payload.append('detalles', JSON.stringify(detalle.map(d => ({
       item_code:String(d.codigo), descripcion:d.descripcion, cantidad:d.cantidad, precio_unitario:d.precio
     }))));
@@ -490,13 +524,14 @@ $(function(){
           Swal.fire('Éxito','Presupuesto guardado','success');
           detalle = []; tabla.clear().draw(); actualizarTotal();
           $('#file_presupuesto').val('');
+          $('#txt_nro_solicitud,#hidden_id_solicitud').val('');
         } else Swal.fire('Error', r.error || 'No se pudo guardar', 'error');
       },
       error: () => Swal.fire('Error','Error de servidor','error')
     });
   });
 
-  $('#btn_salir').click(()=> window.location.href='/');
+  $('#btn_salir').click(()=> window.location.href="{{ url_for('presumod.presupuesto_index') }}");
 });
 </script>
 {% endblock %}

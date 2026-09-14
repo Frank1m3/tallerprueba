@@ -1,6 +1,7 @@
 from flask import current_app as app
 from app.conexion.Conexion import Conexion
 import psycopg2
+from psycopg2 import errors
 from datetime import datetime
 
 class PersonaDao:
@@ -9,10 +10,10 @@ class PersonaDao:
         """Convierte una fecha string a objeto date. Acepta dd/mm/yyyy o yyyy-mm-dd."""
         if not fecha_str:
             return None
-        formatos = ['%d/%m/%Y', '%Y-%m-%d']
+        formatos = ['%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y']
         for fmt in formatos:
             try:
-                return datetime.strptime(fecha_str, fmt).date()
+                return datetime.strptime(str(fecha_str).strip(), fmt).date()
             except ValueError:
                 continue
         raise ValueError(f"Formato de fecha inválido: {fecha_str}")
@@ -21,7 +22,7 @@ class PersonaDao:
         """Valida y normaliza el sexo ('M' o 'F')."""
         if not sexo:
             return None
-        sexo = sexo.strip().upper()
+        sexo = str(sexo).strip().upper()
         if sexo in ['M', 'F']:
             return sexo
         if sexo.startswith('M'):
@@ -50,7 +51,7 @@ class PersonaDao:
                     "nombres": r[2],
                     "apellidos": r[3],
                     "ci": r[4],
-                    "fechanac": r[5],  # string en formato YYYY-MM-DD
+                    "fechanac": r[5],
                     "sexo": r[6]
                 }
                 for r in rows
@@ -92,16 +93,11 @@ class PersonaDao:
             con.close()
 
     def guardarPersona(self, nombres, apellidos, ci, fechanac, sexo, fun_id=None):
-        if not (nombres and apellidos and ci and sexo):
-            app.logger.error("Faltan datos requeridos para insertar persona.")
-            return False
-
         try:
             fecha_nac = self._parse_fecha(fechanac)
             sexo_val = self._validar_sexo(sexo)
         except ValueError as e:
-            app.logger.error(f"Error en validación de datos: {e}")
-            return False
+            return False, str(e), 400
 
         conexion = Conexion()
         con = conexion.getConexion()
@@ -110,38 +106,40 @@ class PersonaDao:
             if fun_id is None:
                 sql = """
                 INSERT INTO public.personas(nombres, apellidos, ci, fechanac, sexo)
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s) RETURNING id_persona
                 """
                 cur.execute(sql, (nombres, apellidos, ci, fecha_nac, sexo_val))
             else:
                 sql = """
                 INSERT INTO public.personas(fun_id, nombres, apellidos, ci, fechanac, sexo)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_persona
                 """
                 cur.execute(sql, (fun_id, nombres, apellidos, ci, fecha_nac, sexo_val))
 
+            nuevo_id = cur.fetchone()[0]
             con.commit()
             app.logger.info("Persona insertada correctamente.")
-            return True
+            return True, nuevo_id, 201
+        except errors.UniqueViolation:
+            con.rollback()
+            return False, "Ya existe una persona registrada con ese número de cédula (CI).", 409
+        except errors.StringDataRightTruncation:
+            con.rollback()
+            return False, "Uno de los textos excede la longitud máxima permitida.", 400
         except psycopg2.DatabaseError as e:
             con.rollback()
             app.logger.error(f"Error al insertar persona: {e}")
-            return False
+            return False, "Error en la base de datos al guardar persona.", 500
         finally:
             cur.close()
             con.close()
 
     def updatePersona(self, id_persona, nombres, apellidos, ci, fechanac, sexo, fun_id=None):
-        if not (id_persona and nombres and apellidos and ci and sexo):
-            app.logger.error("Faltan datos requeridos para actualizar persona.")
-            return False
-
         try:
             fecha_nac = self._parse_fecha(fechanac)
             sexo_val = self._validar_sexo(sexo)
         except ValueError as e:
-            app.logger.error(f"Error en validación de datos: {e}")
-            return False
+            return False, str(e), 400
 
         conexion = Conexion()
         con = conexion.getConexion()
@@ -166,13 +164,23 @@ class PersonaDao:
                 """
                 cur.execute(sql, (fun_id, nombres, apellidos, ci, fecha_nac, sexo_val, id_persona))
 
+            if cur.rowcount == 0:
+                con.rollback()
+                return False, "Persona no encontrada.", 404
+
             con.commit()
             app.logger.info("Persona actualizada correctamente.")
-            return True
+            return True, "Persona actualizada correctamente.", 200
+        except errors.UniqueViolation:
+            con.rollback()
+            return False, "El número de cédula (CI) ya pertenece a otra persona.", 409
+        except errors.StringDataRightTruncation:
+            con.rollback()
+            return False, "Uno de los textos excede la longitud máxima permitida.", 400
         except psycopg2.DatabaseError as e:
             con.rollback()
             app.logger.error(f"Error al actualizar persona: {e}")
-            return False
+            return False, "Error al actualizar persona.", 500
         finally:
             cur.close()
             con.close()
@@ -184,13 +192,19 @@ class PersonaDao:
         cur = con.cursor()
         try:
             cur.execute(sql, (id_persona,))
+            if cur.rowcount == 0:
+                con.rollback()
+                return False, "Persona no encontrada.", 404
             con.commit()
             app.logger.info("Persona eliminada correctamente.")
-            return True
+            return True, "Persona eliminada correctamente.", 200
+        except errors.ForeignKeyViolation:
+            con.rollback()
+            return False, "No se puede eliminar la persona porque está asociada a clientes, proveedores o usuarios.", 400
         except psycopg2.DatabaseError as e:
             con.rollback()
             app.logger.error(f"Error al eliminar persona: {e}")
-            return False
+            return False, "Error al eliminar persona.", 500
         finally:
             cur.close()
             con.close()

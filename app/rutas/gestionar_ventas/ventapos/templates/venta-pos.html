@@ -77,6 +77,34 @@ body {
   font-size: .9rem;
 }
 
+/* ============================================================
+   MODO PANTALLA COMPLETA: oculta sidebar/topbar/footer del layout
+   general para que el POS ocupe toda la pantalla.
+   ============================================================ */
+body { overflow: hidden; }
+#accordionSidebar,
+#content > nav.topbar,
+footer.sticky-footer,
+.scroll-to-top { display: none !important; }
+#content-wrapper, #content { width: 100% !important; }
+#content > .container-fluid { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+
+.pos-topbar-mini { display: flex; align-items: center; gap: .75rem; flex-shrink: 0; }
+.pos-topbar-mini-title {
+  font-size: .8rem; font-weight: 800; color: var(--pos-text-muted);
+  text-transform: uppercase; letter-spacing: .04em;
+  display: flex; align-items: center; gap: .4rem;
+}
+.btn-pos-volver {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--pos-surface); color: var(--pos-text);
+  border: 1px solid var(--pos-border); border-radius: 8px;
+  padding: .35rem .75rem; font-size: .78rem; font-weight: 700;
+  text-decoration: none; box-shadow: var(--pos-shadow);
+}
+.btn-pos-volver:hover { background: var(--pos-surface-hover); color: var(--pos-text); }
+.btn-pos-volver i { font-size: .75rem; }
+
 /* Overrides modo oscuro dentro de modales Bootstrap */
 [data-theme="dark"] .bg-light { background-color: var(--pos-surface-hover) !important; color: var(--pos-text) !important; }
 [data-theme="dark"] .text-dark { color: var(--pos-text) !important; }
@@ -91,7 +119,7 @@ body {
    ============================================================ */
 .pos-container {
   display: flex; flex-direction: column;
-  height: calc(100vh - 30px);
+  height: 100vh;
   gap: .5rem; padding: .5rem;
 }
 
@@ -368,6 +396,14 @@ body {
 
 {% block contenido %}
 <div class="pos-container">
+
+  <!-- MINI BARRA SUPERIOR: VOLVER -->
+  <div class="pos-topbar-mini">
+    <a href="{{ url_for('login.inicio') }}" class="btn-pos-volver" title="Volver al menú principal">
+      <i class="fas fa-arrow-left"></i> Volver
+    </a>
+    <span class="pos-topbar-mini-title"><i class="fas fa-cash-register"></i> Punto de Venta</span>
+  </div>
 
   <!-- BANNER TURNO CERRADO -->
   <div class="banner-caja-cerrada" id="bannerSinApertura">

@@ -14,7 +14,7 @@
     <link href="{{ url_for('static', filename='vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- SB Admin 2 & Plugins -->
+    <!-- SB Admin 2 & DataTables -->
     <link href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/buscador-select.css') }}" rel="stylesheet">
@@ -23,65 +23,67 @@
 
     <style>
         /* ============================================================
-           PALETA DE COLOR AZUL GRAN VÍA (LUMINOSA Y CORPORATIVA)
+           SISTEMA DE DISEÑO UNIFICADO (ALINEADO CON EL PUNTO DE VENTA)
            ============================================================ */
         :root {
-            --gv-font:          'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            
-            /* Azules Principales (En lugar de negro/oscuro) */
-            --gv-blue-deep:     #103e73;  /* Azul base sidebar */
-            --gv-blue-royal:    #16559c;  /* Azul intermedio */
-            --gv-blue-primary:  #1b68bc;  /* Azul de acción y selección */
-            --gv-blue-light:    #e8f1fa;  /* Azul muy suave para fondos/hover */
-            --gv-blue-glow:     rgba(27, 104, 188, 0.25);
-            
-            /* Acento Amarillo Gran Vía */
-            --gv-yellow:        #fbb01b;
-            
-            /* Acentos de Módulos */
-            --gv-mod-venta:     #fbb01b; /* Ámbar/Amarillo */
-            --gv-mod-compra:    #10b981; /* Verde Esmeralda */
-            --gv-mod-prod:      #38bdf8; /* Azul Celeste */
-            --gv-mod-ref:       #818cf8; /* Azul Índigo */
+            --pos-font:            'Plus Jakarta Sans', sans-serif;
 
-            /* Superficies & Fondos */
-            --gv-bg-body:       #f0f4f9;  /* Fondo con tinte azul suave */
-            --gv-card-bg:       #ffffff;
-            --gv-border:        #dbe5f1;
-            --gv-text-dark:     #172b4d;
-            --gv-text-muted:    #627d98;
-            
-            --gv-radius:        12px;
-            --gv-shadow-sm:     0 2px 4px rgba(16, 62, 115, 0.04);
-            --gv-shadow-md:     0 6px 16px rgba(16, 62, 115, 0.07);
+            --pos-bg:              #f1f5f9;
+            --pos-surface:         #ffffff;
+            --pos-surface-hover:   #f8fafc;
+            --pos-border:          #cbd5e1;
+            --pos-text:            #0f172a;
+            --pos-text-muted:      #64748b;
+
+            /* Azules Gran Vía / POS */
+            --pos-primary:         #1e3a8a; /* Azul Marino Gran Vía */
+            --pos-primary-hover:   #172554;
+            --pos-primary-glow:    rgba(30, 58, 138, 0.15);
+            --pos-navy-panel:      #1e40af;
+
+            /* Estados & Acentos */
+            --pos-success:         #15803d;
+            --pos-success-hover:   #166534;
+            --pos-danger:          #b91c1c;
+            --pos-danger-hover:    #991b1b;
+            --pos-warning:         #b45309;
+
+            --pos-display-bg:      #fef08a;
+            --pos-display-border:  #eab308;
+            --pos-display-text:    #1e293b;
+
+            /* Sombras & Radios */
+            --pos-shadow:          0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --pos-shadow-lg:       0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+            --pos-radius:          12px;
         }
 
         *, *::before, *::after { box-sizing: border-box; }
 
         body {
-            font-family: var(--gv-font) !important;
-            background-color: var(--gv-bg-body) !important;
-            color: var(--gv-text-dark) !important;
+            font-family: var(--pos-font) !important;
+            background: var(--pos-bg) !important;
+            color: var(--pos-text) !important;
             font-size: 0.88rem;
             letter-spacing: -0.01em;
             overflow-x: hidden;
         }
 
-        /* Scrollbar en tonos azules */
+        /* Scrollbar Unificado */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #b8cce2; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #8ba9ce; }
+        ::-webkit-scrollbar-thumb { background: var(--pos-border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--pos-text-muted); }
 
         /* ============================================================
-           SIDEBAR AZUL REAL (SIN TONOS NEGROS)
+           SIDEBAR AZUL MARINO POS
            ============================================================ */
         #accordionSidebar {
-            background: linear-gradient(180deg, var(--gv-blue-royal) 0%, var(--gv-blue-deep) 100%) !important;
+            background: linear-gradient(180deg, var(--pos-navy-panel) 0%, var(--pos-primary) 100%) !important;
             width: 250px !important;
             min-height: 100vh;
             border-right: none !important;
-            box-shadow: 4px 0 20px rgba(16, 62, 115, 0.18);
+            box-shadow: 4px 0 20px rgba(30, 58, 138, 0.2);
             padding-bottom: 2rem;
             z-index: 10;
         }
@@ -89,7 +91,7 @@
         .sidebar-brand {
             padding: 1.4rem 1.2rem !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.04);
             height: auto !important;
         }
         .sidebar-brand-icon {
@@ -100,7 +102,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
             padding: 2px;
         }
         .sidebar-brand-icon img {
@@ -117,8 +119,9 @@
         .sidebar-brand-text sup {
             font-size: 0.65rem;
             font-weight: 800;
-            color: var(--gv-yellow);
-            background: rgba(251, 176, 27, 0.2);
+            color: #1e293b;
+            background: var(--pos-display-bg);
+            border: 1px solid var(--pos-display-border);
             padding: 2px 5px;
             border-radius: 4px;
             margin-left: 3px;
@@ -133,18 +136,18 @@
             font-size: 0.68rem !important;
             font-weight: 800 !important;
             letter-spacing: 0.1em !important;
-            color: rgba(255, 255, 255, 0.5) !important;
+            color: rgba(255, 255, 255, 0.55) !important;
             padding: 1.1rem 1.4rem 0.4rem !important;
             text-transform: uppercase;
         }
 
         /* Enlaces del Sidebar */
         .nav-item .nav-link {
-            color: rgba(255, 255, 255, 0.82) !important;
+            color: rgba(255, 255, 255, 0.85) !important;
             font-size: 0.86rem !important;
             font-weight: 600 !important;
             padding: 0.75rem 1.15rem !important;
-            border-radius: var(--gv-radius) !important;
+            border-radius: var(--pos-radius) !important;
             margin: 0.2rem 0.8rem !important;
             transition: all 0.2s ease !important;
             display: flex !important;
@@ -156,7 +159,7 @@
             font-size: 0.95rem;
             width: 20px;
             text-align: center;
-            opacity: 0.85;
+            opacity: 0.9;
             transition: all 0.2s ease;
         }
         .nav-item .nav-link:hover {
@@ -174,7 +177,7 @@
             color: #ffffff !important;
         }
         .nav-item .nav-link:not(.collapsed) i {
-            color: var(--gv-yellow);
+            color: var(--pos-display-bg);
             opacity: 1;
         }
         .nav-item .nav-link:not(.collapsed)::before {
@@ -184,7 +187,7 @@
             top: 20%;
             height: 60%;
             width: 4px;
-            background: var(--gv-yellow);
+            background: var(--pos-display-bg);
             border-radius: 0 4px 4px 0;
         }
 
@@ -192,23 +195,22 @@
            SUBMENÚS EN AZUL TRANSLÚCIDO
            ============================================================ */
         .collapse-inner {
-            background: rgba(10, 36, 68, 0.35) !important;
+            background: rgba(15, 23, 42, 0.4) !important;
             border-radius: 10px !important;
             margin: 0.2rem 0.8rem 0.6rem !important;
             padding: 0.4rem !important;
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
 
-        /* Borde distintivo por módulo */
-        .collapse-inner.mod-caja   { border-left: 3px solid var(--gv-mod-venta) !important; }
-        .collapse-inner.mod-compra { border-left: 3px solid var(--gv-mod-compra) !important; }
-        .collapse-inner.mod-prod   { border-left: 3px solid var(--gv-mod-prod) !important; }
-        .collapse-inner.mod-ref    { border-left: 3px solid var(--gv-mod-ref) !important; }
+        .collapse-inner.mod-caja   { border-left: 3px solid var(--pos-display-border) !important; }
+        .collapse-inner.mod-compra { border-left: 3px solid var(--pos-success) !important; }
+        .collapse-inner.mod-prod   { border-left: 3px solid #38bdf8 !important; }
+        .collapse-inner.mod-ref    { border-left: 3px solid #818cf8 !important; }
 
         .collapse-item {
             font-size: 0.82rem !important;
             font-weight: 500 !important;
-            color: rgba(255, 255, 255, 0.78) !important;
+            color: rgba(255, 255, 255, 0.8) !important;
             padding: 0.5rem 0.85rem !important;
             border-radius: 6px !important;
             display: block;
@@ -221,8 +223,8 @@
             padding-left: 1.15rem !important;
         }
         .collapse-item.active {
-            background: var(--gv-yellow) !important;
-            color: var(--gv-blue-deep) !important;
+            background: var(--pos-display-bg) !important;
+            color: var(--pos-display-text) !important;
             font-weight: 700 !important;
         }
 
@@ -249,31 +251,31 @@
         }
 
         /* ============================================================
-           TOPBAR AZULADA CRISTALINA
+           TOPBAR AZUL CRISTAL
            ============================================================ */
         .topbar {
             height: 66px !important;
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--gv-border) !important;
-            box-shadow: var(--gv-shadow-sm) !important;
+            border-bottom: 1px solid var(--pos-border) !important;
+            box-shadow: var(--pos-shadow) !important;
             padding: 0 1.75rem !important;
         }
 
         .topbar-page-title {
             font-size: 0.85rem;
             font-weight: 700;
-            color: var(--gv-text-muted);
+            color: var(--pos-text-muted);
             display: flex;
             align-items: center;
             gap: 0.55rem;
         }
-        .topbar-page-title i { color: var(--gv-blue-primary); }
-        .topbar-page-title .sep { color: #cbd5e1; }
+        .topbar-page-title i { color: var(--pos-primary); }
+        .topbar-page-title .sep { color: var(--pos-border); }
         .topbar-page-title .current {
-            color: var(--gv-blue-deep);
-            background: var(--gv-blue-light);
+            color: var(--pos-primary);
+            background: #e0e7ff;
             padding: 0.25rem 0.75rem;
             border-radius: 6px;
             font-weight: 700;
@@ -286,15 +288,15 @@
             gap: 0.75rem;
             padding: 0.4rem 0.85rem;
             border-radius: 50px;
-            background: var(--gv-blue-light);
-            border: 1px solid var(--gv-border);
+            background: #f8fafc;
+            border: 1px solid var(--pos-border);
             transition: all 0.2s ease;
             text-decoration: none !important;
         }
         .user-pill:hover {
             background: #ffffff;
-            box-shadow: var(--gv-shadow-sm);
-            border-color: var(--gv-blue-primary);
+            box-shadow: var(--pos-shadow);
+            border-color: var(--pos-primary);
         }
         .user-avatar-wrap {
             position: relative;
@@ -313,7 +315,7 @@
             right: 0;
             width: 9px;
             height: 9px;
-            background-color: #10b981;
+            background-color: var(--pos-success);
             border: 2px solid #ffffff;
             border-radius: 50%;
         }
@@ -321,28 +323,28 @@
         /* ============================================================
            CARDS & TABLAS
            ============================================================ */
-        #content-wrapper { background: var(--gv-bg-body) !important; }
-        #content { background: var(--gv-bg-body) !important; }
-        .container-fluid { padding: 1.75rem 1.75rem 2.5rem !important; }
+        #content-wrapper { background: var(--pos-bg) !important; }
+        #content { background: var(--pos-bg) !important; }
+        .container-fluid { padding: 1.5rem 1.5rem 2.5rem !important; }
 
         .card {
-            border: 1px solid var(--gv-border) !important;
-            border-radius: var(--gv-radius) !important;
-            box-shadow: var(--gv-shadow-sm) !important;
-            background: #ffffff !important;
+            border: 1px solid var(--pos-border) !important;
+            border-radius: var(--pos-radius) !important;
+            box-shadow: var(--pos-shadow) !important;
+            background: var(--pos-surface) !important;
             overflow: hidden;
             transition: box-shadow 0.25s ease;
         }
         .card:hover {
-            box-shadow: var(--gv-shadow-md) !important;
+            box-shadow: var(--pos-shadow-lg) !important;
         }
         .card-header {
-            border-bottom: 1px solid var(--gv-border) !important;
-            background: #ffffff !important;
+            border-bottom: 1px solid var(--pos-border) !important;
+            background: var(--pos-surface) !important;
             font-weight: 700 !important;
             font-size: 0.92rem !important;
             padding: 1.1rem 1.35rem !important;
-            color: var(--gv-blue-deep) !important;
+            color: var(--pos-primary) !important;
         }
 
         table.dataTable thead th {
@@ -350,10 +352,10 @@
             font-weight: 700 !important;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: var(--gv-text-muted) !important;
-            background: #f8fafd !important;
+            color: var(--pos-text-muted) !important;
+            background: var(--pos-surface-hover) !important;
             border-top: none !important;
-            border-bottom: 1.5px solid var(--gv-border) !important;
+            border-bottom: 1.5px solid var(--pos-border) !important;
             padding: 0.85rem 1rem !important;
         }
         table.dataTable tbody td {
@@ -363,40 +365,40 @@
             padding: 0.85rem 1rem !important;
         }
         table.dataTable tbody tr:hover td {
-            background: var(--gv-blue-light) !important;
+            background: #eef2ff !important;
         }
 
         .dataTables_paginate .paginate_button.current, 
         .dataTables_paginate .paginate_button.current:hover {
-            background: var(--gv-blue-primary) !important;
+            background: var(--pos-primary) !important;
             color: #ffffff !important;
-            border-color: var(--gv-blue-primary) !important;
+            border-color: var(--pos-primary) !important;
             border-radius: 8px !important;
         }
 
         .sticky-footer {
             background: #ffffff !important;
-            border-top: 1px solid var(--gv-border) !important;
+            border-top: 1px solid var(--pos-border) !important;
             padding: 1.1rem 0 !important;
         }
         .sticky-footer .copyright {
             font-size: 0.8rem !important;
-            color: var(--gv-text-muted) !important;
+            color: var(--pos-text-muted) !important;
             font-weight: 600 !important;
         }
 
         .scroll-to-top {
-            background: var(--gv-blue-primary) !important;
+            background: var(--pos-primary) !important;
             border-radius: 50% !important;
             width: 42px !important; height: 42px !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            box-shadow: 0 6px 16px var(--gv-blue-glow) !important;
+            box-shadow: 0 6px 16px var(--pos-primary-glow) !important;
             transition: all 0.2s ease !important;
         }
         .scroll-to-top:hover {
-            background: var(--gv-blue-deep) !important;
+            background: var(--pos-primary-hover) !important;
             transform: translateY(-3px);
         }
     </style>
@@ -514,8 +516,8 @@
           <a class="collapse-item" href="{{ url_for('solmod.solicitud_index') }}">R. Solicitud</a>
           <a class="collapse-item" href="{{ url_for('presumod.presupuesto_index') }}">R. Presupuesto</a>
           <a class="collapse-item" href="{{ url_for('pdcmod.pedidos_index') }}">Generar Pedido</a>
-          <a class="collapse-item" href="{{ url_for('ocmod.ordenes_index') }}">Generar OC</a>
           <a class="collapse-item" href="{{ url_for('rm_mod.recepcion_mercaderia') }}">Rec. Mercaderías</a>
+          <a class="collapse-item" href="{{ url_for('facmod.facturas_index') }}">Facturas</a>
         </div>
       </div>
     </li>
@@ -560,7 +562,7 @@
       <nav class="navbar navbar-expand navbar-light topbar mb-0 static-top">
 
         <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-          <i class="fa fa-bars" style="color:var(--gv-text-muted)"></i>
+          <i class="fa fa-bars" style="color:var(--pos-text-muted)"></i>
         </button>
 
         <div class="topbar-page-title d-none d-sm-flex">

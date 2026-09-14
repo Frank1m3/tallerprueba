@@ -2,12 +2,13 @@ from flask import current_app as app
 from app.conexion.Conexion import Conexion
 from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_dto import PresupuestoCompraDto
 from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_detalle_dto import PresupuestoCompraDetalleDto
-from app.dao.gestionar_compras.registrar_solicitud_compras.SolicitudCompraDao import SolicitudCompraDao
 
 class PresupuestoCompraDao:
     """
     DAO para manejar operaciones de presupuesto de compra.
     """
+
+    ESTADOS_VALIDOS = ('PENDIENTE', 'APROBADO', 'RECHAZADO', 'ANULADO')
 
     # ================================
     # Obtener siguiente código
@@ -30,8 +31,8 @@ class PresupuestoCompraDao:
         sql_cab = """
             INSERT INTO presupuesto_compra_cab
             (cod_presupuesto, fun_id, id_proveedor, fecha_emision,
-             fecha_vencimiento, condicion_compra, estado, archivo)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+             fecha_vencimiento, condicion_compra, estado, archivo, id_solicitud)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
             RETURNING id_pre_compra_cab
         """
         sql_det = """
@@ -51,7 +52,8 @@ class PresupuestoCompraDao:
                 dto.fecha_vencimiento if dto.fecha_vencimiento else None,
                 dto.condicion_compra if dto.condicion_compra else None,
                 dto.estado,
-                dto.archivo
+                dto.archivo,
+                dto.id_solicitud
             ))
             id_cab = cur.fetchone()[0]
 
@@ -110,7 +112,7 @@ class PresupuestoCompraDao:
     # ================================
     # Buscar mercaderías por código, descripción o código de barras
     # ================================
-    def buscar_mercaderias(self, filtro='', id_sucursal=None):
+    def buscar_mercaderias(self, filtro='', id_sucursal=None, limit=10):
         sql = """
         SELECT i.id_item,
                i.item_code,
@@ -135,10 +137,14 @@ class PresupuestoCompraDao:
             sql += " AND (st.id_sucursal = %s OR st.id_sucursal IS NULL)"
             params.append(int(id_sucursal))
 
+        # Sin esto, una búsqueda vacía o muy general devolvía el catálogo
+        # entero (decenas de miles de filas) y saturaba la tabla del modal.
         sql += """
         GROUP BY i.id_item, i.item_code, i.descripcion, i.precio_unitario, i.id_proveedor, barras_agg.barras
         ORDER BY i.descripcion
+        LIMIT %s
         """
+        params.append(limit)
 
         con = Conexion().getConexion()
         cur = con.cursor()
@@ -169,25 +175,40 @@ class PresupuestoCompraDao:
     # Obtener datos de una solicitud de compra para presupuesto
     # ================================
     def obtener_solicitud_para_presupuesto(self, nro_solicitud: int):
-        dao = SolicitudCompraDao()
-        solicitud = dao.obtener_solicitud_por_nro(nro_solicitud)
-        if not solicitud:
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT id_solicitud FROM solicitud_compra_cab WHERE nro_solicitud = %s", (nro_solicitud,))
+            fila = cur.fetchone()
+            if not fila:
+                return {'success': False, 'detalles': []}
+            id_solicitud = fila[0]
+
+            # Se trae item_code/precio/stock reales del item (no solo lo que
+            # hay en el detalle de la solicitud), igual que ya hace
+            # PedidoDeComprasDao.obtener_solicitud_por_nro para "Con Pedido".
+            cur.execute("""
+                SELECT sd.id_item, i.item_code, i.descripcion, sd.cantidad,
+                       COALESCE(i.precio_unitario, 0),
+                       COALESCE((SELECT SUM(s.cantidad) FROM stock s WHERE s.id_item = i.id_item), 0)
+                FROM solicitud_compra_det sd
+                LEFT JOIN item i ON i.id_item = sd.id_item
+                WHERE sd.id_solicitud = %s
+            """, (id_solicitud,))
+            detalles = [{
+                'id_item': r[0], 'item_code': r[1], 'codigo': r[1],
+                'descripcion': r[2] or '', 'cantidad': float(r[3]),
+                'precio_unitario': float(r[4]), 'precio': float(r[4]),
+                'stock': float(r[5])
+            } for r in cur.fetchall()]
+
+            return {'success': True, 'id_solicitud': id_solicitud, 'detalles': detalles}
+        except Exception as e:
+            app.logger.error(f"Error al obtener solicitud {nro_solicitud} para presupuesto: {e}")
             return {'success': False, 'detalles': []}
-
-        detalles = []
-        for d in solicitud['detalles']:
-            detalles.append({
-                'id_item': d.get('id_item'),
-                'item_code': d.get('id_item'),        # <-- agregado
-                'codigo': d.get('id_item'),           # <-- compatibilidad front
-                'descripcion': d.get('nombre_producto'),
-                'stock': d.get('stock', 0),
-                'cantidad': d.get('cantidad', 0),
-                'precio_unitario': d.get('precio', 0), # <-- agregado
-                'precio': d.get('precio', 0)          # <-- compatibilidad front
-            })
-
-        return {'success': True, 'detalles': detalles}
+        finally:
+            cur.close()
+            con.close()
     # ================================
     # Obtener presupuesto completo por ID (cabecera + detalle)
     # ================================
@@ -253,20 +274,21 @@ class PresupuestoCompraDao:
             con.close()
 
     # ================================
-    # Cambiar estado (solo desde PENDIENTE)
+    # Cambiar estado (libre: se puede pasar a cualquiera de los estados
+    # válidos sin importar el estado actual, para poder corregir un
+    # presupuesto que quedó mal marcado desde el listado).
     # ================================
     def cambiar_estado(self, id_pre_compra_cab, nuevo_estado):
+        if nuevo_estado not in self.ESTADOS_VALIDOS:
+            return False, f"Estado inválido. Use uno de: {', '.join(self.ESTADOS_VALIDOS)}"
         con = Conexion().getConexion()
         cur = con.cursor()
         try:
-            cur.execute("SELECT estado FROM presupuesto_compra_cab WHERE id_pre_compra_cab = %s", (id_pre_compra_cab,))
-            fila = cur.fetchone()
-            if not fila:
-                return False, 'No existe el presupuesto'
-            if fila[0] != 'PENDIENTE':
-                return False, f'El presupuesto ya está {fila[0]}'
             cur.execute("UPDATE presupuesto_compra_cab SET estado = %s WHERE id_pre_compra_cab = %s",
                         (nuevo_estado, id_pre_compra_cab))
+            if cur.rowcount == 0:
+                con.rollback()
+                return False, 'No existe el presupuesto'
             con.commit()
             return True, None
         except Exception as e:

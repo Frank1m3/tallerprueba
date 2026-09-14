@@ -98,6 +98,63 @@ class ItemDao:
         finally:
             cur.close(); con.close()
 
+    # ---- Búsqueda acotada para los buscadores remotos (producto en solicitudes,
+    #      órdenes, pedidos, etc). Nunca devuelve el catálogo entero: siempre
+    #      limita resultados y calcula el stock con una subconsulta, no con un
+    #      JOIN, para no duplicar filas por cada fila de stock del item. ----
+    def buscar(self, q=None, id_sucursal=None, id_deposito=None, id_proveedor=None, limit=30):
+        con = Conexion().getConexion(); cur = con.cursor()
+        try:
+            condiciones = ["i.activo = TRUE"]
+            params = {"id_sucursal": id_sucursal, "id_deposito": id_deposito, "limit": min(limit, 50)}
+            orden = "i.descripcion"
+            if q:
+                condiciones.append("(i.descripcion ILIKE %(q)s OR i.item_code ILIKE %(q)s)")
+                params["q"] = f"%{q}%"
+                params["q_exacto"] = q
+                params["q_prefijo"] = f"{q}%"
+                # Prioriza: código exacto > código que empieza así > el resto por descripción,
+                # para que un código corto (ej. "5", "9") no quede enterrado entre 30
+                # resultados alfabéticos por descripción.
+                orden = """
+                    CASE
+                        WHEN i.item_code = %(q_exacto)s THEN 0
+                        WHEN i.item_code ILIKE %(q_prefijo)s THEN 1
+                        ELSE 2
+                    END, i.descripcion
+                """
+            if id_proveedor:
+                condiciones.append("i.id_proveedor = %(id_proveedor)s")
+                params["id_proveedor"] = id_proveedor
+            where_sql = " AND ".join(condiciones)
+            sql = f"""
+                SELECT i.id_item, i.item_code, i.descripcion,
+                       COALESCE(i.precio_unitario, 0) AS precio_unitario,
+                       COALESCE((
+                           SELECT SUM(s.cantidad) FROM stock s
+                           WHERE s.id_item = i.id_item
+                             AND (%(id_sucursal)s IS NULL OR s.id_sucursal = %(id_sucursal)s)
+                             AND (%(id_deposito)s IS NULL OR s.id_deposito = %(id_deposito)s)
+                       ), 0) AS stock,
+                       i.id_proveedor, COALESCE(p.prov_nombre, '') AS proveedor_nombre,
+                       COALESCE(i.unidad_med, 3) AS unidad_med
+                FROM item i
+                LEFT JOIN proveedor p ON p.id_proveedor = i.id_proveedor
+                WHERE {where_sql}
+                ORDER BY {orden}
+                LIMIT %(limit)s
+            """
+            cur.execute(sql, params)
+            return [{
+                "id_item": r[0], "item_code": r[1], "descripcion": r[2],
+                "precio_unitario": float(r[3]), "stock": float(r[4]),
+                "id_proveedor": r[5], "proveedor_nombre": r[6], "unidad_med": r[7]
+            } for r in cur.fetchall()]
+        except psycopg2.Error as e:
+            app.logger.error(f"Error en buscar item: {e}"); return []
+        finally:
+            cur.close(); con.close()
+
     # ---- Combos para los selects del formulario ----
     def getCombos(self):
         con = Conexion().getConexion(); cur = con.cursor()

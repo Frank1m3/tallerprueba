@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, jsonify, current_app as app
 from app.dao.referenciales.sucursal.sucursal_dao import SucursalDao
 from app.dao.referenciales.funcionario.funcionario_dao import FuncionarioDao
-from app.dao.referenciales.producto.ProductoDao import ProductoDao
 from app.dao.gestionar_compras.registrar_pedido_compras.pedido_de_compras_dao import PedidoDeComprasDao
 from app.dao.referenciales.proveedor.ProveedorDao import ProveedorDao
 
@@ -26,22 +25,21 @@ def pedidos_agregar():
     # Instanciamos los DAOs
     sdao = SucursalDao()
     empdao = FuncionarioDao()
-    pdao = ProductoDao()
     provdao = ProveedorDao()
 
     # Listas referenciales para los selects
     sucursales = sdao.getSucursales()
     funcionarios = empdao.get_funcionarios()
     proveedores = provdao.getProveedores()
-    productos = pdao.get_productos()
+    # El producto ya no se precarga (el catálogo tiene decenas de miles de
+    # items); el select busca en /api/v1/item/buscar mientras se escribe.
 
     # Renderizamos la plantilla
     return render_template(
         'pedidos-agregar.html',
         sucursales=sucursales,
         funcionarios=funcionarios,
-        proveedores=proveedores,
-        productos=productos
+        proveedores=proveedores
     )
 
 

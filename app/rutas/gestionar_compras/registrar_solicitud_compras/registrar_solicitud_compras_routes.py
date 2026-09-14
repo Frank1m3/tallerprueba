@@ -18,25 +18,21 @@ def solicitud_index():
 def solicitud_modificar(id):
     dao = SolicitudCompraDao()
     solicitud = dao.obtener_solicitud_por_id(id)
-    productos = dao.obtener_productos()
-    return render_template('solicitud_modificar.html', solicitud=solicitud, productos=productos)
+    return render_template('solicitud_modificar.html', solicitud=solicitud)
 
 
 @solmod.route('/solicitud-agregar')
 def solicitud_agregar():
     sdao = SucursalDao()
     fdao = FuncionarioDao()
-    dao = SolicitudCompraDao()
 
     sucursales = sdao.getSucursales()
     funcionarios = fdao.get_funcionarios()
-    productos = dao.obtener_productos()
     fecha_actual = date.today().strftime("%Y-%m-%d")
 
     return render_template(
         'solicitud_agregar.html',
         sucursales=sucursales,
         funcionarios=funcionarios,
-        productos=productos,
         fecha_actual=fecha_actual
     )

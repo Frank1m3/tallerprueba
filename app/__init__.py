@@ -145,12 +145,14 @@ from app.rutas.gestionar_compras.registrar_solicitud_compras.registrar_solicitud
 from app.rutas.gestionar_compras.registrar_presupuesto.registrar_presupuesto_routes         import presumod
 from app.rutas.gestionar_compras.registrar_recepcion_compras.recepcion_mercaderia_routes    import rm_mod
 from app.rutas.gestionar_compras.registrar_orden_compras.registrar_orden_compras_routes     import ocmod
+from app.rutas.gestionar_compras.registrar_factura_compras.registrar_factura_compras_routes import facmod
 
 app.register_blueprint(pdcmod,   url_prefix=f'{modulo_compras}/registrar-pedido-compras')
 app.register_blueprint(solmod,   url_prefix=f'{modulo_compras}/registrar-solicitud-compras')
 app.register_blueprint(presumod, url_prefix=f'{modulo_compras}/registrar-presupuesto')
 app.register_blueprint(rm_mod,   url_prefix=f'{modulo_compras}/registrar-recepcion-compras')
 app.register_blueprint(ocmod,    url_prefix=f'{modulo_compras}/registrar-orden-compras')
+app.register_blueprint(facmod,   url_prefix=f'{modulo_compras}/registrar-factura-compras')
 
 # ================================
 # Gestionar Compras - APIs
@@ -160,12 +162,14 @@ from app.rutas.gestionar_compras.registrar_solicitud_compras.registrar_solicitud
 from app.rutas.gestionar_compras.registrar_presupuesto.registrar_presupuesto_api            import presuapi
 from app.rutas.gestionar_compras.registrar_recepcion_compras.recepcion_mercaderia_api       import rm_api
 from app.rutas.gestionar_compras.registrar_orden_compras.registrar_orden_compras_api        import ocapi
+from app.rutas.gestionar_compras.registrar_factura_compras.registrar_factura_compras_api    import facapi
 
 app.register_blueprint(pdcapi,    url_prefix=f'{api_v1}{modulo_compras}/registrar-pedido-compras')
 app.register_blueprint(scapi,     url_prefix=f'{api_v1}{modulo_compras}/registrar-solicitud-compras')
 app.register_blueprint(presuapi,  url_prefix=f'{api_v1}{modulo_compras}/registrar-presupuesto')
 app.register_blueprint(rm_api,    url_prefix=f'{api_v1}{modulo_compras}/recepcion-mercaderias')
 app.register_blueprint(ocapi,     url_prefix=f'{api_v1}{modulo_compras}/registrar-orden-compras')
+app.register_blueprint(facapi,    url_prefix=f'{api_v1}{modulo_compras}/registrar-factura-compras')
 
 # ================================
 # Cierre - Rutas y APIs
@@ -198,3 +202,23 @@ from app.rutas.gestionar_ventas.arqueo.arqueo_api    import arqueoapi
 
 app.register_blueprint(arqueomod, url_prefix=f'{modulo_ventas}')
 app.register_blueprint(arqueoapi, url_prefix=api_v1)
+
+# ================================
+# Control Global de Sesión
+# ================================
+from flask import session, redirect, url_for, flash, request
+
+@app.before_request
+def verificar_sesion_global():
+    rutas_publicas = ['/login', '/static', '/favicon.ico']
+    path = request.path
+    for p in rutas_publicas:
+        if path.startswith(p):
+            return None
+    
+    modulos_protegidos = [modulo_referenciales, modulo_compras, modulo_ventas]
+    for mod in modulos_protegidos:
+        if path.startswith(mod):
+            if 'usuario_nombre' not in session and 'usuario_id' not in session:
+                flash('Debe iniciar sesión para acceder al sistema.', 'warning')
+                return redirect(url_for('login.login'))

@@ -131,7 +131,7 @@
   .btn-accion:active { transform: scale(.97); }
   .btn-accion:disabled { opacity: .4; cursor: not-allowed; transform: none; }
   .btn-mod   { background: #fffbeb; color: var(--sc-warn);   border: 1px solid #fcd34d; }
-  .btn-anul  { background: #fff1f2; color: var(--sc-danger); border: 1px solid #fca5a5; }
+  .btn-estado{ background: #eef2ff; color: var(--sc-primary); border: 1px solid #c7d2fe; }
 
   /* Botón agregar principal */
   .btn-nuevo {
@@ -212,11 +212,14 @@
 <script>
 $(document).ready(function(){
 
+  const ESTADOS = ['PENDIENTE', 'APROBADA', 'ANULADO'];
+
   const estadoBadge = (estado) => {
     const map = {
       'PENDIENTE':  'badge-pendiente',
-      'APROBADO':   'badge-aprobado',
+      'APROBADA':   'badge-aprobado',
       'ANULADO':    'badge-anulado',
+      'ANULADA':    'badge-anulado',
       'PROCESADO':  'badge-procesado',
     };
     const cls = map[estado] || 'badge-pendiente';
@@ -246,8 +249,8 @@ $(document).ready(function(){
             <button class="btn-accion btn-mod btn-modificar me-1" data-id="${row.id_solicitud}" ${!ok?'disabled':''}>
               <i class="fas fa-edit"></i> Modificar
             </button>
-            <button class="btn-accion btn-anul btn-anular" data-id="${row.id_solicitud}" ${!ok?'disabled':''}>
-              <i class="fas fa-ban"></i> Anular
+            <button class="btn-accion btn-estado btn-cambiar-estado" data-id="${row.id_solicitud}" data-estado="${row.estado}">
+              <i class="fas fa-random"></i> Cambiar estado
             </button>`;
         }
       }
@@ -263,33 +266,40 @@ $(document).ready(function(){
     window.open(`/gestionar-compras/registrar-solicitud-compras/solicitudes/modificar/${id}`, '_blank');
   });
 
-  // Anular
-  $('#tbl_solicitudes tbody').on('click', '.btn-anular', function(){
+  // Cambiar estado (libre; anular ahora también se hace desde acá, eligiendo ANULADO)
+  $('#tbl_solicitudes tbody').on('click', '.btn-cambiar-estado', function(){
     const id = $(this).data('id');
+    const estadoActual = $(this).data('estado');
+    const opciones = ESTADOS.map(e => `<option value="${e}" ${e===estadoActual?'selected':''}>${e}</option>`).join('');
     Swal.fire({
-      title: '¿Anular solicitud?',
-      text: 'Esta acción cambiará el estado a ANULADO y no podrá revertirse.',
-      icon: 'warning',
+      title: 'Cambiar estado',
+      width: 320,
+      padding: '1rem',
+      html: `<select id="swal_nuevo_estado" class="swal2-select" style="display:block;width:100%;margin:0;padding:.4rem;font-size:.85rem;border-radius:6px;border:1px solid #d1d5db">${opciones}</select>`,
       showCancelButton: true,
-      confirmButtonText: 'Sí, anular',
+      confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc2626',
+      confirmButtonColor: '#1a56db',
+      preConfirm: () => document.getElementById('swal_nuevo_estado').value
     }).then(r => {
       if(!r.isConfirmed) return;
-      fetch(`/api/v1/gestionar-compras/registrar-solicitud-compras/anular/${id}`, {
+      const nuevoEstado = r.value;
+      if(nuevoEstado === estadoActual) return;
+      fetch(`/api/v1/gestionar-compras/registrar-solicitud-compras/estado/${id}`, {
         method: 'PUT',
-        headers: {'Content-Type':'application/json'}
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ estado: nuevoEstado })
       })
       .then(r => r.json())
       .then(data => {
         if(data.success){
           tabla.ajax.reload(null, false);
-          Swal.fire({ title:'Anulada', text:'La solicitud fue anulada.', icon:'success', timer:1800, showConfirmButton:false });
+          Swal.fire({ title:'Listo', text:'El estado fue actualizado.', icon:'success', timer:1800, showConfirmButton:false });
         } else {
-          Swal.fire('Error', data.error || 'No se pudo anular', 'error');
+          Swal.fire('Error', data.error || 'No se pudo cambiar el estado', 'error');
         }
       })
-      .catch(() => Swal.fire('Error','Ocurrió un error al anular.','error'));
+      .catch(() => Swal.fire('Error','Ocurrió un error al cambiar el estado.','error'));
     });
   });
 

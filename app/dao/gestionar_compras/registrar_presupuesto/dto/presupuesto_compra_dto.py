@@ -18,7 +18,8 @@ class PresupuestoCompraDto:
         condicion_compra: Optional[date] = None,
         estado: str = 'PENDIENTE',
         detalles: Optional[List[PresupuestoCompraDetalleDto]] = None,
-        archivo: Optional[str] = None        # <-- Para guardar nombre/ruta del archivo
+        archivo: Optional[str] = None,        # <-- Para guardar nombre/ruta del archivo
+        id_solicitud: Optional[int] = None    # <-- Solicitud de origen (opcional)
     ):
         self.__id_pre_compra_cab = id_pre_compra_cab
         self.cod_presupuesto = cod_presupuesto
@@ -31,6 +32,7 @@ class PresupuestoCompraDto:
         self.estado = estado
         self.detalles = detalles or []
         self.archivo = archivo
+        self.id_solicitud = id_solicitud
 
     @property
     def id_pre_compra_cab(self) -> Optional[int]:
@@ -121,3 +123,11 @@ class PresupuestoCompraDto:
     @archivo.setter
     def archivo(self, valor: Optional[str]):
         self.__archivo = valor
+
+    @property
+    def id_solicitud(self) -> Optional[int]:
+        return self.__id_solicitud
+
+    @id_solicitud.setter
+    def id_solicitud(self, valor: Optional[int]):
+        self.__id_solicitud = valor

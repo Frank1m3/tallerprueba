@@ -66,9 +66,6 @@
           <label class="sc-label">Producto</label>
           <select id="selectProducto" class="form-control">
             <option value="">— Seleccione —</option>
-            {% for prod in productos %}
-              <option value="{{ prod.id_item }}" data-unidad="{{ prod.unidad_med }}">{{ prod.nombre_producto }}</option>
-            {% endfor %}
           </select>
         </div>
         <div class="col-md-3"><label class="sc-label">Cantidad</label><input type="number" id="inputCantidad" class="form-control" value="1" min="1"></div>
@@ -109,14 +106,27 @@
 {% block js %}
 <script>
 $(document).ready(function(){
-  $('#selectProducto').buscadorSelect({ placeholder: 'Buscar producto...' });
+  $('#selectProducto').buscadorSelect({
+    placeholder: 'Buscar producto...',
+    remote: {
+      url: '/api/v1/item/buscar',
+      minLength: 1,
+      mapItem: function(p){
+        return {
+          value: p.id_item,
+          text: p.item_code + ' - ' + p.descripcion,
+          data: { nombre: p.descripcion, unidad: p.unidad_med }
+        };
+      }
+    }
+  });
 
   function actualizarContador(){ const n = $('#tblDetalle tbody tr').length; $('#lbl_items').text(n + ' ítem' + (n!==1?'s':'')); }
 
   $('#btnAgregarProducto').on('click', function(){
     const select = $('#selectProducto');
     const id_item = select.val();
-    const nombre = select.find('option:selected').text().trim();
+    const nombre = select.find('option:selected').data('nombre') || select.find('option:selected').text().trim();
     const unidad = select.find('option:selected').data('unidad') || 1;
     const cantidad = parseFloat($('#inputCantidad').val()) || 1;
     if(!id_item){ return Swal.fire({title:'Atención', text:'Seleccione un producto.', icon:'warning', confirmButtonColor:'#1a56db'}); }

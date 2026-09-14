@@ -2,7 +2,6 @@ from datetime import date
 from flask import Blueprint, jsonify, request, current_app as app
 from app.dao.gestionar_compras.registrar_presupuesto.PresupuestoDao import PresupuestoCompraDao
 from app.dao.referenciales.proveedor.ProveedorDao import ProveedorDao
-from app.dao.gestionar_compras.registrar_solicitud_compras.SolicitudCompraDao import SolicitudCompraDao
 from app import csrf
 
 presuapi = Blueprint('presuapi', __name__)
@@ -73,7 +72,8 @@ def crear_presupuesto():
             fecha_vencimiento=data.get('fecha_vencimiento'),
             condicion_compra=data.get('condicion_compra'),
             estado=data.get('estado', 'PENDIENTE'),
-            detalles=detalles_objs
+            detalles=detalles_objs,
+            id_solicitud=data.get('id_solicitud')
         )
 
         dao = PresupuestoCompraDao()
@@ -138,25 +138,11 @@ def buscar_mercaderia():
 @presuapi.route('/detalle-solicitud/<nro_solicitud>', methods=['GET'])
 def detalle_solicitud(nro_solicitud):
     try:
-        dao = SolicitudCompraDao()
-        solicitud = dao.obtener_solicitud_por_nro(nro_solicitud)
-        if not solicitud:
+        dao = PresupuestoCompraDao()
+        res = dao.obtener_solicitud_para_presupuesto(nro_solicitud)
+        if not res.get('success'):
             return jsonify(success=False, error="No se encontró la solicitud")
-
-        detalles = solicitud.get('detalles', [])
-        # Formatear datos para DataTable
-        detalles_formateados = [
-            {
-                'codigo': d.get('id_item'),
-                'descripcion': d.get('nombre_producto'),
-                'stock': d.get('stock', 0),
-                'cantidad': d.get('cantidad', 0),
-                'precio': d.get('precio', 0),
-                'subtotal': d.get('cantidad', 0) * d.get('precio', 0)
-            }
-            for d in detalles
-        ]
-        return jsonify(success=True, detalles=detalles_formateados)
+        return jsonify(success=True, id_solicitud=res.get('id_solicitud'), detalles=res.get('detalles', []))
     except Exception as e:
         app.logger.error(f"Error al obtener detalle de solicitud {nro_solicitud}: {str(e)}")
         return jsonify(success=False, error=str(e))
@@ -170,10 +156,10 @@ def cambiar_estado_presupuesto(id):
     try:
         data = request.get_json() or {}
         nuevo = (data.get('estado') or '').upper()
-        if nuevo not in ('APROBADO', 'RECHAZADO'):
-            return jsonify(success=False, error='Estado inválido'), 400
-
         dao = PresupuestoCompraDao()
+        if nuevo not in dao.ESTADOS_VALIDOS:
+            return jsonify(success=False, error=f"Estado inválido. Use uno de: {', '.join(dao.ESTADOS_VALIDOS)}"), 400
+
         ok, msg = dao.cambiar_estado(id, nuevo)
         if ok:
             return jsonify(success=True), 200

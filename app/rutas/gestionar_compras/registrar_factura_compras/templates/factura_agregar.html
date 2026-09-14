@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block titulo %}Registrar Factura de Compra{% endblock %}
+{% block contenido %}
+<style>
+  :root {
+    --fc-primary:#1a56db; --fc-primary-d:#1040b0; --fc-success:#16a34a;
+    --fc-muted:#6b7280; --fc-border:#e5e7eb; --fc-bg:#f9fafb; --fc-surface:#ffffff; --fc-radius:10px;
+  }
+  .fc-page-header { display:flex; align-items:center; padding:1.4rem 0 1.2rem; border-bottom:2px solid var(--fc-border); margin-bottom:1.5rem; }
+  .fc-page-header h2 { font-size:1.3rem; font-weight:700; color:#111827; margin:0; display:flex; align-items:center; gap:.5rem; }
+  .icon-box { width:36px; height:36px; background:var(--fc-primary); border-radius:8px; display:grid; place-items:center; color:#fff; font-size:.9rem; flex-shrink:0; }
+  .fc-card { background:var(--fc-surface); border:1px solid var(--fc-border); border-radius:var(--fc-radius); box-shadow:0 1px 6px rgba(0,0,0,.06); margin-bottom:1.25rem; overflow:hidden; }
+  .fc-card-header { padding:.75rem 1.2rem; background:var(--fc-bg); border-bottom:1px solid var(--fc-border); font-size:.82rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.05em; }
+  .fc-card-body { padding:1.25rem 1.4rem; }
+  .fc-label { font-size:.78rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.3rem; display:block; }
+  .form-control { font-size:.875rem; border:1px solid var(--fc-border); border-radius:7px; padding:.42rem .75rem; }
+  .form-control[readonly] { background:#f3f4f6; color:var(--fc-muted); }
+  .fc-footer { display:flex; align-items:center; justify-content:flex-end; gap:.75rem; padding:1rem 1.4rem; border-top:1px solid var(--fc-border); background:var(--fc-bg); border-radius:0 0 var(--fc-radius) var(--fc-radius); }
+  .btn-fc { display:inline-flex; align-items:center; gap:.35rem; padding:.44rem 1rem; border-radius:7px; font-size:.845rem; font-weight:600; border:none; cursor:pointer; text-decoration:none; }
+  .btn-save { background:var(--fc-primary); color:#fff; }
+  .btn-exit { background:#f3f4f6; color:#374151; border:1px solid var(--fc-border); }
+</style>
+<div class="container-fluid px-4">
+  <div class="fc-page-header">
+    <h2><span class="icon-box"><i class="fas fa-file-invoice"></i></span> Registrar Factura de Compra</h2>
+  </div>
+
+  <div class="fc-card">
+    <div class="fc-card-header">Datos de la factura</div>
+    <div class="fc-card-body">
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label class="fc-label">Recepción confirmada (sin factura)</label>
+          <select id="cbo_recepcion" class="form-control">
+            <option value="">— Seleccione —</option>
+            {% for r in recepciones %}
+            <option value="{{ r.id_recepcion }}"
+                    data-proveedor-id="{{ r.id_proveedor }}"
+                    data-proveedor-nombre="{{ r.proveedor_nombre }}"
+                    data-monto="{{ r.monto_sugerido }}">
+              Recepción #{{ r.nro_recepcion }} — {{ r.fecha_recepcion }} — {{ r.proveedor_nombre }}
+            </option>
+            {% endfor %}
+          </select>
+          {% if not recepciones %}
+          <small class="text-muted">No hay recepciones confirmadas pendientes de facturar.</small>
+          {% endif %}
+        </div>
+        <div class="col-md-3">
+          <label class="fc-label">Proveedor</label>
+          <input type="text" id="txt_proveedor" class="form-control" readonly>
+        </div>
+        <div class="col-md-4">
+          <label class="fc-label">Nro. Factura (del proveedor)</label>
+          <input type="text" id="txt_nro_factura" class="form-control" placeholder="Ej: 001-001-0001234">
+        </div>
+        <div class="col-md-2">
+          <label class="fc-label">Fecha Emisión</label>
+          <input type="date" id="txt_fecha_emision" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="fc-label">Fecha Vencimiento</label>
+          <input type="date" id="txt_fecha_vencimiento" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="fc-label">Monto Total</label>
+          <input type="number" id="txt_monto_total" class="form-control" min="0" step="0.01">
+        </div>
+        <div class="col-md-3">
+          <label class="fc-label">Tipo de Impuesto (para libro de compras)</label>
+          <select id="cbo_tipo_impuesto" class="form-control">
+            <option value="">— Seleccione —</option>
+            {% for t in tipos_impuesto %}
+            <option value="{{ t.id }}">{{ t.descripcion }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="fc-label">Adjuntar factura (PDF)</label>
+          <input type="file" id="file_factura" class="form-control" accept=".pdf,.xlsx,.xls,.txt">
+        </div>
+      </div>
+    </div>
+    <div class="fc-footer">
+      <button type="button" id="btn_salir" class="btn-fc btn-exit"><i class="fas fa-arrow-left"></i> Volver</button>
+      <button type="button" id="btn_guardar" class="btn-fc btn-save"><i class="fas fa-save"></i> Guardar Factura</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+$(document).ready(function(){
+  $('#txt_fecha_emision').val(new Date().toISOString().slice(0,10));
+
+  $('#cbo_recepcion').change(function(){
+    const op = $(this).find('option:selected');
+    $('#txt_proveedor').val(op.val() ? op.data('proveedor-nombre') : '');
+    $('#txt_monto_total').val(op.val() ? op.data('monto') : '');
+  });
+
+  $('#btn_guardar').click(function(){
+    const op = $('#cbo_recepcion option:selected');
+    const id_recepcion = op.val();
+    const id_proveedor = op.data('proveedor-id');
+    const nro_factura = $('#txt_nro_factura').val().trim();
+    const fecha_emision = $('#txt_fecha_emision').val();
+    const fecha_vencimiento = $('#txt_fecha_vencimiento').val() || null;
+    const monto_total = parseFloat($('#txt_monto_total').val()) || 0;
+    const id_tipo_impuesto = $('#cbo_tipo_impuesto').val() || null;
+
+    if(!id_recepcion || !nro_factura || !fecha_emision){
+      return Swal.fire({title:'Faltan datos', text:'Elegí la recepción, ingresá el número de factura y la fecha de emisión.', icon:'warning', confirmButtonColor:'#1a56db'});
+    }
+
+    const btn = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando…');
+
+    function grabar(archivo){
+      const payload = { nro_factura, fecha_emision, fecha_vencimiento, id_proveedor, id_recepcion, monto_total, id_tipo_impuesto, archivo };
+      $.ajax({
+        url:'/api/v1/gestionar-compras/registrar-factura-compras/facturas', method:'POST',
+        contentType:'application/json', data:JSON.stringify(payload),
+        success:function(res){
+          if(res.success){
+            Swal.fire({title:'¡Registrada!', text:'La factura fue grabada correctamente.', icon:'success', confirmButtonColor:'#1a56db', timer:2000, showConfirmButton:false})
+            .then(() => window.location.href = "{{ url_for('facmod.facturas_index') }}");
+          } else Swal.fire('Error', res.error, 'error');
+        },
+        error: () => Swal.fire('Error','Ocurrió un error al grabar la factura.','error'),
+        complete: () => btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Factura')
+      });
+    }
+
+    const fileInput = document.getElementById('file_factura');
+    if(fileInput.files[0]){
+      const fd = new FormData();
+      fd.append('archivo', fileInput.files[0]);
+      $.ajax({
+        url:'/gestionar-compras/registrar-factura-compras/subir-archivo', method:'POST',
+        data:fd, processData:false, contentType:false,
+        success: r => grabar(r.success ? r.ruta : null),
+        error: () => grabar(null)
+      });
+    } else grabar(null);
+  });
+
+  $('#btn_salir').click(() => window.location.href = "{{ url_for('facmod.facturas_index') }}");
+});
+</script>
+{% endblock %}

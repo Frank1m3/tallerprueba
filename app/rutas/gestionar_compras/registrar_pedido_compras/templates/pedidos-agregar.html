@@ -16,19 +16,28 @@
                     <input type="text" id="txt_nro_pedido" class="form-control" readonly>
                 </div>
                 <div class="col-md-2">
-                    <label>Tipo de Pedido</label>
+                    <label>Origen</label>
                     <div>
                         <input type="radio" name="tipo_pedido" id="rb_sin_pedido" value="SIN" checked>
-                        <label for="rb_sin_pedido">Sin Pedido</label>
+                        <label for="rb_sin_pedido">Sin origen</label>
                     </div>
                     <div>
                         <input type="radio" name="tipo_pedido" id="rb_con_pedido" value="CON">
-                        <label for="rb_con_pedido">Con Pedido</label>
+                        <label for="rb_con_pedido">Desde Solicitud</label>
+                    </div>
+                    <div>
+                        <input type="radio" name="tipo_pedido" id="rb_con_presupuesto" value="PRE">
+                        <label for="rb_con_presupuesto">Desde Presupuesto</label>
                     </div>
                 </div>
                 <div class="col-md-2">
                     <label>Nro Solicitud</label>
                     <input type="text" id="txt_nro_solicitud" class="form-control" placeholder="Ingrese nro de solicitud" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label>Cód. Presupuesto</label>
+                    <input type="text" id="txt_cod_presupuesto" class="form-control" placeholder="Enter para cargar" readonly>
+                    <input type="hidden" id="hidden_id_pre_compra_cab">
                 </div>
                 <div class="col-md-2">
                     <label>Solicitante</label>
@@ -88,15 +97,6 @@
                     <label>Producto</label>
                     <select id="cbo_producto" class="form-control">
                         <option value="">Seleccione</option>
-                        {% for i in productos %}
-                        <option value="{{ i.id_producto }}"
-                                data-proveedor-id="{{ i.id_proveedor }}"
-                                data-proveedor-nombre="{{ i.proveedor_nombre }}"
-                                data-codigo="{{ i.item_code }}"
-                                data-precio="{{ i.precio_unitario }}">
-                            {{ i.nombre }}
-                        </option>
-                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -171,7 +171,25 @@ $(document).ready(function(){
 
     $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar solicitante...' });
     $('#cbo_proveedor_filtro').buscadorSelect({ placeholder: 'Buscar proveedor...' });
-    $('#cbo_producto').buscadorSelect({ placeholder: 'Buscar producto...' });
+    $('#cbo_producto').buscadorSelect({
+        placeholder: 'Buscar producto...',
+        remote: {
+            url: '/api/v1/item/buscar',
+            minLength: 1,
+            params: function(){ return { id_proveedor: $('#cbo_proveedor_filtro').val() }; },
+            mapItem: function(p){
+                return {
+                    value: p.id_item,
+                    text: p.item_code + ' - ' + p.descripcion,
+                    data: {
+                        codigo: p.item_code, nombre: p.descripcion,
+                        'proveedor-id': p.id_proveedor || '', 'proveedor-nombre': p.proveedor_nombre || '',
+                        precio: p.precio_unitario
+                    }
+                };
+            }
+        }
+    });
 
     let tabla = $('#tbl_detalle').DataTable({
         paging:true,
@@ -220,11 +238,14 @@ $(document).ready(function(){
     if($('#cbo_sucursal').val()){ cargarDepositos($('#cbo_sucursal').val()); }
 
     $('input[name="tipo_pedido"]').change(function(){
+        $('#txt_nro_solicitud').prop('readonly', true).val('');
+        $('#txt_cod_presupuesto').prop('readonly', true).val('');
+        $('#hidden_id_pre_compra_cab').val('');
+        $('#cbo_funcionario,#cbo_sucursal,#cbo_deposito,#cbo_proveedor_filtro').prop('disabled', false);
         if($('#rb_con_pedido').is(':checked')){
             $('#txt_nro_solicitud').prop('readonly', false).focus();
-        } else {
-            $('#txt_nro_solicitud').prop('readonly', true).val('');
-            $('#cbo_funcionario,#cbo_sucursal,#cbo_deposito').prop('disabled', false);
+        } else if($('#rb_con_presupuesto').is(':checked')){
+            $('#txt_cod_presupuesto').prop('readonly', false).focus();
         }
     });
 
@@ -233,6 +254,16 @@ $(document).ready(function(){
             e.preventDefault();
             let nro = $(this).val();
             if(!nro) return Swal.fire('Error','Ingrese el nro de solicitud','error');
+
+            // Muchos ítems del catálogo no tienen proveedor asignado (ninguna
+            // solicitud lo pide), así que el pedido necesita que elijas UNO acá
+            // para toda la orden; antes se intentaba adivinar del primer ítem
+            // de la solicitud y si ese no tenía proveedor, fallaba al grabar.
+            const id_proveedor_elegido = $('#cbo_proveedor_filtro').val();
+            if(!id_proveedor_elegido){
+                return Swal.fire('Falta el proveedor', 'Elegí un Proveedor arriba antes de cargar la solicitud: el pedido se genera para ese proveedor.', 'warning');
+            }
+            const nombre_proveedor_elegido = $('#cbo_proveedor_filtro option:selected').text();
 
             $.getJSON(`/api/v1/gestionar-compras/registrar-pedido-compras/solicitud-nro/${nro}`, function(res){
                 if(res.success && res.data){
@@ -244,16 +275,13 @@ $(document).ready(function(){
                     $('#cbo_sucursal').val(res.data.id_sucursal).trigger('change');
                     setTimeout(()=> { $('#cbo_deposito').val(res.data.id_deposito); }, 300);
 
-                    let id_proveedor_global = res.data.detalle.length>0 ? res.data.detalle[0].id_proveedor : null;
-
                     res.data.detalle.forEach(d=>{
                         let cantidad = parseFloat(d.cant_pedido)||0;
                         let precio = parseFloat(d.precio)||0;
                         let stock_actual = parseFloat(d.stock_actual)||0;
                         let subtotal = cantidad*precio;
-                        let proveedor = d.proveedor || '';
-                        if(!proveedor) proveedor = $('#id_proveedor_global').val() || '';
-                        let id_proveedor = d.id_proveedor || id_proveedor_global;
+                        let id_proveedor = d.id_proveedor || id_proveedor_elegido;
+                        let proveedor = d.proveedor || nombre_proveedor_elegido;
 
                         detalle.push({id_item:d.item_code, codigo:d.item_code, producto:d.producto,
                             proveedor, id_proveedor, stock_actual, cantidad, precio, subtotal});
@@ -270,21 +298,62 @@ $(document).ready(function(){
                                      <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
                         }).draw();
                     });
-                    $('#id_proveedor_global').val(id_proveedor_global);
+                    $('#id_proveedor_global').val(id_proveedor_elegido);
                     actualizarTotal();
                 } else Swal.fire('Error',res.error||'Solicitud no encontrada','error');
             });
         }
     });
 
-    // Filtrar productos por proveedor
+    $('#txt_cod_presupuesto').keypress(function(e){
+        if(e.which===13){
+            e.preventDefault();
+            let cod = $(this).val();
+            if(!cod) return Swal.fire('Error','Ingrese el código del presupuesto','error');
+
+            $.getJSON(`/api/v1/gestionar-compras/registrar-pedido-compras/presupuesto/${cod}`, function(res){
+                if(res.success && res.data){
+                    const p = res.data;
+                    if(!p.id_proveedor){
+                        return Swal.fire('Error','El presupuesto no tiene proveedor asignado','error');
+                    }
+                    $('#cbo_funcionario,#cbo_sucursal,#cbo_deposito').prop('disabled',false);
+                    $('#cbo_proveedor_filtro').val(p.id_proveedor).trigger('change').prop('disabled',true);
+                    $('#hidden_id_pre_compra_cab').val(p.id_pre_compra_cab);
+                    detalle = []; tabla.clear().draw();
+
+                    p.detalle.forEach(d=>{
+                        if(!d.id_item){ return; } // item del presupuesto no existe (más) en item
+                        let cantidad = parseFloat(d.cant_pedido)||0;
+                        let precio = parseFloat(d.costo_unitario)||0;
+                        let subtotal = cantidad*precio;
+                        detalle.push({id_item:d.id_item, codigo:d.item_code, producto:d.item_descripcion,
+                            proveedor:p.proveedor_nombre, id_proveedor:p.id_proveedor, stock_actual:0, cantidad, precio, subtotal});
+
+                        tabla.row.add({
+                            codigo:d.item_code,
+                            producto:d.item_descripcion,
+                            proveedor:p.proveedor_nombre,
+                            stock_actual:0,
+                            cantidad,
+                            precio:precio.toFixed(2),
+                            subtotal:subtotal.toFixed(2),
+                            acciones:`<button class="btn btn-sm btn-primary btn-modificar">Modificar</button>
+                                     <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+                        }).draw();
+                    });
+                    $('#id_proveedor_global').val(p.id_proveedor);
+                    actualizarTotal();
+                } else Swal.fire('Error',res.error||'Presupuesto no encontrado','error');
+            });
+        }
+    });
+
+    // Filtrar productos por proveedor: el buscador de producto ya manda
+    // id_proveedor en cada búsqueda remota (ver params() más arriba), acá solo
+    // limpiamos la selección anterior para que no quede un producto de otro proveedor.
     $('#cbo_proveedor_filtro').change(function(){
         let proveedor_id = $(this).val();
-        $('#cbo_producto option').each(function(){
-            if(!proveedor_id || $(this).data('proveedor-id')==proveedor_id){
-                $(this).show();
-            } else $(this).hide();
-        });
         $('#cbo_producto').val('').trigger('change');
         $('#txt_stock_actual,#txt_precio_info').val('');
         $('#id_proveedor_global').val(proveedor_id || '');
@@ -304,16 +373,26 @@ $(document).ready(function(){
         } else $('#txt_stock_actual').val(0);
 
         if(id_item){
-            let id_proveedor = op.data('proveedor-id')||'';
+            // Si el producto no tiene proveedor propio (pasa con la mayoría del
+            // catálogo importado), se usa el del filtro en vez de dejarlo vacío.
+            let id_proveedor = op.data('proveedor-id') || $('#cbo_proveedor_filtro').val() || '';
             $('#id_proveedor_global').val(id_proveedor);
         }
     }
     $('#cbo_producto,#cbo_deposito').on('change', actualizarStockYProveedor);
+    $('#cbo_producto').on('change', function(){
+        if($(this).val()){ $('#txt_cantidad').val('').focus(); }
+    });
+
+    // Enter en Cantidad = click en Agregar
+    $('#txt_cantidad').on('keydown', function(e){
+        if(e.which===13 || e.key==='Enter'){ e.preventDefault(); $('#btn_agregar').trigger('click'); }
+    });
 
     $('#btn_agregar').click(function(){
         let op = $('#cbo_producto option:selected');
         let id_item = op.val();
-        let producto = op.text();
+        let producto = op.data('nombre') || op.text();
         let stock_actual = parseFloat($('#txt_stock_actual').val())||0;
         let cantidad = parseFloat($('#txt_cantidad').val());
         let precio = parseFloat($('#txt_precio_info').val());
@@ -409,6 +488,7 @@ $(document).ready(function(){
             fecha_pedido:$('#txt_fecha_pedido').val(),
             fecha_necesaria:$('#txt_fecha_necesaria').val()||null,
             tipo_factura,
+            id_pre_compra_cab: $('#hidden_id_pre_compra_cab').val() || null,
             detalle_pedido:detalle.map(d=>({
                 item_code:d.id_item,
                 item_descripcion:d.producto,
@@ -429,8 +509,10 @@ $(document).ready(function(){
                     detalle=[]; tabla.clear().draw(); actualizarTotal();
                     cargarNroPedido();
                     $('#txt_nro_solicitud').prop('readonly', true).val('');
+                    $('#txt_cod_presupuesto').prop('readonly', true).val('');
+                    $('#hidden_id_pre_compra_cab').val('');
                     $('#rb_sin_pedido').prop('checked', true);
-                    $('#cbo_funcionario,#cbo_sucursal,#cbo_deposito').prop('disabled', false);
+                    $('#cbo_funcionario,#cbo_sucursal,#cbo_deposito,#cbo_proveedor_filtro').prop('disabled', false);
                     $('#id_proveedor_global').val('');
                     $('#cbo_tipo_factura').val('');
                 } else Swal.fire("Error",res.error,"error");

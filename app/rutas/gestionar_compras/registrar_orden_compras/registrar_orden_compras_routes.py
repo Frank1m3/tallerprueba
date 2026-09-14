@@ -23,20 +23,18 @@ def ordenes_agregar():
     sdao = SucursalDao()
     fdao = FuncionarioDao()
     provdao = ProveedorDao()
-    ocdao = OrdenDeComprasDao()
 
     sucursales = sdao.getSucursales()
     funcionarios = fdao.get_funcionarios()
     proveedores = provdao.getProveedores()
-    # Items desde la tabla item (no usamos ProductoDao, que apunta a productos_legacy)
-    productos = ocdao.obtener_productos()
+    # El producto ya no se precarga (el catálogo tiene decenas de miles de
+    # items); el select busca en /api/v1/item/buscar mientras se escribe.
 
     return render_template(
         'ordenes-agregar.html',
         sucursales=sucursales,
         funcionarios=funcionarios,
-        proveedores=proveedores,
-        productos=productos
+        proveedores=proveedores
     )
 
 

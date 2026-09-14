@@ -6,6 +6,88 @@ from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_det
 
 class PedidoDeComprasDao:
 
+    ESTADOS_VALIDOS = ('PENDIENTE', 'APROBADO', 'ANULADO')
+
+    # ------------------------------
+    # Cambiar estado (libre, mismo patrón que Solicitud/Presupuesto)
+    # ------------------------------
+    def cambiar_estado(self, id_pedido_compra_cab, nuevo_estado):
+        if nuevo_estado not in self.ESTADOS_VALIDOS:
+            return False, f"Estado inválido. Use uno de: {', '.join(self.ESTADOS_VALIDOS)}"
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute(
+                "UPDATE pedido_compra_cab SET estado = %s WHERE id_pedido_compra_cab = %s",
+                (nuevo_estado, id_pedido_compra_cab)
+            )
+            if cur.rowcount == 0:
+                con.rollback()
+                return False, 'No existe el pedido'
+            con.commit()
+            return True, None
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al cambiar estado de pedido {id_pedido_compra_cab}: {str(e)}")
+            return False, str(e)
+        finally:
+            cur.close()
+            con.close()
+
+    # ------------------------------
+    # Obtener datos de un presupuesto (cabecera aprobada) para precargar un pedido
+    # ------------------------------
+    def obtener_presupuesto_para_pedido(self, cod_presupuesto):
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("""
+                SELECT pc.id_pre_compra_cab, pc.id_proveedor, prov.prov_nombre, pc.estado
+                FROM presupuesto_compra_cab pc
+                LEFT JOIN proveedor prov ON prov.id_proveedor = pc.id_proveedor
+                WHERE pc.cod_presupuesto = %s
+                ORDER BY pc.id_pre_compra_cab DESC
+                LIMIT 1
+            """, (cod_presupuesto,))
+            cab = cur.fetchone()
+            if not cab:
+                return None
+
+            presupuesto = {
+                'id_pre_compra_cab': cab[0],
+                'id_proveedor': cab[1],
+                'proveedor_nombre': cab[2] or '',
+                'estado': cab[3],
+                'detalle': []
+            }
+
+            cur.execute("""
+                SELECT d.item_code, i.descripcion, i.id_item,
+                       COALESCE(i.id_proveedor, %s) AS id_proveedor,
+                       d.cantidad, d.precio_unitario
+                FROM presupuesto_compra_det d
+                LEFT JOIN item i ON i.item_code = d.item_code
+                WHERE d.id_pre_compra_cab = %s
+            """, (cab[1], presupuesto['id_pre_compra_cab']))
+            for f in cur.fetchall():
+                presupuesto['detalle'].append({
+                    'item_code': f[0],
+                    'item_descripcion': f[1] or '',
+                    'id_item': f[2],
+                    'id_proveedor': f[3],
+                    'cant_pedido': float(f[4]) if f[4] is not None else 0,
+                    'costo_unitario': float(f[5]) if f[5] is not None else 0
+                })
+            return presupuesto
+        except Exception as e:
+            app.logger.error(f"Error al obtener presupuesto {cod_presupuesto} para pedido: {str(e)}")
+            return None
+        finally:
+            cur.close()
+            con.close()
+
     # ------------------------------
     # Obtener todos los productos (items) con stock real y proveedor
     # ------------------------------
@@ -97,7 +179,8 @@ class PedidoDeComprasDao:
             d.descripcion AS deposito,
             pdc.id_proveedor,
             prov.prov_nombre,
-            pdc.tipo_factura
+            pdc.tipo_factura,
+            COALESCE(pdc.estado,'PENDIENTE') AS estado
         FROM pedido_compra_cab pdc
         LEFT JOIN funcionarios f ON f.fun_id = pdc.id_funcionario
         LEFT JOIN sucursal s ON s.id_sucursal = pdc.id_sucursal
@@ -121,7 +204,8 @@ class PedidoDeComprasDao:
                 'deposito': f[6] if f[6] else '',
                 'id_proveedor': f[7],
                 'proveedor_nombre': f[8] if f[8] else '',
-                'tipo_factura': f[9] if f[9] else ''
+                'tipo_factura': f[9] if f[9] else '',
+                'estado': f[10]
             } for f in filas]
         except Exception as e:
             app.logger.error(f"Error al obtener pedidos: {str(e)}")
@@ -221,8 +305,8 @@ class PedidoDeComprasDao:
         insert_cabecera = """
         INSERT INTO pedido_compra_cab
         (fecha_pedido, id_funcionario, id_sucursal, id_deposito, nro_pedido, id_proveedor, tipo_factura,
-         id_solicitud, nro_solicitud, fecha_necesaria)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+         id_solicitud, nro_solicitud, fecha_necesaria, id_pre_compra_cab)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id_pedido_compra_cab
         """
         insert_detalle = """
@@ -246,7 +330,8 @@ class PedidoDeComprasDao:
                 pedido_dto.tipo_factura,
                 getattr(pedido_dto, 'id_solicitud', None),
                 getattr(pedido_dto, 'nro_solicitud', None),
-                getattr(pedido_dto, 'fecha_necesaria', None)
+                getattr(pedido_dto, 'fecha_necesaria', None),
+                getattr(pedido_dto, 'id_pre_compra_cab', None)
             )
             cur.execute(insert_cabecera, parametros_cabecera)
             id_pedido_cab = cur.fetchone()[0]

@@ -153,6 +153,25 @@ def modificar_solicitud_api(id_solicitud):
         return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
 
 # ================================
+# Cambiar estado
+# ================================
+@scapi.route('/estado/<int:id_solicitud>', methods=['PUT'])
+@csrf.exempt
+def cambiar_estado_solicitud(id_solicitud):
+    try:
+        data = request.get_json() or {}
+        nuevo_estado = (data.get('estado') or '').strip().upper()
+        dao = SolicitudCompraDao()
+        if nuevo_estado not in dao.ESTADOS_VALIDOS:
+            return jsonify({'success': False, 'error': f"Estado inválido. Use uno de: {', '.join(dao.ESTADOS_VALIDOS)}"}), 400
+        if dao.cambiar_estado(id_solicitud, nuevo_estado):
+            return jsonify({'success': True, 'message': 'Estado actualizado correctamente'}), 200
+        return jsonify({'success': False, 'error': 'Solicitud no encontrada'}), 404
+    except Exception as e:
+        app.logger.error(f"Error al cambiar estado de solicitud {id_solicitud}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500
+
+# ================================
 # Anular
 # ================================
 @scapi.route('/anular/<int:id_solicitud>', methods=['PUT'])

@@ -18,7 +18,8 @@ class PedidoDeComprasDto:
         fecha_pedido: Optional[date] = None,
         fecha_necesaria: Optional[date] = None,
         detalle_pedido: Optional[List[PedidoDeCompraDetalleDto]] = None,
-        tipo_factura: Optional[str] = None
+        tipo_factura: Optional[str] = None,
+        id_pre_compra_cab: Optional[int] = None
     ):
         if id_proveedor is None:
             raise ValueError("El id_proveedor no puede ser None al crear un pedido")
@@ -37,6 +38,7 @@ class PedidoDeComprasDto:
         self.__fecha_necesaria = fecha_necesaria
         self.__detalle_pedido = detalle_pedido or []
         self.tipo_factura = tipo_factura  # queda como atributo público opcional
+        self.id_pre_compra_cab = id_pre_compra_cab  # presupuesto de origen (opcional)
 
     # --------------------
     # Propiedades

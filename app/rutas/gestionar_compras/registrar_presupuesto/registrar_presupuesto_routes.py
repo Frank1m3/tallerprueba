@@ -88,6 +88,8 @@ def guardar_presupuesto():
         id_proveedor = int(request.form.get('id_proveedor') or 0)
         fun_id = int(request.form.get('fun_id') or 0)
         estado = request.form.get('estado', 'PENDIENTE')
+        id_solicitud_raw = request.form.get('id_solicitud')
+        id_solicitud = int(id_solicitud_raw) if id_solicitud_raw else None
         detalles_raw = request.form.get('detalles', '[]')
 
         try:
@@ -127,7 +129,8 @@ def guardar_presupuesto():
             condicion_compra='',
             estado=estado,
             archivo=ruta_relativa,
-            detalles=detalles_dto
+            detalles=detalles_dto,
+            id_solicitud=id_solicitud
         )
 
         success = dao.insertar(dto)

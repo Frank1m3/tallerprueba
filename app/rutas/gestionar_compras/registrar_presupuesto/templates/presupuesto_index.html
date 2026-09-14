@@ -80,13 +80,54 @@ $(document).ready(function(){
       {
         data: null, orderable: false, className: 'text-center',
         render: function(row){
-          return `<a href="${DETALLE_BASE}${row.id_pre_compra_cab}" class="btn btn-sm btn-primary">
+          return `<a href="${DETALLE_BASE}${row.id_pre_compra_cab}" class="btn btn-sm btn-primary me-1">
                     <i class="fas fa-eye mr-1"></i> Ver detalle
-                  </a>`;
+                  </a>
+                  <button type="button" class="btn btn-sm btn-outline-secondary btn-cambiar-estado" data-id="${row.id_pre_compra_cab}" data-estado="${row.estado}">
+                    <i class="fas fa-random mr-1"></i> Cambiar estado
+                  </button>`;
         }
       }
     ],
     order: [[0,'desc']]
+  });
+
+  const ESTADOS = ['PENDIENTE', 'APROBADO', 'RECHAZADO', 'ANULADO'];
+
+  $('#tbl_presupuestos tbody').on('click', '.btn-cambiar-estado', function(){
+    const id = $(this).data('id');
+    const estadoActual = $(this).data('estado');
+    const opciones = ESTADOS.map(e => `<option value="${e}" ${e===estadoActual?'selected':''}>${e}</option>`).join('');
+    Swal.fire({
+      title: 'Cambiar estado',
+      width: 320,
+      padding: '1rem',
+      html: `<select id="swal_nuevo_estado" class="swal2-select" style="display:block;width:100%;margin:0;padding:.4rem;font-size:.85rem;border-radius:6px;border:1px solid #d1d5db">${opciones}</select>`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#1565c0',
+      preConfirm: () => document.getElementById('swal_nuevo_estado').value
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      const nuevoEstado = r.value;
+      if(nuevoEstado === estadoActual) return;
+      fetch(`/api/v1/gestionar-compras/registrar-presupuesto/presupuestos/${id}/estado`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ estado: nuevoEstado })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if(data.success){
+          $('#tbl_presupuestos').DataTable().ajax.reload(null, false);
+          Swal.fire({ title:'Listo', text:'El estado fue actualizado.', icon:'success', timer:1800, showConfirmButton:false });
+        } else {
+          Swal.fire('Error', data.error || 'No se pudo cambiar el estado', 'error');
+        }
+      })
+      .catch(() => Swal.fire('Error','Ocurrió un error al cambiar el estado.','error'));
+    });
   });
 });
 </script>

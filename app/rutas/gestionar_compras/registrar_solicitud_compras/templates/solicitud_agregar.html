@@ -87,9 +87,6 @@
           <label class="sc-label">Producto</label>
           <select id="cbo_producto" class="form-control">
             <option value="">— Seleccione —</option>
-            {% for i in productos %}
-            <option value="{{ i.id_item }}" data-codigo="{{ i.item_code }}" data-precio="{{ i.precio }}">{{ i.nombre_producto }}</option>
-            {% endfor %}
           </select>
         </div>
         <div class="col-md-2">
@@ -135,9 +132,33 @@
 <script>
 $(document).ready(function(){
   let detalle = [];
+  const FECHA_INICIAL = $('#txt_fecha_solicitud').val();
+
+  // Deja el formulario listo para cargar la siguiente solicitud desde cero.
+  function resetFormulario(){
+    $('#cbo_funcionario').val('').trigger('change');
+    $('#cbo_sucursal').val('').trigger('change');
+    $('#txt_fecha_solicitud').val(FECHA_INICIAL);
+    $('#cbo_producto').val('').trigger('change');
+    $('#txt_cantidad,#txt_stock,#txt_precio').val('');
+  }
 
   $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar solicitante...' });
-  $('#cbo_producto').buscadorSelect({ placeholder: 'Buscar producto...' });
+  $('#cbo_producto').buscadorSelect({
+    placeholder: 'Buscar producto...',
+    remote: {
+      url: '/api/v1/item/buscar',
+      minLength: 1,
+      params: function(){ return { id_sucursal: $('#cbo_sucursal').val(), id_deposito: $('#cbo_deposito').val() }; },
+      mapItem: function(p){
+        return {
+          value: p.id_item,
+          text: p.item_code + ' - ' + p.descripcion,
+          data: { codigo: p.item_code, nombre: p.descripcion, precio: p.precio_unitario, stock: p.stock }
+        };
+      }
+    }
+  });
   function fmt(n){ return parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:2, maximumFractionDigits:2}); }
   function actualizarContador(){ $('#lbl_total_items').text(detalle.length + ' ítem' + (detalle.length!==1?'s':'') + ' agregado' + (detalle.length!==1?'s':'')); }
 
@@ -177,29 +198,43 @@ $(document).ready(function(){
       if(res.success && res.data){ res.data.forEach(d => $('#cbo_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`)); }
     });
   }
-  $('#cbo_sucursal').change(function(){ cargarDepositos($(this).val()); });
-
-  // Al elegir producto (+ sucursal + deposito) traer stock; precio sale del data-attr
+  // El resultado de la búsqueda remota ya trae precio/stock para la sucursal+depósito
+  // elegidos en ese momento, así que no hace falta otra llamada al elegir producto.
   $('#cbo_producto').change(function(){
     const op = $(this).find('option:selected');
     $('#txt_precio').val(op.data('precio') || '');
+    $('#txt_stock').val(op.val() ? fmt(op.data('stock') || 0) : '');
+    if(op.val()){ $('#txt_cantidad').val('').focus(); }
+  });
+
+  // Enter en Cantidad = click en Agregar (después de elegir el producto con
+  // Enter, se puede cargar la cantidad y agregar todo sin tocar el mouse).
+  $('#txt_cantidad').on('keydown', function(e){
+    if(e.which===13 || e.key==='Enter'){ e.preventDefault(); $('#btn_agregar').trigger('click'); }
+  });
+
+  // Si cambian sucursal/depósito DESPUÉS de haber elegido un producto, el stock
+  // que se guardó al buscar quedó desactualizado: se refresca puntualmente.
+  function refrescarStockProductoSeleccionado(){
+    const op = $('#cbo_producto').find('option:selected');
+    const id_item = op.val();
     const id_sucursal = $('#cbo_sucursal').val();
     const id_deposito = $('#cbo_deposito').val();
-    if(op.val() && id_sucursal && id_deposito){
-      $.getJSON('/api/v1/gestionar-compras/registrar-solicitud-compras/productos', { id_sucursal, id_deposito }, function(res){
-        if(res.success && res.data){
-          const p = res.data.find(x => x.id_item == op.val());
-          $('#txt_stock').val(p ? fmt(p.stock) : '0');
-        } else $('#txt_stock').val('0');
-      });
-    } else $('#txt_stock').val('');
-  });
-  $('#cbo_deposito').change(function(){ $('#cbo_producto').trigger('change'); });
+    if(!id_item || !id_sucursal || !id_deposito){ return; }
+    $.getJSON('/api/v1/item/buscar', { q: op.data('codigo'), id_sucursal, id_deposito, limit: 5 }, function(res){
+      if(res.success && res.data){
+        const p = res.data.find(x => x.id_item == id_item);
+        if(p){ op.attr('data-stock', p.stock); $('#txt_stock').val(fmt(p.stock)); }
+      }
+    });
+  }
+  $('#cbo_sucursal').change(function(){ cargarDepositos($(this).val()); refrescarStockProductoSeleccionado(); });
+  $('#cbo_deposito').change(refrescarStockProductoSeleccionado);
 
   $('#btn_agregar').click(function(){
     const op = $('#cbo_producto option:selected');
     const id_item = op.val();
-    const producto = op.text();
+    const producto = op.data('nombre');
     const codigo = op.data('codigo');
     const stock = parseFloat(($('#txt_stock').val()||'0').replace(/\./g,'').replace(',','.')) || 0;
     const precio = parseFloat($('#txt_precio').val() || 0);
@@ -222,7 +257,7 @@ $(document).ready(function(){
     const idx = parseInt($(this).data('idx')); detalle.splice(idx,1); renderTabla();
   });
 
-  $('#btn_salir_general').click(() => window.location.href = '/');
+  $('#btn_salir_general').click(() => window.location.href = "{{ url_for('solmod.solicitud_index') }}");
 
   $('#btn_grabar_solicitud').click(function(){
     if(detalle.length===0){ return Swal.fire({title:'Sin ítems', text:'Debe agregar al menos un producto.', icon:'error', confirmButtonColor:'#1a56db'}); }
@@ -245,6 +280,7 @@ $(document).ready(function(){
         if(res.success){
           Swal.fire({title:'¡Registrado!', text:'La solicitud fue grabada correctamente.', icon:'success', confirmButtonColor:'#1a56db', timer:2000, showConfirmButton:false});
           detalle=[]; renderTabla(); cargarNroSolicitud();
+          resetFormulario();
         } else Swal.fire('Error', res.error, 'error');
       },
       error:() => Swal.fire('Error','Ocurrió un error al grabar la solicitud.','error'),
