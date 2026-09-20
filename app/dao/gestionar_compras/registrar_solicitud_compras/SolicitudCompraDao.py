@@ -12,19 +12,10 @@ class SolicitudCompraDao:
         conexion = Conexion(); con = conexion.getConexion(); cur = con.cursor()
         try:
             cur.execute("""
-                SELECT
-                    sc.id_solicitud,
-                    sc.nro_solicitud,
-                    sc.fecha_solicitud,
-                    f.nombres || ' ' || f.apellidos AS funcionario_nombre,
-                    s.descripcion AS sucursal_nombre,
-                    d.descripcion AS deposito_nombre,
-                    sc.estado
-                FROM solicitud_compra_cab sc
-                LEFT JOIN funcionarios f ON f.fun_id = sc.id_solicitante
-                LEFT JOIN sucursal s ON s.id_sucursal = sc.id_sucursal
-                LEFT JOIN deposito d ON d.id_deposito = sc.id_deposito AND d.activo = TRUE
-                ORDER BY sc.nro_solicitud DESC
+                SELECT id_solicitud, nro_solicitud, fecha_solicitud,
+                       solicitante, sucursal, deposito, estado
+                FROM v_com_solicitud
+                ORDER BY nro_solicitud DESC
             """)
             return [{
                 'id_solicitud': f[0],

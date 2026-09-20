@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+{% block titulo %}Dashboard{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-chart-line"></i></span>
+      <div>
+        <h2 class="page-header-title">Dashboard de Ventas e Inventario</h2>
+        <p class="page-header-subtitle">Panel de supervisión: qué se vende, qué está en riesgo, qué necesita atención.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="dash-filtros">
+        <button class="btn-app-chip" data-rango="hoy">Hoy</button>
+        <button class="btn-app-chip" data-rango="7d">Últimos 7 días</button>
+        <button class="btn-app-chip" data-rango="mes">Este mes</button>
+        <button class="btn-app-chip active" data-rango="3m">Últimos 3 meses</button>
+        <button class="btn-app-chip" data-rango="anio">Este año</button>
+        <button class="btn-app-chip" data-rango="custom">Personalizado</button>
+        <input type="date" id="dash_fecha_desde" class="form-control d-none" style="width:150px">
+        <span class="d-none" id="dash_fecha_sep">—</span>
+        <input type="date" id="dash_fecha_hasta" class="form-control d-none" style="width:150px">
+
+        <select id="dash_sucursal" class="form-control" style="width:auto; max-width:200px;">
+          <option value="">Todas las sucursales</option>
+          {% for s in sucursales %}<option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>{% endfor %}
+        </select>
+        <select id="dash_deposito" class="form-control" style="width:auto; max-width:200px;">
+          <option value="">Todos los depósitos</option>
+        </select>
+
+        <select id="dash_dias_sin_mov" class="form-control" style="width:auto;">
+          <option value="30">Sin movimiento: 30 días</option>
+          <option value="60">Sin movimiento: 60 días</option>
+          <option value="90">Sin movimiento: 90 días</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-3" id="dash_kpis">
+    <!-- se llenan por JS -->
+  </div>
+
+  <div class="row g-3">
+    <!-- TOP VENDIDOS -->
+    <div class="col-lg-6">
+      <div class="app-card h-100">
+        <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Top de productos más vendidos</div>
+        <div class="app-card-body" id="dash_top_vendidos"></div>
+      </div>
+    </div>
+
+    <!-- MENOS VENDIDOS -->
+    <div class="col-lg-6">
+      <div class="app-card h-100">
+        <div class="app-card-header"><span class="dot" style="background:var(--pos-warning)"></span> Productos de baja rotación</div>
+        <div class="app-card-body" id="dash_menos_vendidos"></div>
+      </div>
+    </div>
+
+    <!-- RIESGO DE QUIEBRE -->
+    <div class="col-lg-6">
+      <div class="app-card h-100">
+        <div class="app-card-header">
+          <span class="dot" style="background:var(--pos-danger)"></span> Productos con riesgo de quiebre
+          <a href="{{ url_for('dashmod.riesgo_stock_index') }}" class="ms-auto" style="font-size:.8rem; font-weight:600;">Ver todos →</a>
+        </div>
+        <div class="app-card-body" style="padding:0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="dash_tbl_riesgo">
+              <thead><tr><th>Producto</th><th>Stock</th><th>Mínimo</th><th>Cobertura</th><th>Estado</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIN STOCK -->
+    <div class="col-lg-6">
+      <div class="app-card h-100">
+        <div class="app-card-header">
+          <span class="dot" style="background:#1f2937"></span> Productos sin stock
+          <a href="{{ url_for('dashmod.sin_stock_index') }}" class="ms-auto" style="font-size:.8rem; font-weight:600;">Ver todos →</a>
+        </div>
+        <div class="app-card-body" style="padding:0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="dash_tbl_sinstock">
+              <thead><tr><th>Producto</th><th>Proveedor</th><th>Últ. venta</th><th>Últ. recepción</th><th>Sugerido</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAYOR ROTACION -->
+    <div class="col-lg-6">
+      <div class="app-card h-100">
+        <div class="app-card-header"><span class="dot" style="background:var(--pos-info)"></span> Productos de mayor rotación</div>
+        <div class="app-card-body" id="dash_mayor_rotacion"></div>
+      </div>
+    </div>
+
+    <!-- SIN MOVIMIENTO -->
+    <div class="col-lg-6">
+      <div class="app-card h-100">
+        <div class="app-card-header"><span class="dot" style="background:var(--pos-text-muted)"></span> Productos sin movimiento</div>
+        <div class="app-card-body" id="dash_sin_movimiento"></div>
+      </div>
+    </div>
+
+    <!-- ANALISIS RAPIDO -->
+    <div class="col-12">
+      <div class="app-card">
+        <div class="app-card-header"><span class="dot"></span> Análisis rápido</div>
+        <div class="app-card-body">
+          <div class="row g-3" id="dash_analisis_rapido"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+
+  function fmtNum(v){ return Number(v||0).toLocaleString('es-PY'); }
+  function fmtMoneda(v){ return Number(v||0).toLocaleString('es-PY', {minimumFractionDigits:2}); }
+  function fmtFecha(v){ return v || '—'; }
+
+  const NIVEL_BADGE = {
+    normal: 'is-normal', atencion: 'is-atencion', bajo: 'is-bajo',
+    critico: 'is-critico', sin_stock: 'is-sinstock'
+  };
+  const NIVEL_LABEL = {
+    normal: 'Normal', atencion: 'Atención', bajo: 'Stock bajo',
+    critico: 'Crítico', sin_stock: 'Sin stock'
+  };
+  function badgeNivel(nivel){
+    const cls = NIVEL_BADGE[nivel] || 'is-normal';
+    const label = NIVEL_LABEL[nivel] || nivel;
+    return `<span class="badge-app ${cls}">${label}</span>`;
+  }
+
+  function vacio(msg){ return `<div class="dash-empty">${msg}</div>`; }
+
+  // ---- Rango de fechas por chip ----
+  function hoyISO(){ return new Date().toISOString().slice(0,10); }
+  function sumarDias(base, dias){
+    const d = new Date(base); d.setDate(d.getDate() + dias);
+    return d.toISOString().slice(0,10);
+  }
+  function calcularRango(rango){
+    const hoy = hoyISO();
+    switch(rango){
+      case 'hoy':  return [hoy, hoy];
+      case '7d':   return [sumarDias(hoy, -6), hoy];
+      case 'mes':  return [hoy.slice(0,8) + '01', hoy];
+      case '3m':   return [sumarDias(hoy, -89), hoy];
+      case 'anio': return [hoy.slice(0,4) + '-01-01', hoy];
+      default:     return [sumarDias(hoy, -89), hoy];
+    }
+  }
+
+  let filtroActual = { desde: null, hasta: null, rango: '3m' };
+
+  $('.btn-app-chip').on('click', function(){
+    const rango = $(this).data('rango');
+    $('.btn-app-chip').removeClass('active');
+    $(this).addClass('active');
+    if(rango === 'custom'){
+      $('#dash_fecha_desde, #dash_fecha_hasta, #dash_fecha_sep').removeClass('d-none');
+      return;
+    }
+    $('#dash_fecha_desde, #dash_fecha_hasta, #dash_fecha_sep').addClass('d-none');
+    const [desde, hasta] = calcularRango(rango);
+    filtroActual.rango = rango; filtroActual.desde = desde; filtroActual.hasta = hasta;
+    cargarResumen();
+  });
+
+  $('#dash_fecha_desde, #dash_fecha_hasta').on('change', function(){
+    const desde = $('#dash_fecha_desde').val(), hasta = $('#dash_fecha_hasta').val();
+    if(desde && hasta){ filtroActual.desde = desde; filtroActual.hasta = hasta; cargarResumen(); }
+  });
+
+  $('#dash_sucursal').on('change', function(){
+    const id = $(this).val();
+    $('#dash_deposito').html('<option value="">Todos los depósitos</option>');
+    if(id){
+      $.getJSON(`/api/v1/sucursal-depositos/${id}`, function(res){
+        (res.data || []).forEach(d => {
+          $('#dash_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`);
+        });
+      });
+    }
+    cargarResumen();
+  });
+  $('#dash_deposito, #dash_dias_sin_mov').on('change', cargarResumen);
+
+  function renderKpis(k){
+    const cards = [
+      { icon:'fa-trophy', clase:'is-success', label:'Unidades vendidas', valor: fmtNum(k.unidades_periodo),
+        delta: k.variacion_unidades },
+      { icon:'fa-arrow-down', clase:'is-warning', label:'Menos vendido',
+        valor: k.menos_vendido ? fmtNum(k.menos_vendido.unidades) + ' u.' : '—',
+        sub: k.menos_vendido ? k.menos_vendido.descripcion : 'Sin datos' },
+      { icon:'fa-exclamation-triangle', clase:'is-warning', label:'Próximos a quebrar', valor: fmtNum(k.proximos_quebrar), sub:'Revisar compras' },
+      { icon:'fa-ban', clase:'is-critico', label:'Sin stock', valor: fmtNum(k.sin_stock), sub:'Atención inmediata' },
+      { icon:'fa-box', clase:'is-danger', label:'Bajo el mínimo', valor: fmtNum(k.bajo_minimo), sub:'Debajo de stock mínimo' },
+      { icon:'fa-sync-alt', clase:'is-info', label:'Mayor rotación',
+        valor: k.mayor_rotacion ? k.mayor_rotacion.velocidad_diaria + '/día' : '—',
+        sub: k.mayor_rotacion ? k.mayor_rotacion.descripcion : 'Sin datos' },
+      { icon:'fa-moon', clase:'is-warning', label:'Sin movimiento', valor: fmtNum(k.sin_movimiento), sub:'Posible sobre-stock' }
+    ];
+    let html = '';
+    cards.forEach(c => {
+      let delta = '';
+      if(c.delta !== undefined && c.delta !== null){
+        const up = c.delta >= 0;
+        delta = `<div class="kpi-card-delta ${up?'is-up':'is-down'}"><i class="fas fa-arrow-${up?'up':'down'}"></i> ${Math.abs(c.delta)}%</div>`;
+      }
+      html += `
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card">
+            <span class="kpi-card-icon ${c.clase}"><i class="fas ${c.icon}"></i></span>
+            <span class="kpi-card-label">${c.label}</span>
+            <span class="kpi-card-value">${c.valor}</span>
+            ${c.sub ? `<span class="kpi-card-sub">${c.sub}</span>` : ''}
+            ${delta}
+          </div>
+        </div>`;
+    });
+    $('#dash_kpis').html(html);
+  }
+
+  function renderRanking(contenedor, filas, campoValor, formatoValor, campoSub){
+    if(!filas || !filas.length){ $(contenedor).html(vacio('No hay datos para el período seleccionado.')); return; }
+    const max = Math.max(...filas.map(f => Number(f[campoValor]) || 0));
+    let html = '';
+    filas.forEach((f, i) => {
+      const pct = max ? Math.round((Number(f[campoValor])||0) / max * 100) : 0;
+      html += `
+        <div class="ranking-item">
+          <span class="ranking-pos">${i+1}</span>
+          <div class="ranking-body">
+            <div class="ranking-title" title="${f.descripcion}">${f.descripcion}</div>
+            ${campoSub ? `<div class="kpi-card-sub">${campoSub(f)}</div>` : `
+            <div class="ranking-bar-track"><div class="ranking-bar-fill" style="width:${pct}%"></div></div>`}
+          </div>
+          <span class="ranking-value">${formatoValor(f)}</span>
+        </div>`;
+    });
+    $(contenedor).html(html);
+  }
+
+  function renderAnalisisRapido(a){
+    const items = [
+      { icon:'fa-trophy', label:'Más vendido', dato: a.mas_vendido ? `${a.mas_vendido.descripcion} — ${fmtNum(a.mas_vendido.unidades)} u.` : 'Sin datos' },
+      { icon:'fa-arrow-down', label:'Menos vendido', dato: a.menos_vendido ? `${a.menos_vendido.descripcion} — ${fmtNum(a.menos_vendido.unidades)} u.` : 'Sin datos' },
+      { icon:'fa-fire', label:'Mayor rotación', dato: a.mayor_rotacion ? `${a.mayor_rotacion.descripcion} — ${a.mayor_rotacion.velocidad_diaria}/día` : 'Sin datos' },
+      { icon:'fa-exclamation-triangle', label:'Mayor riesgo', dato: a.mayor_riesgo ? `${a.mayor_riesgo.descripcion} — ${a.mayor_riesgo.cobertura_dias != null ? a.mayor_riesgo.cobertura_dias+' días' : badgeNivel(a.mayor_riesgo.nivel)}` : 'Sin datos' },
+      { icon:'fa-moon', label:'Sin movimiento', dato: a.sin_movimiento_top ? `${a.sin_movimiento_top.descripcion} — ${a.sin_movimiento_top.dias_sin_venta != null ? a.sin_movimiento_top.dias_sin_venta+' días' : 'Nunca vendido'}` : 'Sin datos' }
+    ];
+    let html = '';
+    items.forEach(it => {
+      html += `
+        <div class="col-md-6 col-lg-4">
+          <div style="display:flex; align-items:center; gap:.6rem; padding:.6rem 0;">
+            <span class="kpi-card-icon is-info" style="width:30px;height:30px;font-size:.8rem;"><i class="fas ${it.icon}"></i></span>
+            <div>
+              <div class="kpi-card-label" style="text-transform:none; font-size:.75rem;">${it.label}</div>
+              <div style="font-size:.85rem; font-weight:600;">${it.dato}</div>
+            </div>
+          </div>
+        </div>`;
+    });
+    $('#dash_analisis_rapido').html(html);
+  }
+
+  function cargarResumen(){
+    const params = {
+      desde: filtroActual.desde, hasta: filtroActual.hasta,
+      id_sucursal: $('#dash_sucursal').val() || undefined,
+      id_deposito: $('#dash_deposito').val() || undefined,
+      dias_sin_movimiento: $('#dash_dias_sin_mov').val()
+    };
+    $.getJSON('/api/v1/dashboard/resumen', params, function(res){
+      if(!res.success){ Swal.fire('Error', res.error || 'No se pudo cargar el dashboard', 'error'); return; }
+      const d = res.data;
+
+      renderKpis(d.kpis);
+
+      renderRanking('#dash_top_vendidos', d.top_vendidos, 'unidades',
+        f => `${fmtNum(f.unidades)} u. · $${fmtMoneda(f.facturacion)}`);
+
+      renderRanking('#dash_menos_vendidos', d.menos_vendidos, 'unidades',
+        f => `${fmtNum(f.unidades)} u.`,
+        f => `Stock: ${fmtNum(f.stock_actual)} · Últ. venta: ${f.dias_ultima_venta != null ? 'hace '+f.dias_ultima_venta+' días' : '—'}`);
+
+      renderRanking('#dash_mayor_rotacion', d.mayor_rotacion, 'velocidad_diaria',
+        f => `${f.velocidad_diaria}/día`,
+        f => `Stock: ${fmtNum(f.stock_actual)} · Cobertura: ${f.cobertura_dias != null ? f.cobertura_dias+' días' : '—'} · ${badgeNivel(f.nivel)}`);
+
+      renderRanking('#dash_sin_movimiento', d.sin_movimiento, 'stock_actual',
+        f => f.dias_sin_venta != null ? `${f.dias_sin_venta} días` : 'Nunca vendido',
+        f => `Stock actual: ${fmtNum(f.stock_actual)}`);
+
+      const $riesgo = $('#dash_tbl_riesgo tbody');
+      if(!d.riesgo_stock.length){ $riesgo.html(`<tr><td colspan="5" class="dash-empty">Sin productos en riesgo de quiebre.</td></tr>`); }
+      else {
+        $riesgo.html(d.riesgo_stock.map(f => `
+          <tr>
+            <td>${f.descripcion}</td>
+            <td>${fmtNum(f.stock_actual)}</td>
+            <td>${fmtNum(f.cantidad_minima)}</td>
+            <td>${f.cobertura_dias != null ? f.cobertura_dias+' días' : '—'}</td>
+            <td>${badgeNivel(f.nivel)}</td>
+          </tr>`).join(''));
+      }
+
+      const $sinstock = $('#dash_tbl_sinstock tbody');
+      if(!d.sin_stock.length){ $sinstock.html(`<tr><td colspan="5" class="dash-empty">No hay productos sin stock.</td></tr>`); }
+      else {
+        $sinstock.html(d.sin_stock.map(f => `
+          <tr>
+            <td>${f.descripcion}</td>
+            <td>${f.proveedor || '—'}</td>
+            <td>${fmtFecha(f.ultima_venta)}</td>
+            <td>${fmtFecha(f.ultima_recepcion)}</td>
+            <td>${fmtNum(f.cantidad_sugerida)}</td>
+          </tr>`).join(''));
+      }
+
+      renderAnalisisRapido(d.analisis_rapido);
+    }).fail(function(){
+      Swal.fire('Error', 'Ocurrió un error al cargar el dashboard.', 'error');
+    });
+  }
+
+  // Carga inicial: últimos 3 meses (hay pocas ventas de prueba fuera de ese rango)
+  const [d0, h0] = calcularRango('3m');
+  filtroActual.desde = d0; filtroActual.hasta = h0;
+  cargarResumen();
+});
+</script>
+{% endblock %}

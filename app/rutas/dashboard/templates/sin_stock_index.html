@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block titulo %}Productos Sin Stock{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-ban"></i></span>
+      <div>
+        <h2 class="page-header-title">Productos sin stock</h2>
+        <p class="page-header-subtitle">Listado completo de productos que requieren atención inmediata.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashmod.dashboard') }}" class="btn-app btn-app-secondary"><i class="fas fa-arrow-left"></i> Volver al dashboard</a>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="dash-filtros">
+        <select id="f_sucursal" class="form-control" style="width:auto; max-width:200px;">
+          <option value="">Todas las sucursales</option>
+          {% for s in sucursales %}<option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>{% endfor %}
+        </select>
+        <select id="f_deposito" class="form-control" style="width:auto; max-width:200px;">
+          <option value="">Todos los depósitos</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:#1f2937"></span> Listado de productos sin stock</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_sinstock" class="table table-hover w-100">
+          <thead>
+            <tr>
+              <th>Código</th><th>Producto</th><th>Mínimo</th><th>Proveedor</th>
+              <th>Últ. venta</th><th>Últ. recepción</th><th>Cant. sugerida</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const tabla = $('#tbl_sinstock').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    serverSide: true,
+    ajax: {
+      url: '/api/v1/dashboard/sin-stock',
+      data: function(d){
+        d.id_sucursal = $('#f_sucursal').val() || undefined;
+        d.id_deposito = $('#f_deposito').val() || undefined;
+      }
+    },
+    columns: [
+      { data: 'item_code' },
+      { data: 'descripcion' },
+      { data: 'cantidad_minima' },
+      { data: 'proveedor', render: v => v || '—' },
+      { data: 'ultima_venta', render: v => v || '—' },
+      { data: 'ultima_recepcion', render: v => v || '—' },
+      { data: 'cantidad_sugerida' }
+    ],
+    ordering: false,
+    pageLength: 15
+  });
+
+  $('#f_sucursal').on('change', function(){
+    const id = $(this).val();
+    $('#f_deposito').html('<option value="">Todos los depósitos</option>');
+    if(id){
+      $.getJSON(`/api/v1/sucursal-depositos/${id}`, function(res){
+        (res.data || []).forEach(d => $('#f_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`));
+      });
+    }
+    tabla.ajax.reload();
+  });
+  $('#f_deposito').on('change', () => tabla.ajax.reload());
+});
+</script>
+{% endblock %}

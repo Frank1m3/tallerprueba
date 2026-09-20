@@ -36,3 +36,27 @@ def enviar_codigo_2fa(destinatario: str, codigo: str) -> bool:
     except Exception as e:
         app.logger.error(f"2FA: error al enviar el código por correo: {str(e)}")
         return False
+
+
+def enviar_alerta_acceso(destinatarios, asunto: str, cuerpo: str) -> bool:
+    """Envía una alerta de seguridad por correo a uno o más destinatarios. Nunca lanza excepción."""
+    destinatarios = [d for d in (destinatarios or []) if d]
+    if not destinatarios or not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        return False
+
+    mensaje = EmailMessage()
+    mensaje['Subject'] = asunto
+    mensaje['From'] = GMAIL_USER
+    mensaje['To'] = ', '.join(destinatarios)
+    mensaje.set_content(cuerpo)
+
+    try:
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as servidor:
+            servidor.starttls(context=contexto)
+            servidor.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            servidor.send_message(mensaje)
+        return True
+    except Exception as e:
+        app.logger.error(f"Alerta de acceso: error al enviar correo: {str(e)}")
+        return False

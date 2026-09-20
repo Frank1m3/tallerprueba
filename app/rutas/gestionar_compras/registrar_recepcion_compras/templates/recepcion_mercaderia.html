@@ -3,78 +3,93 @@
 {% block titulo %}Recepción de Mercaderías{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4" style="max-width:1200px;">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <strong>Recepción de Mercaderías - Compras</strong>
-            <div>
-                <button class="btn btn-sm btn-warning" id="btnNuevo" onclick="nuevo()">Nuevo</button>
-                <button class="btn btn-sm btn-success" id="btnGrabar" onclick="grabar()" disabled>Grabar</button>
-                <button class="btn btn-sm btn-secondary" id="btnCancelar" onclick="cancelar()" disabled>Cancelar</button>
-                <button class="btn btn-sm btn-secondary" id="btnSalir" onclick="location.href='/'">Salir</button>
-            </div>
-        </div>
-
-        <div class="card-body">
-            <!-- ENCABEZADO -->
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label>Número de Pedido</label>
-                    <input type="text" id="txt_nro_pedido" class="form-control" disabled>
-                </div>
-                <div class="col-md-4">
-                    <label>Proveedor</label>
-                    <input type="text" id="txt_proveedor" class="form-control" readonly>
-                </div>
-                <div class="col-md-4">
-                    <label>Fecha de Vencimiento</label>
-                    <input type="text" id="txt_fecha_vencimiento" class="form-control" readonly>
-                </div>
-            </div>
-
-            <!-- CAMPOS DE ITEM -->
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label>Código</label>
-                    <input type="text" id="txt_codigo" class="form-control" disabled>
-                </div>
-                <div class="col-md-4">
-                    <label>Descripción</label>
-                    <input type="text" id="txt_descripcion" class="form-control" readonly>
-                </div>
-                <div class="col-md-2">
-                    <label>Cantidad Pedido</label>
-                    <input type="text" id="txt_cant_pedida" class="form-control" readonly>
-                </div>
-                <div class="col-md-2">
-                    <label>Cantidad Recibida</label>
-                    <input type="number" id="txt_cant_recibida" class="form-control" disabled>
-                </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button class="btn btn-success w-100" id="btnAgregar" disabled>+</button>
-                </div>
-            </div>
-
-            <!-- DETALLE -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <table id="tbl_detalle" class="table table-bordered text-center align-middle">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Código</th>
-                                <th>Descripción</th>
-                                <th>Cantidad Pedido</th>
-                                <th>Cantidad Recibida</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-truck-loading"></i></span>
+      <div>
+        <h2 class="page-header-title">Recepción de Mercaderías</h2>
+        <p class="page-header-subtitle">Confirme la mercadería recibida contra un pedido de compra.</p>
+      </div>
     </div>
+  </div>
+
+  <!-- ENCABEZADO -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Datos del pedido</div>
+    <div class="app-card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="field-label">Número de Pedido</label>
+          <input type="text" id="txt_nro_pedido" class="form-control" disabled>
+        </div>
+        <div class="col-md-4">
+          <label class="field-label">Proveedor</label>
+          <input type="text" id="txt_proveedor" class="form-control" readonly>
+        </div>
+        <div class="col-md-4">
+          <label class="field-label">Fecha de Vencimiento</label>
+          <input type="text" id="txt_fecha_vencimiento" class="form-control" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMPOS DE ITEM -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Agregar ítem recibido</div>
+    <div class="app-card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="field-label">Código</label>
+          <input type="text" id="txt_codigo" class="form-control" disabled>
+        </div>
+        <div class="col-md-4">
+          <label class="field-label">Descripción</label>
+          <input type="text" id="txt_descripcion" class="form-control" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Cantidad Pedido</label>
+          <input type="text" id="txt_cant_pedida" class="form-control" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Cantidad Recibida</label>
+          <input type="number" id="txt_cant_recibida" class="form-control" disabled>
+        </div>
+        <div class="col-md-1">
+          <button class="btn-app btn-app-success w-100" id="btnAgregar" disabled><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETALLE -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-warning)"></span> Detalle de la recepción</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_detalle" class="table table-hover text-center align-middle w-100 mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Cantidad Pedido</th>
+              <th>Cantidad Recibida</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="app-card-footer">
+      <button class="btn-app btn-app-secondary" id="btnSalir" onclick="location.href='/'"><i class="fas fa-arrow-left"></i> Salir</button>
+      <button class="btn-app btn-app-secondary" id="btnCancelar" onclick="cancelar()" disabled><i class="fas fa-undo"></i> Cancelar</button>
+      <button class="btn-app btn-app-secondary" id="btnNuevo" onclick="nuevo()"><i class="fas fa-plus"></i> Nuevo</button>
+      <button class="btn-app btn-app-primary" id="btnGrabar" onclick="grabar()" disabled><i class="fas fa-save"></i> Grabar</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -85,6 +100,7 @@ let pedido = null;
 let pedidoVencido = false;
 
 let tabla = $('#tbl_detalle').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
     paging: false,
     info: false,
     searching: false,
@@ -206,7 +222,7 @@ $('#btnAgregar').on('click', function() {
         cantidad_pedida: cantPed,
         cantidad_recibida: cantRec,
         id_pedido_det: $('#txt_codigo').data('id-pedido-det'), // <-- agregado
-        acciones: `<button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>`
+        acciones: `<button class="btn-app btn-app-danger btn-sm btn-eliminar"><i class="fas fa-trash"></i> Eliminar</button>`
     };
 
     detalle.push(fila);

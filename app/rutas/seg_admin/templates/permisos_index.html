@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block titulo %}Permisos por Perfil{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-user-shield"></i></span>
+      <div>
+        <h2 class="page-header-title">Permisos por perfil</h2>
+        <p class="page-header-subtitle">Habilitá cada perfil por módulo, ventana y escenario: ver, agregar, modificar y eliminar/anular.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <button class="btn-app btn-app-primary" id="btn_guardar"><i class="fas fa-save"></i> Guardar cambios</button>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="dash-filtros">
+        <label class="field-label mb-0">Perfil</label>
+        <select id="sel_grupo" class="form-control" style="width:auto;">
+          {% for g in grupos %}<option value="{{ g['gru_id'] }}" data-nombre="{{ g['gru_des'] }}">{{ g['gru_des'] }}</option>{% endfor %}
+        </select>
+        <span class="kpi-card-sub" id="aviso_admin" style="display:none;">
+          <i class="fas fa-lock"></i> El perfil «administradores» tiene acceso total y no se puede restringir.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table class="table mb-0" id="tbl_permisos">
+          <thead>
+            <tr><th>Módulo / ventana</th>
+                <th class="text-center">Ver</th><th class="text-center">Agregar</th>
+                <th class="text-center">Modificar</th><th class="text-center">Eliminar / Anular</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  const COLS = ['leer', 'insertar', 'editar', 'borrar'];
+  let datos = [];
+
+  const esAdmin = () => $('#sel_grupo option:selected').data('nombre') === 'administradores';
+
+  function pintar(){
+    const bloqueado = esAdmin();
+    $('#aviso_admin').toggle(bloqueado); $('#btn_guardar').toggle(!bloqueado);
+    let html = '', modulo = null;
+    datos.forEach((f, i) => {
+      if(f.modulo !== modulo){
+        modulo = f.modulo;
+        html += `<tr style="background:var(--pos-surface-hover)"><td><strong>${modulo}</strong></td>` +
+          COLS.map(c => `<td class="text-center"><input type="checkbox" class="chk-modulo" data-modulo="${modulo}" data-col="${c}" title="Marcar todo el módulo" ${bloqueado ? 'disabled' : ''}></td>`).join('') + '</tr>';
+      }
+      html += `<tr><td style="padding-left:2rem">${f.ventana}</td>` +
+        COLS.map(c => `<td class="text-center"><input type="checkbox" class="chk" data-i="${i}" data-col="${c}" ${f[c] ? 'checked' : ''} ${bloqueado ? 'disabled' : ''}></td>`).join('') + '</tr>';
+    });
+    $('#tbl_permisos tbody').html(html);
+    actualizarEncabezados();
+  }
+
+  function actualizarEncabezados(){
+    $('.chk-modulo').each(function(){
+      const m = $(this).data('modulo'), c = $(this).data('col');
+      const filas = datos.filter(f => f.modulo === m);
+      $(this).prop('checked', filas.every(f => f[c]));
+    });
+  }
+
+  function cargar(){
+    $.getJSON(`/api/v1/seguridad/permisos/${$('#sel_grupo').val()}`, res => { datos = res.data; pintar(); });
+  }
+
+  $('#tbl_permisos').on('change', '.chk', function(){
+    const f = datos[$(this).data('i')], c = $(this).data('col'), v = this.checked;
+    f[c] = v;
+    if(c === 'leer' && !v){ COLS.forEach(x => f[x] = false); }          // sin "ver" no hay nada más
+    if(c !== 'leer' && v){ f.leer = true; }                              // agregar/modificar/eliminar implican ver
+    pintar();
+  });
+
+  $('#tbl_permisos').on('change', '.chk-modulo', function(){
+    const m = $(this).data('modulo'), c = $(this).data('col'), v = this.checked;
+    datos.filter(f => f.modulo === m).forEach(f => {
+      f[c] = v;
+      if(c === 'leer' && !v){ COLS.forEach(x => f[x] = false); }
+      if(c !== 'leer' && v){ f.leer = true; }
+    });
+    pintar();
+  });
+
+  $('#sel_grupo').on('change', cargar);
+
+  $('#btn_guardar').on('click', function(){
+    fetch(`/api/v1/seguridad/permisos/${$('#sel_grupo').val()}`, {
+      method: 'PUT', headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF},
+      body: JSON.stringify({ permisos: datos })
+    }).then(r => r.json()).then(res => {
+      if(res.success) Swal.fire({ icon:'success', title:'Permisos guardados', text:'Se aplican de inmediato.', timer:1800, showConfirmButton:false });
+      else Swal.fire('Error', res.error || 'No se pudieron guardar', 'error');
+    });
+  });
+
+  cargar();
+});
+</script>
+{% endblock %}

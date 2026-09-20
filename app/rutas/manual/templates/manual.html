@@ -1,0 +1,732 @@
+{% extends 'base.html' %}
+{% block titulo %}Manual de Usuario{% endblock %}
+
+{% block css %}
+<style>
+  .manual { --man-fs: 1rem; font-size: var(--man-fs); line-height: 1.7; max-width: 980px; margin: 0 auto; }
+  .manual h1 { font-size: 2rem; font-weight: 800; margin: 0 0 .25rem; }
+  .manual h2 { font-size: 1.5rem; font-weight: 800; margin: 3rem 0 1rem; padding-top: 1rem; border-top: 2px solid var(--pos-border); scroll-margin-top: 80px; }
+  .manual h3 { font-size: 1.15rem; font-weight: 700; margin: 2rem 0 .6rem; color: var(--pos-primary-hover); scroll-margin-top: 80px; }
+  .manual p, .manual li { color: var(--pos-text); }
+  .manual ol.pasos { counter-reset: paso; list-style: none; padding-left: 0; }
+  .manual ol.pasos > li { counter-increment: paso; position: relative; padding: .35rem 0 .35rem 2.6rem; }
+  .manual ol.pasos > li::before {
+    content: counter(paso); position: absolute; left: 0; top: .25rem; width: 1.8rem; height: 1.8rem; border-radius: 50%;
+    background: var(--pos-primary); color: #fff; font-weight: 700; font-size: .85rem; display: flex; align-items: center; justify-content: center;
+  }
+  .manual figure { margin: 1.2rem 0; border: 1px solid var(--pos-border); border-radius: 12px; overflow: hidden; background: #fff; }
+  .manual figure img { display: block; width: 100%; height: auto; }
+  .manual figcaption { padding: .55rem .9rem; font-size: .85em; color: var(--pos-text-muted); background: var(--pos-surface-hover); border-top: 1px solid var(--pos-border); }
+  .manual .nota, .manual .aviso, .manual .consejo { border-left: 4px solid; border-radius: 8px; padding: .7rem 1rem; margin: 1rem 0; }
+  .manual .nota    { background: #eff6ff; border-color: #2563eb; }
+  .manual .aviso   { background: #fef3c7; border-color: #f59e0b; }
+  .manual .consejo { background: #ecfdf5; border-color: #16a34a; }
+  .manual .nota strong, .manual .aviso strong, .manual .consejo strong { display: block; margin-bottom: .15rem; }
+  .manual table.man-tabla { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .95em; }
+  .manual table.man-tabla th, .manual table.man-tabla td { border: 1px solid var(--pos-border); padding: .5rem .7rem; text-align: left; vertical-align: top; }
+  .manual table.man-tabla th { background: var(--pos-surface-hover); }
+  .manual .flujo { display: flex; flex-wrap: wrap; align-items: stretch; gap: .5rem; margin: 1.2rem 0; }
+  .manual .flujo .caja { flex: 1 1 130px; background: #fff; border: 2px solid var(--pos-primary); border-radius: 10px; padding: .6rem .7rem; text-align: center; }
+  .manual .flujo .caja b { display: block; color: var(--pos-primary-hover); }
+  .manual .flujo .caja small { color: var(--pos-text-muted); }
+  .manual .flujo .flecha { align-self: center; font-size: 1.4rem; color: var(--pos-text-muted); font-weight: 700; }
+  .manual .tecla { display: inline-block; padding: 0 .45rem; border: 1px solid var(--pos-border); border-bottom-width: 2px; border-radius: 5px; background: #fff; font-family: monospace; font-size: .9em; }
+  .manual .indice { columns: 2 280px; column-gap: 2rem; padding-left: 1.2rem; }
+  .manual .indice li { margin-bottom: .25rem; break-inside: avoid; }
+  .manual .volver { font-size: .85em; }
+  .manual details { border: 1px solid var(--pos-border); border-radius: 10px; margin: .6rem 0; background: #fff; }
+  .manual details summary { cursor: pointer; padding: .7rem 1rem; font-weight: 700; }
+  .manual details[open] summary { border-bottom: 1px solid var(--pos-border); }
+  .manual details > div { padding: .3rem 1rem .8rem; }
+  .man-barra { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: flex-end;
+    padding: .6rem 0; background: var(--pos-bg); border-bottom: 1px solid var(--pos-border); margin-bottom: 1rem; }
+  .man-barra a, .man-barra button { font-size: .85rem; }
+  .manual a:focus, .manual button:focus, .manual summary:focus { outline: 3px solid #f59e0b; outline-offset: 2px; }
+  .saltar { position: absolute; left: -999px; top: 0; background: #fff; padding: .5rem 1rem; z-index: 50; }
+  .saltar:focus { left: 8px; top: 8px; }
+
+  /* Alto contraste */
+  .manual.alto-contraste { background: #000; color: #fff; padding: 1rem 1.5rem; border-radius: 12px; }
+  .manual.alto-contraste p, .manual.alto-contraste li, .manual.alto-contraste td, .manual.alto-contraste th, .manual.alto-contraste h1,
+  .manual.alto-contraste h2, .manual.alto-contraste summary, .manual.alto-contraste figcaption { color: #fff; }
+  .manual.alto-contraste h3 { color: #ffea00; }
+  .manual.alto-contraste a { color: #7dd3fc; text-decoration: underline; }
+  .manual.alto-contraste .nota, .manual.alto-contraste .aviso, .manual.alto-contraste .consejo,
+  .manual.alto-contraste details, .manual.alto-contraste .flujo .caja, .manual.alto-contraste figure { background: #111; color: #fff; border-color: #ffea00; }
+  .manual.alto-contraste .flujo .caja b { color: #ffea00; }
+  .manual.alto-contraste .flujo .caja small, .manual.alto-contraste .flujo .flecha, .manual.alto-contraste figcaption, .manual.alto-contraste .kpi-card-sub { color: #e5e7eb; }
+  .manual.alto-contraste .tecla { background: #111; color: #fff; border-color: #ffea00; }
+  .manual.alto-contraste figcaption { background: #111; border-color: #555; }
+  .manual.alto-contraste table.man-tabla th { background: #222; }
+  .manual.alto-contraste table.man-tabla th, .manual.alto-contraste table.man-tabla td { border-color: #888; }
+
+  @media print {
+    body #accordionSidebar, body .navbar, body a.scroll-to-top, body .scroll-to-top, body footer.sticky-footer, body .man-barra, body .volver, body .saltar { display: none !important; visibility: hidden !important; }
+    #content-wrapper, #content, .container-fluid { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+    /* Bootstrap 4 impone min-width:992px al imprimir: más ancho que una hoja A4 y recorta el texto */
+    html, body, #wrapper, #content-wrapper, #content, .container, .container-fluid { min-width: 0 !important; width: 100% !important; }
+    body { background: #fff !important; }
+    .manual { max-width: 100%; font-size: 11pt; }
+    .manual h2 { break-before: page; border-top: 0; }
+    .manual h2:first-of-type { break-before: auto; }
+    .manual figure, .manual .flujo, .manual table { break-inside: avoid; }
+    .manual details { border: 0; }
+    .manual details summary { padding-left: 0; }
+    .manual .portada { min-height: 90vh; }
+  }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid px-4">
+<a class="saltar" href="#contenido-manual">Saltar al contenido</a>
+
+<div class="man-barra" role="toolbar" aria-label="Opciones de lectura">
+  <span style="margin-right:auto; font-weight:700;"><i class="fas fa-book-open"></i> Manual de usuario</span>
+  <button type="button" class="btn-app btn-app-secondary btn-sm" id="man_menos" aria-label="Reducir tamaño del texto">A−</button>
+  <button type="button" class="btn-app btn-app-secondary btn-sm" id="man_mas" aria-label="Aumentar tamaño del texto">A+</button>
+  <button type="button" class="btn-app btn-app-secondary btn-sm" id="man_contraste" aria-pressed="false"><i class="fas fa-adjust"></i> Alto contraste</button>
+  <button type="button" class="btn-app btn-app-secondary btn-sm" id="man_imprimir"><i class="fas fa-print"></i> Imprimir / Guardar PDF</button>
+  <a class="btn-app btn-app-primary btn-sm" href="{{ url_for('manualmod.manual_archivo', ruta='Manual_de_Usuario_GranViaSys.pdf') }}" download><i class="fas fa-file-pdf"></i> Descargar PDF</a>
+  <a class="btn-app btn-app-secondary btn-sm" href="{{ url_for('manualmod.manual_archivo', ruta='Manual_de_Usuario_GranViaSys.txt') }}" download><i class="fas fa-file-alt"></i> Texto plano</a>
+</div>
+
+<article class="manual" id="contenido-manual">
+
+<header class="portada" id="inicio">
+  <h1>Manual de Usuario — GranViaSys</h1>
+  <p><strong>Sistema de gestión de Gran Vía Supermercados</strong><br>
+     Ventas · Compras · Inventario · Producción · Seguridad</p>
+  <table class="man-tabla" style="max-width:520px">
+    <tr><th>Versión del manual</th><td>{{ version }}</td></tr>
+    <tr><th>Última actualización</th><td>{{ fecha }}</td></tr>
+    <tr><th>Versión del sistema</th><td>GranViaSys 2026</td></tr>
+    <tr><th>Idioma</th><td>Español</td></tr>
+  </table>
+
+  <h2 style="border-top:0; margin-top:2rem;">Índice</h2>
+  <ol class="indice">
+    <li><a href="#introduccion">Introducción y a quién va dirigido</a></li>
+    <li><a href="#ingreso">Ingreso al sistema</a>
+      <ul>
+        <li><a href="#ingreso-login">Iniciar sesión</a></li>
+        <li><a href="#ingreso-recuperar">Recuperar la contraseña</a></li>
+        <li><a href="#ingreso-salir">Cerrar sesión</a></li>
+      </ul></li>
+    <li><a href="#pantalla">La pantalla del sistema y el menú</a></li>
+    <li><a href="#perfiles">Perfiles y permisos</a></li>
+    <li><a href="#dashboard">Dashboard de ventas e inventario</a></li>
+    <li><a href="#catalogos">Catálogos (Referenciales)</a></li>
+    <li><a href="#ventas">Módulo de Ventas</a>
+      <ul>
+        <li><a href="#ventas-apertura">Apertura de caja</a></li>
+        <li><a href="#ventas-pos">Punto de Venta</a></li>
+        <li><a href="#ventas-arqueo">Arqueo de caja</a></li>
+        <li><a href="#ventas-cierre">Cierre de caja</a></li>
+      </ul></li>
+    <li><a href="#compras">Módulo de Compras</a>
+      <ul>
+        <li><a href="#compras-solicitud">Solicitud de compra</a></li>
+        <li><a href="#compras-presupuesto">Presupuesto</a></li>
+        <li><a href="#compras-pedido">Pedido de compra</a></li>
+        <li><a href="#compras-recepcion">Recepción de mercaderías</a></li>
+        <li><a href="#compras-factura">Factura de compra</a></li>
+        <li><a href="#compras-estado">Cambiar el estado de un documento</a></li>
+      </ul></li>
+    <li><a href="#produccion">Módulo de Producción</a></li>
+    <li><a href="#seguridad">Seguridad y auditoría (administradores)</a>
+      <ul>
+        <li><a href="#seg-usuarios">Usuarios</a></li>
+        <li><a href="#seg-permisos">Permisos por perfil</a></li>
+        <li><a href="#seg-auditoria">Auditoría de transacciones</a></li>
+        <li><a href="#seg-accesos">Intentos de acceso</a></li>
+      </ul></li>
+    <li><a href="#faq">Preguntas frecuentes y solución de problemas</a></li>
+    <li><a href="#glosario">Glosario</a></li>
+    <li><a href="#versiones">Historial de versiones</a></li>
+  </ol>
+</header>
+
+<!-- ============================================================ -->
+<h2 id="introduccion">1. Introducción</h2>
+<p>GranViaSys es el sistema con el que trabaja Gran Vía Supermercados. Con él se cobra en caja, se compra mercadería a los proveedores, se controla cuánto stock hay en cada sucursal y depósito, y se cuida la seguridad de la información.</p>
+<p>Este manual explica, paso a paso y con capturas de pantalla, cómo usar cada parte del sistema. No necesitás conocimientos técnicos.</p>
+
+<h3>¿A quién va dirigido?</h3>
+<table class="man-tabla">
+  <tr><th>Si sos…</th><th>Leé principalmente…</th></tr>
+  <tr><td>Cajero o fiscal de caja</td><td><a href="#ingreso">Ingreso</a>, <a href="#ventas">Ventas</a>, <a href="#faq">Preguntas frecuentes</a></td></tr>
+  <tr><td>Encargado de compras</td><td><a href="#ingreso">Ingreso</a>, <a href="#catalogos">Catálogos</a>, <a href="#compras">Compras</a>, <a href="#dashboard">Dashboard</a></td></tr>
+  <tr><td>Fiscal / auditor (solo consulta)</td><td><a href="#dashboard">Dashboard</a>, <a href="#perfiles">Perfiles y permisos</a></td></tr>
+  <tr><td>Administrador del sistema</td><td>Todo el manual, en especial <a href="#seguridad">Seguridad y auditoría</a></td></tr>
+</table>
+
+<h3>Cómo leer este manual</h3>
+<ul>
+  <li>Los números en círculo indican <strong>pasos</strong> que se hacen en orden.</li>
+  <li>Los recuadros <span style="color:#2563eb"><strong>azules</strong></span> son notas, los <span style="color:#b45309"><strong>amarillos</strong></span> son avisos importantes y los <span style="color:#15803d"><strong>verdes</strong></span> son consejos.</li>
+  <li>Los nombres de botones y menús aparecen en <strong>negrita</strong>.</li>
+  <li>Arriba tenés botones para agrandar el texto, activar el alto contraste, imprimir o descargar este manual en PDF o texto plano.</li>
+</ul>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="ingreso">2. Ingreso al sistema</h2>
+<div class="flujo" role="img" aria-label="Diagrama: usuario y contraseña, código por correo, sistema">
+  <div class="caja"><b>1. Usuario y contraseña</b><small>Los escribís en la pantalla de inicio</small></div><div class="flecha">→</div>
+  <div class="caja"><b>2. Código por correo</b><small>6 dígitos, vence en 5 minutos</small></div><div class="flecha">→</div>
+  <div class="caja"><b>3. Dashboard</b><small>Ya estás dentro del sistema</small></div>
+</div>
+
+<h3 id="ingreso-login">Iniciar sesión</h3>
+<ol class="pasos">
+  <li>Abrí el navegador (Chrome, Edge o Firefox) y entrá a la dirección del sistema que te indicó el administrador.</li>
+  <li>Escribí tu <strong>Nombre de usuario</strong> y tu <strong>Contraseña</strong>. Con el ícono del ojo podés ver lo que escribiste. Si dejás un campo vacío, el sistema te lo marca en rojo al instante.</li>
+  <li>Presioná <strong>Ingresar al sistema</strong>.</li>
+  <li>Por seguridad, te enviamos un <strong>código de 6 dígitos</strong> al correo registrado en tu usuario. Escribilo y presioná <strong>Verificar código</strong>. Si no llegó, usá <strong>Reenviar</strong>.</li>
+  <li>Listo: se abre el <a href="#dashboard">Dashboard</a>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/login.png') }}" alt="Pantalla de inicio de sesión con los campos usuario y contraseña" loading="lazy">
+  <figcaption>Figura 1. Pantalla de inicio de sesión. Debajo del botón está el enlace «¿Olvidaste tu contraseña?».</figcaption>
+</figure>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/verificar_2fa.png') }}" alt="Pantalla para ingresar el código de verificación de 6 dígitos" loading="lazy">
+  <figcaption>Figura 2. Verificación en dos pasos: ingresá el código que llegó a tu correo.</figcaption>
+</figure>
+<div class="aviso"><strong>Bloqueo de la cuenta</strong>
+  Si escribís mal la contraseña <strong>3 veces</strong>, tu usuario se bloquea y se envía un aviso a tu correo. Solo un administrador puede desbloquearlo (ver <a href="#seg-usuarios">Usuarios</a>). El código del correo también admite solo 3 intentos.</div>
+<div class="nota"><strong>Sesión</strong>
+  Por seguridad, la sesión se cierra sola después de 30 minutos sin actividad. Solo tenés que ingresar de nuevo.</div>
+
+<h3 id="ingreso-recuperar">Recuperar la contraseña</h3>
+<ol class="pasos">
+  <li>En la pantalla de inicio, presioná <strong>¿Olvidaste tu contraseña?</strong></li>
+  <li>Escribí tu nombre de usuario y presioná <strong>Enviar código</strong>. Te llega un código al correo (vence en 10 minutos).</li>
+  <li>Escribí el código y elegí tu contraseña nueva. La pantalla te muestra en verde cada requisito que vas cumpliendo:
+    <ul><li>Al menos 8 caracteres</li><li>Una letra mayúscula y una minúscula</li><li>Un número</li></ul></li>
+  <li>Repetí la contraseña y presioná <strong>Cambiar contraseña</strong>. Ya podés ingresar con la nueva.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/recuperar.png') }}" alt="Pantalla de recuperación de contraseña" loading="lazy">
+  <figcaption>Figura 3. Recuperación de contraseña.</figcaption>
+</figure>
+<div class="nota"><strong>Por tu seguridad</strong> El sistema responde lo mismo aunque el usuario no exista, para no revelar quiénes tienen cuenta.</div>
+
+<h3 id="ingreso-salir">Cerrar sesión</h3>
+<ol class="pasos">
+  <li>Arriba a la derecha, hacé clic en tu nombre.</li>
+  <li>Elegí <strong>Cerrar sesión</strong>.</li>
+</ol>
+<div class="consejo"><strong>Buena práctica</strong> Cerrá siempre la sesión si dejás la computadora, especialmente en caja.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="pantalla">3. La pantalla del sistema y el menú</h2>
+<p>Todas las pantallas se organizan igual:</p>
+<ul>
+  <li><strong>Menú lateral (izquierda, azul):</strong> los módulos del sistema. Hacé clic en un módulo para desplegarlo y elegir la ventana. Con el botón redondo de abajo podés achicarlo.</li>
+  <li><strong>Barra superior:</strong> muestra dónde estás (por ejemplo <em>Inicio / Solicitudes de Compra</em>), un buscador, las notificaciones y tu usuario.</li>
+  <li><strong>Área de trabajo:</strong> el título de la ventana, los botones de acción (por ejemplo <em>Nueva Solicitud</em>) y las tablas o formularios.</li>
+</ul>
+<p>Las tablas se pueden <strong>ordenar</strong> haciendo clic en el título de una columna, <strong>buscar</strong> con el cuadro <em>Buscar</em> y recorrer con <em>Anterior / Siguiente</em>. Con <em>Mostrar … registros</em> elegís cuántas filas ver.</p>
+<div class="nota"><strong>Menú a tu medida</strong> Solo ves las opciones que tu perfil puede usar. Si no aparece un módulo, es porque tu perfil no tiene permiso (ver <a href="#perfiles">Perfiles y permisos</a>).</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="perfiles">4. Perfiles y permisos</h2>
+<p>Cada usuario pertenece a un <strong>perfil</strong>. El perfil define en qué ventanas puede entrar y qué puede hacer en cada una:</p>
+<table class="man-tabla">
+  <tr><th>Permiso</th><th>Qué permite</th></tr>
+  <tr><td>Ver</td><td>Entrar a la ventana y consultar.</td></tr>
+  <tr><td>Agregar</td><td>Crear registros nuevos (botones <em>Agregar</em>, <em>Nuevo</em>, <em>Grabar</em>).</td></tr>
+  <tr><td>Modificar</td><td>Editar y cambiar estados (botones <em>Editar</em>, <em>Modificar</em>, <em>Cambiar estado</em>).</td></tr>
+  <tr><td>Eliminar / Anular</td><td>Borrar registros o anular documentos.</td></tr>
+</table>
+<p>Los perfiles que trae el sistema son:</p>
+<table class="man-tabla">
+  <tr><th>Perfil</th><th>Puede</th></tr>
+  <tr><td><strong>administradores</strong></td><td>Todo, incluido el módulo de Seguridad.</td></tr>
+  <tr><td><strong>compras</strong></td><td>Ver todo. En Compras puede agregar y modificar, pero <strong>no anular ni eliminar</strong>.</td></tr>
+  <tr><td><strong>fiscales</strong></td><td>Solo consultar.</td></tr>
+</table>
+<div class="aviso"><strong>«Acceso denegado»</strong>
+  Si intentás algo que tu perfil no permite, el sistema te muestra el mensaje <em>No tiene permiso para… «nombre de la ventana»</em>. No es un error: pedile a un administrador que te habilite el permiso (ver <a href="#seg-permisos">Permisos por perfil</a>). Los botones que tu perfil no puede usar directamente no se muestran.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="dashboard">5. Dashboard de ventas e inventario</h2>
+<p>Es la primera pantalla al ingresar. Responde en un vistazo: <em>¿qué se vende más y menos?, ¿qué se está por acabar?, ¿qué necesita una acción inmediata?</em></p>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/dashboard.png') }}" alt="Dashboard con tarjetas de indicadores, rankings y tablas de riesgo de quiebre" loading="lazy">
+  <figcaption>Figura 4. Dashboard de Ventas e Inventario.</figcaption>
+</figure>
+
+<h3>Filtros (arriba)</h3>
+<ol class="pasos">
+  <li>Elegí el período: <strong>Hoy</strong>, <strong>Últimos 7 días</strong>, <strong>Este mes</strong>, <strong>Últimos 3 meses</strong>, <strong>Este año</strong> o <strong>Personalizado</strong> (indicás fecha desde y hasta).</li>
+  <li>Si querés, elegí una <strong>sucursal</strong> y luego un <strong>depósito</strong> de esa sucursal.</li>
+  <li>Con <strong>Sin movimiento</strong> elegís desde cuántos días sin ventas (30, 60 o 90) un producto se considera «dormido».</li>
+</ol>
+<p>Todo el panel se actualiza solo al cambiar un filtro.</p>
+
+<h3>Las tarjetas</h3>
+<table class="man-tabla">
+  <tr><th>Tarjeta</th><th>Qué te dice</th></tr>
+  <tr><td>Unidades vendidas</td><td>Total del período, con la variación frente al período anterior (flecha verde ▲ sube, roja ▼ baja).</td></tr>
+  <tr><td>Menos vendido</td><td>El producto que menos salió entre los que se vendieron.</td></tr>
+  <tr><td>Próximos a quebrar</td><td>Productos cuyo stock ya está cerca del mínimo: conviene revisar compras.</td></tr>
+  <tr><td>Sin stock</td><td>Productos en cero o menos: atención inmediata.</td></tr>
+  <tr><td>Bajo el mínimo</td><td>Productos por debajo de su stock mínimo.</td></tr>
+  <tr><td>Mayor rotación</td><td>El producto que más rápido sale (unidades por día).</td></tr>
+  <tr><td>Sin movimiento</td><td>Productos que no se vendieron en el plazo elegido: posible sobre-stock.</td></tr>
+</table>
+
+<h3>Niveles de riesgo de stock</h3>
+<table class="man-tabla">
+  <tr><th>Nivel</th><th>Significa</th></tr>
+  <tr><td>Normal</td><td>Stock por encima de una vez y media el mínimo.</td></tr>
+  <tr><td>Atención</td><td>Stock hasta una vez y media el mínimo.</td></tr>
+  <tr><td>Stock bajo</td><td>Stock igual o menor al mínimo.</td></tr>
+  <tr><td>Crítico</td><td>Stock en la mitad del mínimo o menos, <em>o</em> alcanza para 2 días o menos según lo que se vende.</td></tr>
+  <tr><td>Sin stock</td><td>Stock en cero o negativo.</td></tr>
+</table>
+<p>La <strong>cobertura</strong> son los días que alcanza el stock actual vendiendo al ritmo del período. Por ejemplo: 20 unidades y 5 ventas por día = 4 días.</p>
+
+<h3>Ver todos los productos en riesgo o sin stock</h3>
+<ol class="pasos">
+  <li>En la tabla <em>Productos con riesgo de quiebre</em> o <em>Productos sin stock</em>, hacé clic en <strong>Ver todos →</strong>.</li>
+  <li>Usá el cuadro <strong>Buscar</strong> para encontrar un producto por nombre o código, y los filtros de sucursal y depósito.</li>
+  <li>Volvé con <strong>Volver al dashboard</strong>.</li>
+</ol>
+<div class="consejo"><strong>Cómo usarlo</strong> Empezá cada día por <em>Sin stock</em> y <em>Próximos a quebrar</em>: son los productos que hay que reponer primero.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="catalogos">6. Catálogos (Referenciales)</h2>
+<p>Los catálogos son las listas base que usa todo el sistema: productos, proveedores, clientes, sucursales, depósitos, monedas, etc. Están en el menú <strong>Referenciales</strong>, agrupados en <em>Generales</em>, <em>Compras</em>, <em>Ventas</em> y <em>Producción</em>.</p>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/ref_items.png') }}" alt="Listado de productos con botones Editar y Eliminar" loading="lazy">
+  <figcaption>Figura 5. Ejemplo de catálogo: Items / Productos.</figcaption>
+</figure>
+
+<h3>Agregar un registro (ejemplo: un producto)</h3>
+<ol class="pasos">
+  <li>Menú <strong>Referenciales → Items / Productos</strong>.</li>
+  <li>Presioná <strong>Agregar</strong>.</li>
+  <li>Completá <strong>Código</strong> y <strong>Descripción</strong>, elegí <strong>Unidad de medida</strong>, <strong>Tipo de item</strong>, <strong>Tipo de impuesto</strong> y <strong>Proveedor</strong>, y escribí el <strong>Costo unitario</strong> y el <strong>Stock mínimo</strong>. Dejá <strong>Activo</strong> encendido.</li>
+  <li>Presioná <strong>Guardar</strong>. Para salir sin guardar, <strong>Cerrar</strong>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/ref_items_nuevo.png') }}" alt="Formulario Agregar Item" loading="lazy">
+  <figcaption>Figura 6. Formulario para agregar un producto.</figcaption>
+</figure>
+<div class="nota"><strong>Stock mínimo</strong> Es la cantidad por debajo de la cual el producto se considera en riesgo en el <a href="#dashboard">Dashboard</a>. Cargarlo bien hace que las alertas sean útiles.</div>
+
+<h3>Modificar o eliminar</h3>
+<ol class="pasos">
+  <li>Buscá el registro con el cuadro <strong>Buscar</strong>.</li>
+  <li>Presioná <strong>Editar</strong> (cambiás los datos y <strong>Guardar</strong>) o <strong>Eliminar</strong> (el sistema te pide confirmar).</li>
+</ol>
+<div class="aviso"><strong>Si no se puede eliminar</strong> Un registro que ya se usó en compras o ventas no se puede borrar. En ese caso, editalo y apagá <strong>Activo</strong>: deja de usarse pero se conserva el historial.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="ventas">7. Módulo de Ventas</h2>
+<p>La venta en caja funciona por <strong>turnos</strong>. Un turno se abre, se vende, se controla el dinero y se cierra:</p>
+<div class="flujo" role="img" aria-label="Diagrama del ciclo de caja: apertura, venta, arqueo, cierre">
+  <div class="caja"><b>Apertura</b><small>Se abre el turno con un monto inicial</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Punto de Venta</b><small>Se registran y cobran las ventas</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Arqueo</b><small>Se cuenta el dinero y se compara</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Cierre</b><small>Se cierra el turno</small></div>
+</div>
+
+<h3 id="ventas-apertura">Apertura de caja</h3>
+<ol class="pasos">
+  <li>Menú <strong>Módulo de Venta → Caja → Apertura</strong>.</li>
+  <li>Presioná <strong>Aperturar Turno</strong>.</li>
+  <li>Completá la <strong>Clave Fiscal</strong> (la ingresa el fiscal autorizado), elegí el <strong>Cajero</strong> y escribí el <strong>Monto Inicial</strong> (el efectivo con el que arranca la caja).</li>
+  <li>Presioná <strong>Guardar</strong>. El turno queda <em>Abierto</em>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/ventas_apertura_nueva.png') }}" alt="Formulario Apertura de Turno con clave fiscal, cajero y monto inicial" loading="lazy">
+  <figcaption>Figura 7. Apertura de turno.</figcaption>
+</figure>
+<div class="aviso"><strong>Sin turno abierto no se puede vender</strong> El Punto de Venta muestra «Turno de Caja Cerrado» y un botón <strong>Ir a Apertura de Caja</strong>.</div>
+
+<h3 id="ventas-pos">Punto de Venta</h3>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/ventas_pos.png') }}" alt="Pantalla del punto de venta con campo de código, detalle de la venta y panel de atajos" loading="lazy">
+  <figcaption>Figura 8. Punto de Venta (aquí con el turno cerrado). A la derecha, el panel de atajos.</figcaption>
+</figure>
+<ol class="pasos">
+  <li>Menú <strong>Caja → Punto de Venta</strong>.</li>
+  <li>Escaneá el código de barras o escribilo en <strong>Código</strong> (<span class="tecla">F2</span>) y presioná <span class="tecla">Enter</span>. Aparecen el artículo, su precio y el total del ítem.</li>
+  <li>Para más de una unidad, cambiá la <strong>Cantidad</strong> con <span class="tecla">F4</span>.</li>
+  <li>Repetí para cada producto. Se van sumando en <strong>Detalle de la venta</strong>; arriba ves subtotal, IVA y total.</li>
+  <li>Opcional: <span class="tecla">F3</span> para elegir o registrar rápido al <strong>cliente</strong>, y <span class="tecla">F5</span> para aplicar un <strong>descuento</strong>.</li>
+  <li>Presioná <strong>COBRAR</strong> (<span class="tecla">F10</span>). Elegí el <strong>Tipo de comprobante</strong> (Ticket o Factura), cargá los pagos con <strong>Añadir Pago</strong> (podés combinar formas de pago) o usá los botones de dinero rápido (Exacto, 5.000, 10.000…). El sistema te dice cuánto <em>falta abonar</em> o el vuelto.</li>
+  <li>Presioná <strong>Finalizar Venta</strong>. Aparece <em>¡Venta Registrada!</em> con opciones para <strong>Imprimir Ticket</strong>, <strong>Descargar Factura (PDF)</strong>, <strong>Enviar por Correo</strong> o iniciar una <strong>Nueva Venta</strong> (<span class="tecla">Esc</span>).</li>
+</ol>
+<table class="man-tabla">
+  <tr><th>Tecla</th><th>Acción</th></tr>
+  <tr><td><span class="tecla">F2</span></td><td>Código / escáner</td></tr>
+  <tr><td><span class="tecla">F3</span></td><td>Buscar cliente</td></tr>
+  <tr><td><span class="tecla">F4</span></td><td>Modificar cantidad</td></tr>
+  <tr><td><span class="tecla">F5</span></td><td>Aplicar descuento</td></tr>
+  <tr><td><span class="tecla">F8</span></td><td>Historial de ventas del turno</td></tr>
+  <tr><td><span class="tecla">F10</span> / <span class="tecla">Esc</span></td><td>Cobrar la transacción</td></tr>
+</table>
+<div class="nota"><strong>Otras funciones</strong> <strong>Caja</strong> muestra el resumen del turno (recaudación por forma de cobro y los 5 productos más vendidos). <strong>Limpiar</strong> descarta la venta en curso (pide confirmación). Los totales se ven en guaraníes, dólares y reales.</div>
+
+<h3 id="ventas-arqueo">Arqueo de caja</h3>
+<p>El arqueo compara el dinero que <em>debería</em> haber según el sistema con el que <em>realmente</em> hay.</p>
+<ol class="pasos">
+  <li>Menú <strong>Caja → Arqueo de Caja</strong> y presioná <strong>Nuevo Arqueo</strong>.</li>
+  <li>En <strong>Turno / Apertura activa</strong> elegí el turno y presioná <strong>Cargar</strong>: el sistema muestra lo que registró por cada forma de pago.</li>
+  <li>Contá el dinero y escribí el monto físico de cada forma: <strong>Efectivo, Tarjeta crédito, Tarjeta débito, Cheque, QR, Otros</strong>.</li>
+  <li>Si hace falta, agregá una <strong>Observación</strong> y presioná <strong>Guardar Arqueo</strong>.</li>
+  <li>En el historial vas a ver el <strong>Total sistema</strong>, el <strong>Total arqueo</strong> y la <strong>Diferencia</strong> (en rojo si falta dinero).</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/ventas_arqueo_nuevo.png') }}" alt="Formulario Realizar Arqueo de Caja con conteo por forma de pago" loading="lazy">
+  <figcaption>Figura 9. Arqueo de caja: conteo por forma de pago.</figcaption>
+</figure>
+
+<h3 id="ventas-cierre">Cierre de caja</h3>
+<ol class="pasos">
+  <li>Menú <strong>Caja → Cierre</strong> y presioná <strong>Nuevo Cierre</strong>.</li>
+  <li>Elegí el <strong>Turno a cerrar</strong>, escribí una <strong>Observación</strong> si querés y presioná <strong>Registrar Cierre</strong>.</li>
+  <li>El turno pasa a <em>Cerrado</em> y queda en el listado con el monto de apertura, el total de ventas y la diferencia.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/ventas_cierre.png') }}" alt="Listado de cierres de caja" loading="lazy">
+  <figcaption>Figura 10. Cierres registrados.</figcaption>
+</figure>
+<div class="consejo"><strong>Buena práctica</strong> Hacé el arqueo antes del cierre y revisá cualquier diferencia antes de cerrar el turno.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="compras">8. Módulo de Compras</h2>
+<p>Comprar mercadería sigue un ciclo ordenado. Cada documento nace del anterior, así queda registro de quién pidió qué, a qué precio y cuándo llegó:</p>
+<div class="flujo" role="img" aria-label="Diagrama del ciclo de compras: solicitud, presupuesto, pedido, recepción, factura, libro de compras">
+  <div class="caja"><b>Solicitud</b><small>Se pide la mercadería</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Presupuesto</b><small>El proveedor cotiza</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Pedido</b><small>Se le encarga al proveedor</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Recepción</b><small>Llega y se verifica</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Factura</b><small>Se registra la factura</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Libro de compras</b><small>Se asienta solo</small></div>
+</div>
+<div class="nota"><strong>Estados</strong> Cada documento tiene un estado (por ejemplo <em>Pendiente</em>, <em>Aprobada/Aprobado</em>, <em>Anulado</em>). Se cambia con el botón <a href="#compras-estado">Cambiar estado</a>.</div>
+
+<h3>Cómo se busca un producto (vale para todas las pantallas de compras)</h3>
+<ol class="pasos">
+  <li>En el campo <strong>Producto</strong> escribí el <strong>código</strong> (por ejemplo «5») o parte del <strong>nombre</strong>. La lista se filtra mientras escribís.</li>
+  <li>Presioná <span class="tecla">Enter</span> para elegir el primero de la lista; el cursor pasa solo a <strong>Cantidad</strong>.</li>
+  <li>Escribí la cantidad y presioná <span class="tecla">Enter</span> otra vez: el producto se agrega al detalle.</li>
+  <li>Si te equivocaste de producto, presioná la <strong>×</strong> del campo para borrar la selección.</li>
+</ol>
+
+<h3 id="compras-solicitud">Solicitud de compra</h3>
+<ol class="pasos">
+  <li>Menú <strong>Módulo de Compra → Gestionar Compras → R. Solicitud</strong>.</li>
+  <li>Presioná <strong>Nueva Solicitud</strong>.</li>
+  <li>Elegí el <strong>Solicitante</strong>, la <strong>Sucursal</strong> y el <strong>Depósito</strong>, y revisá la <strong>Fecha</strong>.</li>
+  <li>Agregá los productos (ver «Cómo se busca un producto»).</li>
+  <li>Presioná <strong>Guardar</strong>. Los campos se limpian para cargar la siguiente. Con <strong>Volver</strong> regresás al listado.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_solicitud_lista.png') }}" alt="Listado de solicitudes de compra con estados y botones" loading="lazy">
+  <figcaption>Figura 11. Listado de solicitudes. Cada fila tiene <em>Modificar</em> y <em>Cambiar estado</em>.</figcaption>
+</figure>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_solicitud_nueva.png') }}" alt="Formulario Nueva Solicitud de compra" loading="lazy">
+  <figcaption>Figura 12. Nueva solicitud de compra.</figcaption>
+</figure>
+<div class="nota"><strong>Modificar</strong> Solo se pueden modificar las solicitudes en estado <em>Pendiente</em>.</div>
+
+<h3 id="compras-presupuesto">Presupuesto</h3>
+<ol class="pasos">
+  <li>Menú <strong>R. Presupuesto</strong> y presioná <strong>Nuevo presupuesto</strong>.</li>
+  <li>Si el presupuesto responde a una solicitud, escribí su <strong>Nro. Solicitud</strong> y presioná <span class="tecla">Enter</span>: se cargan los productos.</li>
+  <li>Completá <strong>Fecha de emisión</strong>, <strong>Fecha de vencimiento</strong>, <strong>Proveedor</strong>, <strong>Sucursal</strong> y <strong>Funcionario</strong>.</li>
+  <li>Si tenés el presupuesto del proveedor en archivo, adjuntalo (PDF, XLSX, XLS o TXT).</li>
+  <li>Cargá el <strong>precio</strong> de cada producto y presioná <strong>Guardar</strong>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_presupuesto_nuevo.png') }}" alt="Formulario Registrar Presupuesto" loading="lazy">
+  <figcaption>Figura 13. Registrar presupuesto.</figcaption>
+</figure>
+
+<h3 id="compras-pedido">Pedido de compra</h3>
+<ol class="pasos">
+  <li>Menú <strong>Generar Pedido</strong> y presioná <strong>Nuevo pedido</strong>.</li>
+  <li>Elegí el <strong>Origen</strong>:
+    <ul>
+      <li><strong>Sin origen</strong>: cargás todo a mano.</li>
+      <li><strong>Desde Solicitud</strong>: escribís el número de solicitud y se cargan los productos.</li>
+      <li><strong>Desde Presupuesto</strong>: escribís el código del presupuesto y se cargan proveedor y precios.</li>
+    </ul></li>
+  <li>Elegí el <strong>Proveedor</strong> <em>antes</em> de buscar productos: el pedido es para un solo proveedor.</li>
+  <li>Completá <strong>Sucursal, Depósito, Tipo de factura, Fecha del pedido y Fecha necesaria</strong>.</li>
+  <li>Agregá los productos con su <strong>Cantidad</strong> y <strong>Precio</strong> (botón verde <strong>+</strong>). Abajo ves el <strong>Total</strong>.</li>
+  <li>Presioná <strong>Grabar</strong>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_pedido_nuevo.png') }}" alt="Formulario Pedido de Compra con origen, proveedor y detalle" loading="lazy">
+  <figcaption>Figura 14. Pedido de compra.</figcaption>
+</figure>
+<div class="aviso"><strong>Proveedor obligatorio</strong> Si intentás grabar sin elegir proveedor, el sistema te avisa. Es necesario porque muchos productos no tienen un proveedor fijo asignado.</div>
+
+<h3 id="compras-recepcion">Recepción de mercaderías</h3>
+<p>Se hace cuando llega la mercadería y se verifica contra el pedido.</p>
+<ol class="pasos">
+  <li>Menú <strong>Rec. Mercaderías</strong> y presioná <strong>Nuevo</strong>.</li>
+  <li>Escribí el <strong>Número de Pedido</strong>. Se muestran el proveedor y la fecha de vencimiento.</li>
+  <li>Escribí el <strong>Código</strong> de cada producto recibido; aparecen la descripción y la cantidad pedida.</li>
+  <li>Ingresá la <strong>Cantidad Recibida</strong> (no puede superar la pedida) y presioná el botón <strong>+</strong>.</li>
+  <li>Cuando termines, presioná <strong>Grabar</strong>. El stock del depósito se actualiza.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_recepcion.png') }}" alt="Pantalla de recepción de mercaderías" loading="lazy">
+  <figcaption>Figura 15. Recepción de mercaderías.</figcaption>
+</figure>
+<div class="aviso"><strong>Pedido vencido</strong> Si el pedido ya venció, el sistema no permite recibirlo.</div>
+
+<h3 id="compras-factura">Factura de compra</h3>
+<ol class="pasos">
+  <li>Menú <strong>Facturas → Nueva Factura</strong>.</li>
+  <li>Elegí la <strong>Recepción confirmada (sin factura)</strong>. Se completan el proveedor y el monto sugerido.</li>
+  <li>Escribí el <strong>Nro. de factura</strong> del proveedor, la <strong>fecha de emisión</strong> y, si corresponde, la de <strong>vencimiento</strong>.</li>
+  <li>Revisá el <strong>Monto total</strong> y elegí el <strong>Tipo de impuesto</strong> (para el libro de compras). Podés adjuntar el PDF de la factura.</li>
+  <li>Presioná <strong>Guardar Factura</strong>. La factura queda <em>Pendiente</em> y se asienta automáticamente en el <strong>libro de compras</strong>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_factura_nueva.png') }}" alt="Formulario Registrar Factura de Compra" loading="lazy">
+  <figcaption>Figura 16. Factura de compra.</figcaption>
+</figure>
+
+<h3 id="compras-estado">Cambiar el estado de un documento</h3>
+<ol class="pasos">
+  <li>En el listado (solicitudes, presupuestos, pedidos o facturas), buscá el documento.</li>
+  <li>Presioná <strong>Cambiar estado</strong>.</li>
+  <li>Elegí el nuevo estado en la lista y presioná <strong>Guardar</strong>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_cambiar_estado.png') }}" alt="Ventana pequeña para elegir el nuevo estado del documento" loading="lazy">
+  <figcaption>Figura 17. Ventana para cambiar el estado.</figcaption>
+</figure>
+<table class="man-tabla">
+  <tr><th>Documento</th><th>Estados posibles</th></tr>
+  <tr><td>Solicitud</td><td>Pendiente, Aprobada, Anulado</td></tr>
+  <tr><td>Presupuesto</td><td>Pendiente, Aprobado, Rechazado, Anulado</td></tr>
+  <tr><td>Pedido</td><td>Pendiente, Aprobado, Anulado</td></tr>
+  <tr><td>Factura</td><td>Pendiente, Pagada, Anulada</td></tr>
+</table>
+<div class="nota"><strong>Permisos</strong> Cambiar el estado requiere el permiso <em>Modificar</em>. Los perfiles sin ese permiso no ven el botón.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="produccion">9. Módulo de Producción</h2>
+<p>Reúne los catálogos que usa la producción. Se administran igual que cualquier otro catálogo (ver <a href="#catalogos">Catálogos</a>): <strong>Agregar</strong>, <strong>Editar</strong>, <strong>Eliminar</strong>.</p>
+<table class="man-tabla">
+  <tr><th>Ventana</th><th>Para qué sirve</th></tr>
+  <tr><td>Etapas de Producción</td><td>Los pasos por los que pasa un producto elaborado.</td></tr>
+  <tr><td>Parámetros de Calidad</td><td>Los criterios de control que se revisan.</td></tr>
+  <tr><td>Motivos de Ajuste</td><td>Las razones por las que se ajusta el stock (merma, rotura, etc.).</td></tr>
+</table>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/prod_etapas.png') }}" alt="Listado de etapas de producción" loading="lazy">
+  <figcaption>Figura 18. Etapas de producción.</figcaption>
+</figure>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="seguridad">10. Seguridad y auditoría (administradores)</h2>
+<p>Esta sección del menú (<strong>Seguridad</strong>) solo la ven los usuarios del perfil <em>administradores</em>.</p>
+
+<h3 id="seg-usuarios">Usuarios</h3>
+<ol class="pasos">
+  <li>Menú <strong>Seguridad → Usuarios</strong>. Ves todos los usuarios con su perfil, correo y si están <em>Activos</em> o <em>Bloqueados</em>.</li>
+  <li><strong>Crear:</strong> presioná <strong>Nuevo usuario</strong>, escribí el usuario (3 a 10 caracteres), elegí el funcionario y el perfil, cargá el correo (donde llegan el código y las alertas) y una contraseña inicial que cumpla los requisitos. <strong>Guardar</strong>.</li>
+  <li><strong>Desbloquear:</strong> en un usuario bloqueado, presioná <strong>Desbloquear</strong>. Se reinician sus intentos fallidos.</li>
+  <li><strong>Cambiar perfil o correo:</strong> <strong>Editar</strong>, modificá y <strong>Guardar</strong>.</li>
+  <li><strong>Restablecer contraseña:</strong> <strong>Contraseña</strong>, escribí la nueva y confirmá.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/seg_usuarios.png') }}" alt="Listado de usuarios del sistema" loading="lazy">
+  <figcaption>Figura 19. Administración de usuarios.</figcaption>
+</figure>
+<div class="aviso"><strong>Correo obligatorio para ingresar</strong> Sin correo cargado, el usuario no puede completar la verificación en dos pasos. Cargalo al crear el usuario.</div>
+<div class="nota"><strong>Protección</strong> No podés desactivar tu propio usuario ni cambiarte tu propio perfil, para no quedarte sin acceso.</div>
+
+<h3 id="seg-permisos">Permisos por perfil</h3>
+<ol class="pasos">
+  <li>Menú <strong>Seguridad → Permisos por perfil</strong>.</li>
+  <li>Elegí el <strong>Perfil</strong>.</li>
+  <li>Marcá, para cada ventana, lo que puede hacer: <strong>Ver, Agregar, Modificar, Eliminar/Anular</strong>. La casilla de la fila del módulo marca o desmarca todo el módulo.</li>
+  <li>Presioná <strong>Guardar cambios</strong>. Se aplica de inmediato.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/seg_permisos.png') }}" alt="Matriz de permisos por módulo y ventana" loading="lazy">
+  <figcaption>Figura 20. Permisos por perfil.</figcaption>
+</figure>
+<div class="nota"><strong>Reglas</strong> Marcar Agregar, Modificar o Eliminar marca también Ver. Si quitás Ver, se quita todo lo demás. El perfil «administradores» siempre tiene acceso total.</div>
+<div class="consejo"><strong>Ejemplo</strong> Para que un perfil pueda cargar solicitudes pero no anularlas: en «Solicitud de compra» marcá <em>Ver</em>, <em>Agregar</em> y <em>Modificar</em>, y dejá <em>Eliminar/Anular</em> sin marcar.</div>
+
+<h3 id="seg-auditoria">Auditoría de transacciones</h3>
+<p>El sistema registra automáticamente <strong>quién hizo qué y cuándo</strong> sobre las operaciones importantes: ventas, compras, stock, productos, proveedores, clientes, usuarios y permisos. Los registros <strong>no se pueden modificar ni borrar</strong>.</p>
+<ol class="pasos">
+  <li>Menú <strong>Seguridad → Auditoría</strong>.</li>
+  <li>Filtrá por <strong>tabla</strong>, <strong>operación</strong> (INSERT = alta, UPDATE = modificación, DELETE = baja), <strong>usuario</strong> y <strong>rango de fechas</strong>.</li>
+  <li>Presioná <strong>Ver</strong> en una fila para comparar los <strong>datos anteriores</strong> con los <strong>datos nuevos</strong>.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/seg_auditoria.png') }}" alt="Pantalla de auditoría con filtros y registros" loading="lazy">
+  <figcaption>Figura 21. Auditoría del sistema.</figcaption>
+</figure>
+<div class="nota"><strong>Contraseñas</strong> Por seguridad, las contraseñas nunca se guardan en la auditoría.</div>
+
+<h3 id="seg-accesos">Intentos de acceso</h3>
+<p>Muestra todos los intentos de ingreso al sistema para verificarlos y definir políticas de seguridad.</p>
+<ol class="pasos">
+  <li>Menú <strong>Seguridad → Intentos de acceso</strong>.</li>
+  <li>Elegí el rango <strong>Desde / Hasta</strong>. También podés filtrar por <strong>evento</strong>, <strong>usuario</strong> o <strong>IP</strong>.</li>
+  <li>Revisá las tarjetas (accesos completos, intentos fallidos, cuentas bloqueadas) y el aviso <em>IP con actividad sospechosa</em>, que aparece cuando una misma IP acumula 3 o más fallos.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/seg_accesos.png') }}" alt="Pantalla de intentos de acceso con filtros por fecha" loading="lazy">
+  <figcaption>Figura 22. Intentos de acceso.</figcaption>
+</figure>
+<div class="nota"><strong>Alertas por correo</strong> Ante cada intento fallido se avisa al dueño de la cuenta. Si la cuenta se bloquea, se avisa también a los administradores. Esta pantalla registra además los accesos denegados por falta de permiso.</div>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="faq">11. Preguntas frecuentes y solución de problemas</h2>
+
+<details><summary>No puedo ingresar: dice «Usuario bloqueado».</summary><div>
+  Se escribió mal la contraseña 3 veces. Pedile a un administrador que te desbloquee (<a href="#seg-usuarios">Seguridad → Usuarios → Desbloquear</a>). Para evitarlo, usá <strong>¿Olvidaste tu contraseña?</strong> antes de fallar por tercera vez.
+</div></details>
+
+<details><summary>No me llega el código al correo.</summary><div>
+  <ol><li>Revisá la carpeta de correo no deseado (spam).</li><li>Presioná <strong>Reenviar</strong>.</li><li>Confirmá con un administrador que tu usuario tenga el correo bien cargado.</li></ol>
+  Si tu usuario no tiene correo, el sistema no puede completar el ingreso.
+</div></details>
+
+<details><summary>El código dice que expiró o es incorrecto.</summary><div>
+  El código vence a los 5 minutos y admite 3 intentos. Volvé a iniciar sesión para recibir uno nuevo.
+</div></details>
+
+<details><summary>Me sale «Acceso denegado» o «No tiene permiso».</summary><div>
+  Tu perfil no puede usar esa ventana o esa acción. Pedile a un administrador que lo habilite en <a href="#seg-permisos">Permisos por perfil</a>.
+</div></details>
+
+<details><summary>No veo un botón (Agregar, Editar, Anular…) o un módulo del menú.</summary><div>
+  Es porque tu perfil no tiene ese permiso. Ver <a href="#perfiles">Perfiles y permisos</a>.
+</div></details>
+
+<details><summary>La sesión se cerró sola.</summary><div>
+  Se cierra después de 30 minutos sin actividad. Ingresá de nuevo; lo que estabas cargando sin guardar hay que volver a hacerlo.
+</div></details>
+
+<details><summary>En el Punto de Venta dice «Turno de Caja Cerrado».</summary><div>
+  Hay que abrir el turno primero: <strong>Ir a Apertura de Caja</strong> o menú <em>Caja → Apertura → Aperturar Turno</em> (ver <a href="#ventas-apertura">Apertura de caja</a>).
+</div></details>
+
+<details><summary>Escaneo un producto y no aparece.</summary><div>
+  Revisá que el código esté bien cargado en <em>Referenciales → Items / Productos</em> y que el producto esté <strong>Activo</strong>.
+</div></details>
+
+<details><summary>Al buscar un producto en Compras no encuentro el que quiero.</summary><div>
+  Escribí el código exacto o al menos dos letras del nombre. Los códigos cortos como «5» funcionan: el que coincide exactamente aparece primero. Confirmá que el producto esté activo.
+</div></details>
+
+<details><summary>Quiero grabar un pedido y me pide proveedor.</summary><div>
+  Elegí el <strong>Proveedor</strong> en la sección <em>Agregar producto</em> antes de cargar los productos (ver <a href="#compras-pedido">Pedido de compra</a>).
+</div></details>
+
+<details><summary>No puedo recibir un pedido en Recepción.</summary><div>
+  Puede estar <strong>vencido</strong> (fecha de vencimiento anterior a hoy) o el código no pertenece a ese pedido. La cantidad recibida tampoco puede superar la pedida.
+</div></details>
+
+<details><summary>No puedo eliminar un registro de un catálogo.</summary><div>
+  Ya se usó en otros documentos. Editalo y apagá <strong>Activo</strong> (ver <a href="#catalogos">Catálogos</a>).
+</div></details>
+
+<details><summary>Una cifra del Dashboard parece no coincidir.</summary><div>
+  Revisá los filtros: el período, la sucursal y el depósito cambian todos los números. El Dashboard cuenta solo ventas en estado <em>Pagado</em>.
+</div></details>
+
+<details><summary>Quiero guardar o imprimir este manual.</summary><div>
+  Usá los botones de arriba: <strong>Imprimir / Guardar PDF</strong>, <strong>Descargar PDF</strong> o <strong>Texto plano</strong>. Para que se lea mejor, usá <strong>A+</strong> o <strong>Alto contraste</strong>.
+</div></details>
+
+<h3>Consejos para evitar problemas</h3>
+<ul>
+  <li>Guardá siempre antes de cambiar de ventana.</li>
+  <li>No compartas tu usuario ni tu contraseña; todo queda registrado con tu nombre.</li>
+  <li>Elegí una contraseña que no uses en otros sitios.</li>
+  <li>Mantené el correo de tu usuario actualizado.</li>
+</ul>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="glosario">12. Glosario</h2>
+<table class="man-tabla">
+  <tr><th>Término</th><th>Significado</th></tr>
+  <tr><td>Perfil</td><td>Grupo de permisos que se asigna a un usuario (administradores, compras, fiscales…).</td></tr>
+  <tr><td>Turno</td><td>Período de trabajo de una caja: se abre, se vende y se cierra.</td></tr>
+  <tr><td>Arqueo</td><td>Control que compara el dinero contado con el que registró el sistema.</td></tr>
+  <tr><td>Stock</td><td>Cantidad de un producto disponible.</td></tr>
+  <tr><td>Stock mínimo</td><td>Cantidad por debajo de la cual hay que reponer.</td></tr>
+  <tr><td>Depósito</td><td>Lugar físico donde se guarda la mercadería dentro de una sucursal.</td></tr>
+  <tr><td>Cobertura</td><td>Cuántos días alcanza el stock actual al ritmo de venta.</td></tr>
+  <tr><td>Rotación</td><td>Qué tan rápido se vende un producto.</td></tr>
+  <tr><td>Quiebre de stock</td><td>Cuando un producto se queda sin existencias.</td></tr>
+  <tr><td>Solicitud de compra</td><td>Pedido interno de mercadería, previo a comprar.</td></tr>
+  <tr><td>Presupuesto</td><td>Cotización de precios que entrega el proveedor.</td></tr>
+  <tr><td>Pedido de compra</td><td>Encargo formal de mercadería a un proveedor.</td></tr>
+  <tr><td>Recepción</td><td>Registro de la mercadería que llegó y se verificó.</td></tr>
+  <tr><td>Libro de compras</td><td>Registro contable de las facturas de compra.</td></tr>
+  <tr><td>Verificación en dos pasos</td><td>Segundo control de seguridad: un código que llega a tu correo.</td></tr>
+  <tr><td>Auditoría</td><td>Registro inalterable de quién hizo cada operación y cuándo.</td></tr>
+</table>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+<!-- ============================================================ -->
+<h2 id="versiones">13. Historial de versiones</h2>
+<table class="man-tabla">
+  <tr><th>Versión</th><th>Fecha</th><th>Cambios</th></tr>
+  <tr><td>{{ version }}</td><td>{{ fecha }}</td><td>Primera edición. Incluye: nuevo diseño del sistema, dashboard de ventas e inventario, ciclo completo de compras con facturas y libro de compras, permisos por perfil, auditoría, intentos de acceso y recuperación de contraseña.</td></tr>
+</table>
+<p>Esta versión del manual corresponde a <strong>GranViaSys 2026</strong>. Cuando el sistema cambie, se actualizan la versión y la fecha de este documento.</p>
+<p class="volver"><a href="#inicio">↑ Volver al índice</a></p>
+
+</article>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+(function(){
+  var manual = document.getElementById('contenido-manual');
+  var CLAVE_FS = 'manual_fs', CLAVE_HC = 'manual_hc';
+  function leer(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function guardar(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+
+  var fs = parseFloat(leer(CLAVE_FS)) || 1;
+  function aplicarFs(){ manual.style.setProperty('--man-fs', fs + 'rem'); guardar(CLAVE_FS, fs); }
+  document.getElementById('man_mas').addEventListener('click', function(){ fs = Math.min(fs + 0.125, 1.75); aplicarFs(); });
+  document.getElementById('man_menos').addEventListener('click', function(){ fs = Math.max(fs - 0.125, 0.85); aplicarFs(); });
+  aplicarFs();
+
+  var btnHc = document.getElementById('man_contraste');
+  function aplicarHc(on){ manual.classList.toggle('alto-contraste', on); btnHc.setAttribute('aria-pressed', on); guardar(CLAVE_HC, on ? '1' : '0'); }
+  btnHc.addEventListener('click', function(){ aplicarHc(!manual.classList.contains('alto-contraste')); });
+  aplicarHc(leer(CLAVE_HC) === '1');
+
+  document.getElementById('man_imprimir').addEventListener('click', function(){ window.print(); });
+  window.addEventListener('beforeprint', function(){ document.querySelectorAll('.manual details').forEach(function(d){ d.open = true; }); });
+})();
+</script>
+{% endblock %}

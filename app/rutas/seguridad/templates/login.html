@@ -378,6 +378,12 @@
                     </button>
                 </form>
 
+                <div class="text-center mt-4">
+                    <a class="action-link" href="{{ url_for('login.recuperar') }}">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+
             </div>
 
         </div>
@@ -388,6 +394,33 @@
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
     <script>
+        // Validación en tiempo real: avisa al instante si falta usuario o contraseña
+        (function () {
+            const form = document.querySelector('form');
+            form.setAttribute('novalidate', 'novalidate');
+            [['usuario_nombre', 'Ingresá tu nombre de usuario.'], ['usuario_clave', 'Ingresá tu contraseña.']].forEach(function (par) {
+                const input = form.elements[par[0]];
+                const aviso = document.createElement('div');
+                aviso.style.cssText = 'color:#dc2626;font-size:.8rem;margin:-.5rem 0 .75rem 1rem;display:none;';
+                aviso.textContent = par[1];
+                input.closest('.custom-input-group').after(aviso);
+                function chequear() {
+                    const vacio = input.value.trim() === '';
+                    aviso.style.display = vacio ? 'block' : 'none';
+                    input.style.borderColor = vacio ? '#dc2626' : '';
+                    return !vacio;
+                }
+                input.addEventListener('blur', chequear);
+                input.addEventListener('input', function () { if (aviso.style.display === 'block') chequear(); });
+                input._chequear = chequear;
+            });
+            form.addEventListener('submit', function (e) {
+                let ok = true;
+                ['usuario_nombre', 'usuario_clave'].forEach(function (n) { if (!form.elements[n]._chequear()) ok = false; });
+                if (!ok) e.preventDefault();
+            });
+        })();
+
         document.getElementById('togglePasswordBtn').addEventListener('click', function () {
             const input = document.getElementById('inputClave');
             const icon = document.getElementById('eyeIcon');

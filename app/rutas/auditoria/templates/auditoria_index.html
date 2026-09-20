@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block titulo %}Auditoría del Sistema{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-shield-alt"></i></span>
+      <div>
+        <h2 class="page-header-title">Auditoría del Sistema</h2>
+        <p class="page-header-subtitle">Registro completo de transacciones: quién, qué y cuándo. Los registros son inmutables.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3" id="aud_resumen"></div>
+
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="dash-filtros">
+        <select id="f_tabla" class="form-control" style="width:auto; max-width:220px;">
+          <option value="">Todas las tablas</option>
+          {% for t in tablas %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+        <select id="f_operacion" class="form-control" style="width:auto;">
+          <option value="">Todas las operaciones</option>
+          <option value="INSERT">INSERT</option>
+          <option value="UPDATE">UPDATE</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+        <input type="text" id="f_usuario" class="form-control" placeholder="Usuario" style="width:150px;">
+        <label class="kpi-card-sub mb-0">Desde</label>
+        <input type="date" id="f_desde" class="form-control" style="width:150px;">
+        <label class="kpi-card-sub mb-0">Hasta</label>
+        <input type="date" id="f_hasta" class="form-control" style="width:150px;">
+        <button class="btn-app btn-app-secondary btn-sm" id="btn_limpiar_filtros"><i class="fas fa-eraser"></i> Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Registros de auditoría</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_auditoria" class="table table-hover w-100">
+          <thead>
+            <tr>
+              <th>Fecha y hora</th><th>Tabla</th><th>Operación</th><th>Usuario</th><th>Resultado</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle del registro de auditoría</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-6">
+            <h6>Datos anteriores</h6>
+            <pre id="det_antes" style="background:var(--pos-surface-hover); padding:.75rem; border-radius:8px; font-size:.78rem; max-height:400px; overflow:auto;"></pre>
+          </div>
+          <div class="col-6">
+            <h6>Datos nuevos</h6>
+            <pre id="det_despues" style="background:var(--pos-surface-hover); padding:.75rem; border-radius:8px; font-size:.78rem; max-height:400px; overflow:auto;"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const OP_BADGE = { INSERT:'is-normal', UPDATE:'is-atencion', DELETE:'is-critico' };
+
+  function filtros(){
+    return {
+      tabla: $('#f_tabla').val() || undefined,
+      operacion: $('#f_operacion').val() || undefined,
+      usuario: $('#f_usuario').val() || undefined,
+      desde: $('#f_desde').val() || undefined,
+      hasta: $('#f_hasta').val() || undefined
+    };
+  }
+
+  const tabla = $('#tbl_auditoria').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    serverSide: true,
+    ajax: {
+      url: '/api/v1/auditoria/listado',
+      data: function(d){ Object.assign(d, filtros()); }
+    },
+    columns: [
+      { data: 'fecha_hora' },
+      { data: 'tabla' },
+      { data: 'operacion', render: v => `<span class="badge-app ${OP_BADGE[v]||'is-normal'}">${v}</span>` },
+      { data: 'usuario' },
+      { data: 'resultado', render: v => `<span class="badge-app is-normal">${v}</span>` },
+      {
+        data: null, orderable: false, className: 'text-center',
+        render: (row) => `<button class="btn-app btn-app-secondary btn-sm btn-ver-detalle" data-id="${row.id_auditoria}"><i class="fas fa-eye"></i> Ver</button>`
+      }
+    ],
+    ordering: false,
+    pageLength: 15
+  });
+
+  let cacheFilas = {};
+  tabla.on('xhr', function(){
+    const json = tabla.ajax.json();
+    (json.data || []).forEach(f => cacheFilas[f.id_auditoria] = f);
+  });
+
+  $('#tbl_auditoria tbody').on('click', '.btn-ver-detalle', function(){
+    const id = $(this).data('id');
+    const f = cacheFilas[id];
+    if(!f) return;
+    $('#det_antes').text(f.datos_anteriores ? JSON.stringify(f.datos_anteriores, null, 2) : '—');
+    $('#det_despues').text(f.datos_nuevos ? JSON.stringify(f.datos_nuevos, null, 2) : '—');
+    $('#modalDetalle').modal('show');
+  });
+
+  ['#f_tabla', '#f_operacion', '#f_usuario', '#f_desde', '#f_hasta'].forEach(sel => {
+    $(sel).on('change', function(){ tabla.ajax.reload(); cargarResumen(); });
+  });
+  $('#btn_limpiar_filtros').on('click', function(){
+    $('#f_tabla, #f_operacion, #f_usuario, #f_desde, #f_hasta').val('');
+    tabla.ajax.reload(); cargarResumen();
+  });
+
+  function renderResumen(d){
+    const cards = [
+      { icon:'fa-list', clase:'is-info', label:'Total de registros', valor: d.total },
+      { icon:'fa-plus-circle', clase:'is-success', label:'Inserciones', valor: d.por_operacion.INSERT || 0 },
+      { icon:'fa-pen', clase:'is-warning', label:'Modificaciones', valor: d.por_operacion.UPDATE || 0 },
+      { icon:'fa-trash', clase:'is-danger', label:'Eliminaciones', valor: d.por_operacion.DELETE || 0 }
+    ];
+    let html = '';
+    cards.forEach(c => {
+      html += `
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card">
+            <span class="kpi-card-icon ${c.clase}"><i class="fas ${c.icon}"></i></span>
+            <span class="kpi-card-label">${c.label}</span>
+            <span class="kpi-card-value">${c.valor}</span>
+          </div>
+        </div>`;
+    });
+    $('#aud_resumen').html(html);
+  }
+
+  function cargarResumen(){
+    $.getJSON('/api/v1/auditoria/resumen', { desde: $('#f_desde').val(), hasta: $('#f_hasta').val() }, function(res){
+      if(res.success) renderResumen(res.data);
+    });
+  }
+  cargarResumen();
+});
+</script>
+{% endblock %}

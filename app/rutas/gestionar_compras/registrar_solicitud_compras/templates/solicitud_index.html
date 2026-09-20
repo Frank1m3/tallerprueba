@@ -4,188 +4,31 @@
 
 {% block contenido %}
 <style>
-  :root {
-    --sc-primary:   #1a56db;
-    --sc-primary-d: #1040b0;
-    --sc-warn:      #d97706;
-    --sc-danger:    #dc2626;
-    --sc-success:   #16a34a;
-    --sc-muted:     #6b7280;
-    --sc-border:    #e5e7eb;
-    --sc-bg:        #f9fafb;
-    --sc-surface:   #ffffff;
-    --sc-radius:    10px;
-  }
-
-  .sc-page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.5rem 0 1.25rem;
-    border-bottom: 2px solid var(--sc-border);
-    margin-bottom: 1.5rem;
-  }
-  .sc-page-header h2 {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: .55rem;
-  }
-  .sc-page-header h2 .icon-box {
-    width: 36px; height: 36px;
-    background: var(--sc-primary);
-    border-radius: 8px;
-    display: grid; place-items: center;
-    color: #fff;
-    font-size: .95rem;
-    flex-shrink: 0;
-  }
-
-  .sc-card {
-    background: var(--sc-surface);
-    border: 1px solid var(--sc-border);
-    border-radius: var(--sc-radius);
-    box-shadow: 0 1px 6px rgba(0,0,0,.06);
-    overflow: hidden;
-  }
-  .sc-card-header {
-    padding: .85rem 1.25rem;
-    background: var(--sc-bg);
-    border-bottom: 1px solid var(--sc-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-  }
-  .sc-card-header span {
-    font-size: .82rem;
-    color: var(--sc-muted);
-    font-weight: 500;
-  }
-  .sc-card-body { padding: 1.25rem; }
-
-  /* Tabla */
-  #tbl_solicitudes thead th {
-    background: #f1f5f9;
-    color: #374151;
-    font-size: .78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    border-bottom: 2px solid var(--sc-border);
-    padding: .65rem .85rem;
-    white-space: nowrap;
-  }
-  #tbl_solicitudes tbody td {
-    font-size: .865rem;
-    color: #1f2937;
-    vertical-align: middle;
-    padding: .6rem .85rem;
-    border-bottom: 1px solid #f3f4f6;
-  }
-  #tbl_solicitudes tbody tr:last-child td { border-bottom: none; }
-  #tbl_solicitudes tbody tr:hover td { background: #f8faff; }
-
-  /* Badges de estado */
-  .badge-estado {
-    display: inline-flex;
-    align-items: center;
-    gap: .3rem;
-    padding: .28rem .7rem;
-    border-radius: 999px;
-    font-size: .74rem;
-    font-weight: 700;
-    letter-spacing: .03em;
-    text-transform: uppercase;
-  }
-  .badge-estado::before {
-    content: '';
-    display: block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-  .badge-pendiente  { background: #fef3c7; color: #92400e; }
-  .badge-aprobado   { background: #d1fae5; color: #065f46; }
-  .badge-anulado    { background: #fee2e2; color: #991b1b; }
-  .badge-procesado  { background: #dbeafe; color: #1e40af; }
-
-  /* Botones de acción */
-  .btn-accion {
-    display: inline-flex;
-    align-items: center;
-    gap: .3rem;
-    padding: .3rem .72rem;
-    border-radius: 6px;
-    font-size: .775rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: opacity .15s, transform .1s;
-    text-decoration: none;
-  }
-  .btn-accion:hover { opacity: .85; transform: translateY(-1px); }
-  .btn-accion:active { transform: scale(.97); }
-  .btn-accion:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-  .btn-mod   { background: #fffbeb; color: var(--sc-warn);   border: 1px solid #fcd34d; }
-  .btn-estado{ background: #eef2ff; color: var(--sc-primary); border: 1px solid #c7d2fe; }
-
-  /* Botón agregar principal */
-  .btn-nuevo {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    background: var(--sc-primary);
-    color: #fff;
-    padding: .48rem 1rem;
-    border-radius: 8px;
-    font-size: .84rem;
-    font-weight: 600;
-    border: none;
-    text-decoration: none;
-    transition: background .15s, transform .1s, box-shadow .15s;
-    box-shadow: 0 2px 8px rgba(26,86,219,.25);
-  }
-  .btn-nuevo:hover  { background: var(--sc-primary-d); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,86,219,.3); }
-  .btn-nuevo:active { transform: scale(.97); }
-
-  /* Nro solicitud */
-  .nro-sol {
-    font-weight: 700;
-    color: var(--sc-primary);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Override DataTables mínimo */
-  div.dataTables_wrapper div.dataTables_filter input { border-radius: 6px; border: 1px solid var(--sc-border); padding: .3rem .6rem; font-size: .83rem; }
-  div.dataTables_wrapper div.dataTables_length select { border-radius: 6px; border: 1px solid var(--sc-border); }
-  div.dataTables_wrapper .dataTables_info { font-size: .8rem; color: var(--sc-muted); }
-  div.dataTables_paginate .paginate_button { border-radius: 6px !important; font-size: .82rem !important; }
-  div.dataTables_paginate .paginate_button.current { background: var(--sc-primary) !important; color: #fff !important; border-color: var(--sc-primary) !important; }
+  .nro-sol { font-weight: 700; color: var(--pos-primary); font-variant-numeric: tabular-nums; }
 </style>
 
 <div class="container-fluid px-4">
 
   <!-- Encabezado de página -->
-  <div class="sc-page-header">
-    <h2>
-      <span class="icon-box"><i class="fas fa-shopping-cart"></i></span>
-      Solicitudes de Compra
-    </h2>
-    <a href="{{ url_for('solmod.solicitud_agregar') }}" target="_blank" class="btn-nuevo">
-      <i class="fas fa-plus"></i> Nueva Solicitud
-    </a>
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-shopping-cart"></i></span>
+      <div>
+        <h2 class="page-header-title">Solicitudes de Compra</h2>
+        <p class="page-header-subtitle">Pedidos internos de mercadería, previos a la compra formal.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('solmod.solicitud_agregar') }}" target="_blank" class="btn-app btn-app-primary">
+        <i class="fas fa-plus"></i> Nueva Solicitud
+      </a>
+    </div>
   </div>
 
   <!-- Tarjeta principal -->
-  <div class="sc-card">
-    <div class="sc-card-header">
-      <span><i class="fas fa-list me-1"></i> Listado de solicitudes registradas</span>
-    </div>
-    <div class="sc-card-body">
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Listado de solicitudes registradas</div>
+    <div class="app-card-body">
       <div class="table-responsive">
         <table id="tbl_solicitudes" class="table table-hover w-100">
           <thead>
@@ -216,14 +59,14 @@ $(document).ready(function(){
 
   const estadoBadge = (estado) => {
     const map = {
-      'PENDIENTE':  'badge-pendiente',
-      'APROBADA':   'badge-aprobado',
-      'ANULADO':    'badge-anulado',
-      'ANULADA':    'badge-anulado',
-      'PROCESADO':  'badge-procesado',
+      'PENDIENTE':  'is-pendiente',
+      'APROBADA':   'is-aprobado',
+      'ANULADO':    'is-anulado',
+      'ANULADA':    'is-anulado',
+      'PROCESADO':  'is-proceso',
     };
-    const cls = map[estado] || 'badge-pendiente';
-    return `<span class="badge-estado ${cls}">${estado}</span>`;
+    const cls = map[estado] || 'is-pendiente';
+    return `<span class="badge-app ${cls}">${estado}</span>`;
   };
 
   const tabla = $('#tbl_solicitudes').DataTable({
@@ -246,10 +89,10 @@ $(document).ready(function(){
         render: function(row){
           const ok = row.estado === 'PENDIENTE';
           return `
-            <button class="btn-accion btn-mod btn-modificar me-1" data-id="${row.id_solicitud}" ${!ok?'disabled':''}>
+            <button class="btn-app btn-app-secondary btn-sm btn-modificar" data-id="${row.id_solicitud}" ${!ok?'disabled':''}>
               <i class="fas fa-edit"></i> Modificar
             </button>
-            <button class="btn-accion btn-estado btn-cambiar-estado" data-id="${row.id_solicitud}" data-estado="${row.estado}">
+            <button class="btn-app btn-app-secondary btn-sm btn-cambiar-estado" data-id="${row.id_solicitud}" data-estado="${row.estado}">
               <i class="fas fa-random"></i> Cambiar estado
             </button>`;
         }
@@ -279,7 +122,7 @@ $(document).ready(function(){
       showCancelButton: true,
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#1a56db',
+      confirmButtonColor: '#1e3a8a',
       preConfirm: () => document.getElementById('swal_nuevo_estado').value
     }).then(r => {
       if(!r.isConfirmed) return;

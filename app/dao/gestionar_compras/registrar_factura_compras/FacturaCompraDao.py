@@ -53,12 +53,10 @@ class FacturaCompraDao:
     # ================================
     def listar(self):
         sql = """
-            SELECT f.id_factura, f.nro_factura, f.fecha_emision, f.fecha_vencimiento,
-                   p.prov_nombre, r.nro_recepcion, f.monto_total, f.estado, f.fecha_pago
-            FROM factura_compra_cab f
-            LEFT JOIN proveedor p ON p.id_proveedor = f.id_proveedor
-            LEFT JOIN recepcion_cab r ON r.id_recepcion = f.id_recepcion
-            ORDER BY f.id_factura DESC
+            SELECT id_factura, nro_factura, fecha_emision, fecha_vencimiento,
+                   proveedor, nro_recepcion, monto_total, estado, fecha_pago
+            FROM v_com_factura
+            ORDER BY id_factura DESC
         """
         con = Conexion().getConexion()
         cur = con.cursor()

@@ -137,3 +137,19 @@ class LoginDao:
         finally:
             cur.close()
             con.close()
+
+    def actualizarClave(self, usu_id: int, clave_hash: str) -> bool:
+        conexion = Conexion()
+        con = conexion.getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("UPDATE usuarios SET usu_clave = %s WHERE usu_id = %s", (clave_hash, usu_id))
+            con.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al actualizar la clave: {str(e)}")
+            return False
+        finally:
+            cur.close()
+            con.close()

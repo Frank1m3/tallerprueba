@@ -3,160 +3,170 @@
 {% block titulo %}PEDIDO de Compra{% endblock %}
 
 {% block contenido %}
-<div class="container mt-4" style="max-width:1400px;">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">PEDIDO DE COMPRA</h4>
-        </div>
-        <div class="card-body">
-            <!-- Encabezado pedido -->
-            <div class="row mb-3">
-                <div class="col-md-2">
-                    <label>Nro Pedido</label>
-                    <input type="text" id="txt_nro_pedido" class="form-control" readonly>
-                </div>
-                <div class="col-md-2">
-                    <label>Origen</label>
-                    <div>
-                        <input type="radio" name="tipo_pedido" id="rb_sin_pedido" value="SIN" checked>
-                        <label for="rb_sin_pedido">Sin origen</label>
-                    </div>
-                    <div>
-                        <input type="radio" name="tipo_pedido" id="rb_con_pedido" value="CON">
-                        <label for="rb_con_pedido">Desde Solicitud</label>
-                    </div>
-                    <div>
-                        <input type="radio" name="tipo_pedido" id="rb_con_presupuesto" value="PRE">
-                        <label for="rb_con_presupuesto">Desde Presupuesto</label>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <label>Nro Solicitud</label>
-                    <input type="text" id="txt_nro_solicitud" class="form-control" placeholder="Ingrese nro de solicitud" readonly>
-                </div>
-                <div class="col-md-2">
-                    <label>Cód. Presupuesto</label>
-                    <input type="text" id="txt_cod_presupuesto" class="form-control" placeholder="Enter para cargar" readonly>
-                    <input type="hidden" id="hidden_id_pre_compra_cab">
-                </div>
-                <div class="col-md-2">
-                    <label>Solicitante</label>
-                    <select id="cbo_funcionario" class="form-control">
-                        <option value="">Seleccione</option>
-                        {% for f in funcionarios %}
-                        <option value="{{ f['fun_id'] }}">{{ f['nombre_completo'] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label>Sucursal</label>
-                    <select id="cbo_sucursal" class="form-control">
-                        <option value="">Seleccione</option>
-                        {% for s in sucursales %}
-                        <option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label>Depósito</label>
-                    <select id="cbo_deposito" class="form-control">
-                        <option value="">Seleccione</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label>Fecha Pedido</label>
-                    <input type="date" id="txt_fecha_pedido" class="form-control">
-                </div>
-                <div class="col-md-2">
-                    <label>Fecha Necesaria</label>
-                    <input type="date" id="txt_fecha_necesaria" class="form-control">
-                </div>
-                <div class="col-md-2">
-                    <label>Tipo de Factura</label>
-                    <select id="cbo_tipo_factura" class="form-control">
-                        <option value="">Seleccione</option>
-                        <option value="CONTADO">Contado</option>
-                        <option value="CREDITO">Crédito</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Selección de proveedor y producto -->
-            <div class="row mb-3 align-items-end">
-                <div class="col-md-3">
-                    <label>Proveedor</label>
-                    <select id="cbo_proveedor_filtro" class="form-control">
-                        <option value="">Seleccione</option>
-                        {% for p in proveedores %}
-                        <option value="{{ p['id_proveedor'] }}">{{ p['nombre'] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="col-md-3">
-                    <label>Producto</label>
-                    <select id="cbo_producto" class="form-control">
-                        <option value="">Seleccione</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label>Stock Actual</label>
-                    <input type="number" id="txt_stock_actual" class="form-control" readonly>
-                </div>
-                <div class="col-md-1">
-                    <label>Cantidad</label>
-                    <input type="number" id="txt_cantidad" min="1" class="form-control">
-                </div>
-                <div class="col-md-2">
-                    <label>Precio</label>
-                    <input type="number" id="txt_precio_info" min="0" step="0.01" class="form-control">
-                </div>
-                <div class="col-md-1">
-                    <button type="button" id="btn_agregar" class="btn btn-success">AGREGAR</button>
-                </div>
-            </div>
-
-            <!-- Tabla detalle -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="table-responsive">
-                        <table id="tbl_detalle" class="table table-bordered table-hover text-center table-striped align-middle">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Código</th>
-                                    <th>Producto</th>
-                                    <th>Proveedor</th>
-                                    <th>Stock</th>
-                                    <th>Cantidad</th>
-                                    <th>Precio</th>
-                                    <th>Subtotal</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="6" class="text-end">TOTAL</th>
-                                    <th id="total">0.00</th>
-                                    <th></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Botones finales -->
-            <div class="row mt-3">
-                <div class="col d-flex justify-content-end">
-                    <button type="button" id="btn_grabar_pedido" class="btn btn-primary mr-2">GRABAR</button>
-                    <button type="button" class="btn btn-warning mr-2" id="btn_cancelar_general">CANCELAR</button>
-                    <a href="{{ url_for('pdcmod.pedidos_index') }}" class="btn btn-danger">SALIR</a>
-                </div>
-            </div>
-
-        </div>
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-file-invoice"></i></span>
+      <div>
+        <h2 class="page-header-title">Pedido de Compra</h2>
+        <p class="page-header-subtitle">Genere un pedido formal a un proveedor, con o sin origen previo.</p>
+      </div>
     </div>
+  </div>
+
+  <!-- Encabezado -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Datos del encabezado</div>
+    <div class="app-card-body">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="field-label">Nro Pedido</label>
+          <input type="text" id="txt_nro_pedido" class="form-control" readonly>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Origen</label>
+          <div class="d-flex flex-wrap align-items-center" style="min-height:calc(1.5em + .84rem + 2px)">
+            <div class="form-check form-check-inline mr-3">
+              <input class="form-check-input" type="radio" name="tipo_pedido" id="rb_sin_pedido" value="SIN" checked>
+              <label class="form-check-label" for="rb_sin_pedido">Sin origen</label>
+            </div>
+            <div class="form-check form-check-inline mr-3">
+              <input class="form-check-input" type="radio" name="tipo_pedido" id="rb_con_pedido" value="CON">
+              <label class="form-check-label" for="rb_con_pedido">Desde Solicitud</label>
+            </div>
+            <div class="form-check form-check-inline mr-0">
+              <input class="form-check-input" type="radio" name="tipo_pedido" id="rb_con_presupuesto" value="PRE">
+              <label class="form-check-label" for="rb_con_presupuesto">Desde Presupuesto</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Nro Solicitud</label>
+          <input type="text" id="txt_nro_solicitud" class="form-control" placeholder="Ingrese nro de solicitud" readonly>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Cód. Presupuesto</label>
+          <input type="text" id="txt_cod_presupuesto" class="form-control" placeholder="Enter para cargar" readonly>
+          <input type="hidden" id="hidden_id_pre_compra_cab">
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Solicitante</label>
+          <select id="cbo_funcionario" class="form-control">
+            <option value="">Seleccione</option>
+            {% for f in funcionarios %}
+            <option value="{{ f['fun_id'] }}">{{ f['nombre_completo'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Sucursal</label>
+          <select id="cbo_sucursal" class="form-control">
+            <option value="">Seleccione</option>
+            {% for s in sucursales %}
+            <option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Depósito</label>
+          <select id="cbo_deposito" class="form-control">
+            <option value="">Seleccione</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Tipo de Factura</label>
+          <select id="cbo_tipo_factura" class="form-control">
+            <option value="">Seleccione</option>
+            <option value="CONTADO">Contado</option>
+            <option value="CREDITO">Crédito</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Fecha Pedido</label>
+          <input type="date" id="txt_fecha_pedido" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Fecha Necesaria</label>
+          <input type="date" id="txt_fecha_necesaria" class="form-control">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selección de proveedor y producto -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Agregar producto</div>
+    <div class="app-card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="field-label">Proveedor</label>
+          <select id="cbo_proveedor_filtro" class="form-control">
+            <option value="">Seleccione</option>
+            {% for p in proveedores %}
+            <option value="{{ p['id_proveedor'] }}">{{ p['nombre'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Producto</label>
+          <select id="cbo_producto" class="form-control">
+            <option value="">Seleccione</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Stock Actual</label>
+          <input type="number" id="txt_stock_actual" class="form-control" readonly>
+        </div>
+        <div class="col-md-1">
+          <label class="field-label">Cantidad</label>
+          <input type="number" id="txt_cantidad" min="1" class="form-control">
+        </div>
+        <div class="col-md-2">
+          <label class="field-label">Precio</label>
+          <input type="number" id="txt_precio_info" min="0" step="0.01" class="form-control">
+        </div>
+        <div class="col-md-1">
+          <button type="button" id="btn_agregar" class="btn-app btn-app-success w-100"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-warning)"></span> Detalle del pedido</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_detalle" class="table table-hover text-center align-middle w-100 mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Proveedor</th>
+              <th>Stock</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Subtotal</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <th colspan="6" class="text-end">TOTAL</th>
+              <th id="total">0.00</th>
+              <th></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="app-card-footer">
+      <a href="{{ url_for('pdcmod.pedidos_index') }}" class="btn-app btn-app-secondary"><i class="fas fa-times"></i> Salir</a>
+      <button type="button" class="btn-app btn-app-secondary" id="btn_cancelar_general"><i class="fas fa-undo"></i> Cancelar</button>
+      <button type="button" id="btn_grabar_pedido" class="btn-app btn-app-primary"><i class="fas fa-save"></i> Grabar</button>
+    </div>
+  </div>
 </div>
 
 <!-- Input oculto para proveedor global -->
@@ -192,6 +202,7 @@ $(document).ready(function(){
     });
 
     let tabla = $('#tbl_detalle').DataTable({
+        language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
         paging:true,
         info:true,
         searching:true,

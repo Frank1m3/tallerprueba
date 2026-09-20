@@ -1,0 +1,443 @@
+Manual de Usuario — GranViaSys
+
+Sistema de gestión de Gran Vía Supermercados
+Ventas · Compras · Inventario · Producción · Seguridad
+
+Versión del manual	|1.0
+Última actualización	|19 de septiembre de 2026
+Versión del sistema	|GranViaSys 2026
+Idioma	|Español
+========================================
+Índice
+Introducción y a quién va dirigido
+Ingreso al sistema
+Iniciar sesión
+Recuperar la contraseña
+Cerrar sesión
+La pantalla del sistema y el menú
+Perfiles y permisos
+Dashboard de ventas e inventario
+Catálogos (Referenciales)
+Módulo de Ventas
+Apertura de caja
+Punto de Venta
+Arqueo de caja
+Cierre de caja
+Módulo de Compras
+Solicitud de compra
+Presupuesto
+Pedido de compra
+Recepción de mercaderías
+Factura de compra
+Cambiar el estado de un documento
+Módulo de Producción
+Seguridad y auditoría (administradores)
+Usuarios
+Permisos por perfil
+Auditoría de transacciones
+Intentos de acceso
+Preguntas frecuentes y solución de problemas
+Glosario
+Historial de versiones
+========================================
+1. Introducción
+
+GranViaSys es el sistema con el que trabaja Gran Vía Supermercados. Con él se cobra en caja, se compra mercadería a los proveedores, se controla cuánto stock hay en cada sucursal y depósito, y se cuida la seguridad de la información.
+
+Este manual explica, paso a paso y con capturas de pantalla, cómo usar cada parte del sistema. No necesitás conocimientos técnicos.
+
+¿A quién va dirigido?
+Si sos…	|Leé principalmente…
+Cajero o fiscal de caja	|Ingreso, Ventas, Preguntas frecuentes
+Encargado de compras	|Ingreso, Catálogos, Compras, Dashboard
+Fiscal / auditor (solo consulta)	|Dashboard, Perfiles y permisos
+Administrador del sistema	|Todo el manual, en especial Seguridad y auditoría
+Cómo leer este manual
+Los números en círculo indican pasos que se hacen en orden.
+Los recuadros azules son notas, los amarillos son avisos importantes y los verdes son consejos.
+Los nombres de botones y menús aparecen en negrita.
+Arriba tenés botones para agrandar el texto, activar el alto contraste, imprimir o descargar este manual en PDF o texto plano.
+========================================
+2. Ingreso al sistema
+1. Usuario y contraseña
+Los escribís en la pantalla de inicio
+→
+2. Código por correo
+6 dígitos, vence en 5 minutos
+→
+3. Dashboard
+Ya estás dentro del sistema
+Iniciar sesión
+1. Abrí el navegador (Chrome, Edge o Firefox) y entrá a la dirección del sistema que te indicó el administrador.
+2. Escribí tu Nombre de usuario y tu Contraseña. Con el ícono del ojo podés ver lo que escribiste. Si dejás un campo vacío, el sistema te lo marca en rojo al instante.
+3. Presioná Ingresar al sistema.
+4. Por seguridad, te enviamos un código de 6 dígitos al correo registrado en tu usuario. Escribilo y presioná Verificar código. Si no llegó, usá Reenviar.
+5. Listo: se abre el Dashboard.
+[Imagen: Pantalla de inicio de sesión con los campos usuario y contraseña — Figura 1. Pantalla de inicio de sesión. Debajo del botón está el enlace «¿Olvidaste tu contraseña?».] [Imagen: Pantalla para ingresar el código de verificación de 6 dígitos — Figura 2. Verificación en dos pasos: ingresá el código que llegó a tu correo.]
+Bloqueo de la cuenta
+Si escribís mal la contraseña
+3 veces
+, tu usuario se bloquea y se envía un aviso a tu correo. Solo un administrador puede desbloquearlo (ver Usuarios). El código del correo también admite solo 3 intentos.
+Sesión
+Por seguridad, la sesión se cierra sola después de 30 minutos sin actividad. Solo tenés que ingresar de nuevo.
+Recuperar la contraseña
+1. En la pantalla de inicio, presioná ¿Olvidaste tu contraseña?
+2. Escribí tu nombre de usuario y presioná Enviar código. Te llega un código al correo (vence en 10 minutos).
+3. Escribí el código y elegí tu contraseña nueva. La pantalla te muestra en verde cada requisito que vas cumpliendo:
+Al menos 8 caracteres
+Una letra mayúscula y una minúscula
+Un número
+4. Repetí la contraseña y presioná Cambiar contraseña. Ya podés ingresar con la nueva.
+[Imagen: Pantalla de recuperación de contraseña — Figura 3. Recuperación de contraseña.]
+Por tu seguridad
+El sistema responde lo mismo aunque el usuario no exista, para no revelar quiénes tienen cuenta.
+Cerrar sesión
+1. Arriba a la derecha, hacé clic en tu nombre.
+2. Elegí Cerrar sesión.
+Buena práctica
+Cerrá siempre la sesión si dejás la computadora, especialmente en caja.
+========================================
+3. La pantalla del sistema y el menú
+
+Todas las pantallas se organizan igual:
+
+Menú lateral (izquierda, azul): los módulos del sistema. Hacé clic en un módulo para desplegarlo y elegir la ventana. Con el botón redondo de abajo podés achicarlo.
+Barra superior: muestra dónde estás (por ejemplo Inicio / Solicitudes de Compra), un buscador, las notificaciones y tu usuario.
+Área de trabajo: el título de la ventana, los botones de acción (por ejemplo Nueva Solicitud) y las tablas o formularios.
+
+Las tablas se pueden ordenar haciendo clic en el título de una columna, buscar con el cuadro Buscar y recorrer con Anterior / Siguiente. Con Mostrar … registros elegís cuántas filas ver.
+
+Menú a tu medida
+Solo ves las opciones que tu perfil puede usar. Si no aparece un módulo, es porque tu perfil no tiene permiso (ver Perfiles y permisos).
+========================================
+4. Perfiles y permisos
+
+Cada usuario pertenece a un perfil. El perfil define en qué ventanas puede entrar y qué puede hacer en cada una:
+
+Permiso	|Qué permite
+Ver	|Entrar a la ventana y consultar.
+Agregar	|Crear registros nuevos (botones Agregar, Nuevo, Grabar).
+Modificar	|Editar y cambiar estados (botones Editar, Modificar, Cambiar estado).
+Eliminar / Anular	|Borrar registros o anular documentos.
+
+Los perfiles que trae el sistema son:
+
+Perfil	|Puede
+administradores	|Todo, incluido el módulo de Seguridad.
+compras	|Ver todo. En Compras puede agregar y modificar, pero no anular ni eliminar.
+fiscales	|Solo consultar.
+«Acceso denegado»
+Si intentás algo que tu perfil no permite, el sistema te muestra el mensaje No tiene permiso para… «nombre de la ventana». No es un error: pedile a un administrador que te habilite el permiso (ver Permisos por perfil). Los botones que tu perfil no puede usar directamente no se muestran.
+========================================
+5. Dashboard de ventas e inventario
+
+Es la primera pantalla al ingresar. Responde en un vistazo: ¿qué se vende más y menos?, ¿qué se está por acabar?, ¿qué necesita una acción inmediata?
+
+[Imagen: Dashboard con tarjetas de indicadores, rankings y tablas de riesgo de quiebre — Figura 4. Dashboard de Ventas e Inventario.]
+Filtros (arriba)
+1. Elegí el período: Hoy, Últimos 7 días, Este mes, Últimos 3 meses, Este año o Personalizado (indicás fecha desde y hasta).
+2. Si querés, elegí una sucursal y luego un depósito de esa sucursal.
+3. Con Sin movimiento elegís desde cuántos días sin ventas (30, 60 o 90) un producto se considera «dormido».
+
+Todo el panel se actualiza solo al cambiar un filtro.
+
+Las tarjetas
+Tarjeta	|Qué te dice
+Unidades vendidas	|Total del período, con la variación frente al período anterior (flecha verde ▲ sube, roja ▼ baja).
+Menos vendido	|El producto que menos salió entre los que se vendieron.
+Próximos a quebrar	|Productos cuyo stock ya está cerca del mínimo: conviene revisar compras.
+Sin stock	|Productos en cero o menos: atención inmediata.
+Bajo el mínimo	|Productos por debajo de su stock mínimo.
+Mayor rotación	|El producto que más rápido sale (unidades por día).
+Sin movimiento	|Productos que no se vendieron en el plazo elegido: posible sobre-stock.
+Niveles de riesgo de stock
+Nivel	|Significa
+Normal	|Stock por encima de una vez y media el mínimo.
+Atención	|Stock hasta una vez y media el mínimo.
+Stock bajo	|Stock igual o menor al mínimo.
+Crítico	|Stock en la mitad del mínimo o menos, o alcanza para 2 días o menos según lo que se vende.
+Sin stock	|Stock en cero o negativo.
+
+La cobertura son los días que alcanza el stock actual vendiendo al ritmo del período. Por ejemplo: 20 unidades y 5 ventas por día = 4 días.
+
+Ver todos los productos en riesgo o sin stock
+1. En la tabla Productos con riesgo de quiebre o Productos sin stock, hacé clic en Ver todos →.
+2. Usá el cuadro Buscar para encontrar un producto por nombre o código, y los filtros de sucursal y depósito.
+3. Volvé con Volver al dashboard.
+Cómo usarlo
+Empezá cada día por Sin stock y Próximos a quebrar: son los productos que hay que reponer primero.
+========================================
+6. Catálogos (Referenciales)
+
+Los catálogos son las listas base que usa todo el sistema: productos, proveedores, clientes, sucursales, depósitos, monedas, etc. Están en el menú Referenciales, agrupados en Generales, Compras, Ventas y Producción.
+
+[Imagen: Listado de productos con botones Editar y Eliminar — Figura 5. Ejemplo de catálogo: Items / Productos.]
+Agregar un registro (ejemplo: un producto)
+1. Menú Referenciales → Items / Productos.
+2. Presioná Agregar.
+3. Completá Código y Descripción, elegí Unidad de medida, Tipo de item, Tipo de impuesto y Proveedor, y escribí el Costo unitario y el Stock mínimo. Dejá Activo encendido.
+4. Presioná Guardar. Para salir sin guardar, Cerrar.
+[Imagen: Formulario Agregar Item — Figura 6. Formulario para agregar un producto.]
+Stock mínimo
+Es la cantidad por debajo de la cual el producto se considera en riesgo en el Dashboard. Cargarlo bien hace que las alertas sean útiles.
+Modificar o eliminar
+1. Buscá el registro con el cuadro Buscar.
+2. Presioná Editar (cambiás los datos y Guardar) o Eliminar (el sistema te pide confirmar).
+Si no se puede eliminar
+Un registro que ya se usó en compras o ventas no se puede borrar. En ese caso, editalo y apagá
+Activo
+: deja de usarse pero se conserva el historial.
+========================================
+7. Módulo de Ventas
+
+La venta en caja funciona por turnos. Un turno se abre, se vende, se controla el dinero y se cierra:
+
+Apertura
+Se abre el turno con un monto inicial
+→
+Punto de Venta
+Se registran y cobran las ventas
+→
+Arqueo
+Se cuenta el dinero y se compara
+→
+Cierre
+Se cierra el turno
+Apertura de caja
+1. Menú Módulo de Venta → Caja → Apertura.
+2. Presioná Aperturar Turno.
+3. Completá la Clave Fiscal (la ingresa el fiscal autorizado), elegí el Cajero y escribí el Monto Inicial (el efectivo con el que arranca la caja).
+4. Presioná Guardar. El turno queda Abierto.
+[Imagen: Formulario Apertura de Turno con clave fiscal, cajero y monto inicial — Figura 7. Apertura de turno.]
+Sin turno abierto no se puede vender
+El Punto de Venta muestra «Turno de Caja Cerrado» y un botón
+Ir a Apertura de Caja
+.
+Punto de Venta
+[Imagen: Pantalla del punto de venta con campo de código, detalle de la venta y panel de atajos — Figura 8. Punto de Venta (aquí con el turno cerrado). A la derecha, el panel de atajos.]
+1. Menú Caja → Punto de Venta.
+2. Escaneá el código de barras o escribilo en Código (F2) y presioná Enter. Aparecen el artículo, su precio y el total del ítem.
+3. Para más de una unidad, cambiá la Cantidad con F4.
+4. Repetí para cada producto. Se van sumando en Detalle de la venta; arriba ves subtotal, IVA y total.
+5. Opcional: F3 para elegir o registrar rápido al cliente, y F5 para aplicar un descuento.
+6. Presioná COBRAR (F10). Elegí el Tipo de comprobante (Ticket o Factura), cargá los pagos con Añadir Pago (podés combinar formas de pago) o usá los botones de dinero rápido (Exacto, 5.000, 10.000…). El sistema te dice cuánto falta abonar o el vuelto.
+7. Presioná Finalizar Venta. Aparece ¡Venta Registrada! con opciones para Imprimir Ticket, Descargar Factura (PDF), Enviar por Correo o iniciar una Nueva Venta (Esc).
+Tecla	|Acción
+F2	|Código / escáner
+F3	|Buscar cliente
+F4	|Modificar cantidad
+F5	|Aplicar descuento
+F8	|Historial de ventas del turno
+F10 / Esc	|Cobrar la transacción
+Otras funciones
+Caja
+muestra el resumen del turno (recaudación por forma de cobro y los 5 productos más vendidos).
+Limpiar
+descarta la venta en curso (pide confirmación). Los totales se ven en guaraníes, dólares y reales.
+Arqueo de caja
+
+El arqueo compara el dinero que debería haber según el sistema con el que realmente hay.
+
+1. Menú Caja → Arqueo de Caja y presioná Nuevo Arqueo.
+2. En Turno / Apertura activa elegí el turno y presioná Cargar: el sistema muestra lo que registró por cada forma de pago.
+3. Contá el dinero y escribí el monto físico de cada forma: Efectivo, Tarjeta crédito, Tarjeta débito, Cheque, QR, Otros.
+4. Si hace falta, agregá una Observación y presioná Guardar Arqueo.
+5. En el historial vas a ver el Total sistema, el Total arqueo y la Diferencia (en rojo si falta dinero).
+[Imagen: Formulario Realizar Arqueo de Caja con conteo por forma de pago — Figura 9. Arqueo de caja: conteo por forma de pago.]
+Cierre de caja
+1. Menú Caja → Cierre y presioná Nuevo Cierre.
+2. Elegí el Turno a cerrar, escribí una Observación si querés y presioná Registrar Cierre.
+3. El turno pasa a Cerrado y queda en el listado con el monto de apertura, el total de ventas y la diferencia.
+[Imagen: Listado de cierres de caja — Figura 10. Cierres registrados.]
+Buena práctica
+Hacé el arqueo antes del cierre y revisá cualquier diferencia antes de cerrar el turno.
+========================================
+8. Módulo de Compras
+
+Comprar mercadería sigue un ciclo ordenado. Cada documento nace del anterior, así queda registro de quién pidió qué, a qué precio y cuándo llegó:
+
+Solicitud
+Se pide la mercadería
+→
+Presupuesto
+El proveedor cotiza
+→
+Pedido
+Se le encarga al proveedor
+→
+Recepción
+Llega y se verifica
+→
+Factura
+Se registra la factura
+→
+Libro de compras
+Se asienta solo
+Estados
+Cada documento tiene un estado (por ejemplo Pendiente, Aprobada/Aprobado, Anulado). Se cambia con el botón Cambiar estado.
+Cómo se busca un producto (vale para todas las pantallas de compras)
+1. En el campo Producto escribí el código (por ejemplo «5») o parte del nombre. La lista se filtra mientras escribís.
+2. Presioná Enter para elegir el primero de la lista; el cursor pasa solo a Cantidad.
+3. Escribí la cantidad y presioná Enter otra vez: el producto se agrega al detalle.
+4. Si te equivocaste de producto, presioná la × del campo para borrar la selección.
+Solicitud de compra
+1. Menú Módulo de Compra → Gestionar Compras → R. Solicitud.
+2. Presioná Nueva Solicitud.
+3. Elegí el Solicitante, la Sucursal y el Depósito, y revisá la Fecha.
+4. Agregá los productos (ver «Cómo se busca un producto»).
+5. Presioná Guardar. Los campos se limpian para cargar la siguiente. Con Volver regresás al listado.
+[Imagen: Listado de solicitudes de compra con estados y botones — Figura 11. Listado de solicitudes. Cada fila tiene Modificar y Cambiar estado.] [Imagen: Formulario Nueva Solicitud de compra — Figura 12. Nueva solicitud de compra.]
+Modificar
+Solo se pueden modificar las solicitudes en estado Pendiente.
+Presupuesto
+1. Menú R. Presupuesto y presioná Nuevo presupuesto.
+2. Si el presupuesto responde a una solicitud, escribí su Nro. Solicitud y presioná Enter: se cargan los productos.
+3. Completá Fecha de emisión, Fecha de vencimiento, Proveedor, Sucursal y Funcionario.
+4. Si tenés el presupuesto del proveedor en archivo, adjuntalo (PDF, XLSX, XLS o TXT).
+5. Cargá el precio de cada producto y presioná Guardar.
+[Imagen: Formulario Registrar Presupuesto — Figura 13. Registrar presupuesto.]
+Pedido de compra
+1. Menú Generar Pedido y presioná Nuevo pedido.
+2. Elegí el Origen:
+Sin origen: cargás todo a mano.
+Desde Solicitud: escribís el número de solicitud y se cargan los productos.
+Desde Presupuesto: escribís el código del presupuesto y se cargan proveedor y precios.
+3. Elegí el Proveedor antes de buscar productos: el pedido es para un solo proveedor.
+4. Completá Sucursal, Depósito, Tipo de factura, Fecha del pedido y Fecha necesaria.
+5. Agregá los productos con su Cantidad y Precio (botón verde +). Abajo ves el Total.
+6. Presioná Grabar.
+[Imagen: Formulario Pedido de Compra con origen, proveedor y detalle — Figura 14. Pedido de compra.]
+Proveedor obligatorio
+Si intentás grabar sin elegir proveedor, el sistema te avisa. Es necesario porque muchos productos no tienen un proveedor fijo asignado.
+Recepción de mercaderías
+
+Se hace cuando llega la mercadería y se verifica contra el pedido.
+
+1. Menú Rec. Mercaderías y presioná Nuevo.
+2. Escribí el Número de Pedido. Se muestran el proveedor y la fecha de vencimiento.
+3. Escribí el Código de cada producto recibido; aparecen la descripción y la cantidad pedida.
+4. Ingresá la Cantidad Recibida (no puede superar la pedida) y presioná el botón +.
+5. Cuando termines, presioná Grabar. El stock del depósito se actualiza.
+[Imagen: Pantalla de recepción de mercaderías — Figura 15. Recepción de mercaderías.]
+Pedido vencido
+Si el pedido ya venció, el sistema no permite recibirlo.
+Factura de compra
+1. Menú Facturas → Nueva Factura.
+2. Elegí la Recepción confirmada (sin factura). Se completan el proveedor y el monto sugerido.
+3. Escribí el Nro. de factura del proveedor, la fecha de emisión y, si corresponde, la de vencimiento.
+4. Revisá el Monto total y elegí el Tipo de impuesto (para el libro de compras). Podés adjuntar el PDF de la factura.
+5. Presioná Guardar Factura. La factura queda Pendiente y se asienta automáticamente en el libro de compras.
+[Imagen: Formulario Registrar Factura de Compra — Figura 16. Factura de compra.]
+Cambiar el estado de un documento
+1. En el listado (solicitudes, presupuestos, pedidos o facturas), buscá el documento.
+2. Presioná Cambiar estado.
+3. Elegí el nuevo estado en la lista y presioná Guardar.
+[Imagen: Ventana pequeña para elegir el nuevo estado del documento — Figura 17. Ventana para cambiar el estado.]
+Documento	|Estados posibles
+Solicitud	|Pendiente, Aprobada, Anulado
+Presupuesto	|Pendiente, Aprobado, Rechazado, Anulado
+Pedido	|Pendiente, Aprobado, Anulado
+Factura	|Pendiente, Pagada, Anulada
+Permisos
+Cambiar el estado requiere el permiso Modificar. Los perfiles sin ese permiso no ven el botón.
+========================================
+9. Módulo de Producción
+
+Reúne los catálogos que usa la producción. Se administran igual que cualquier otro catálogo (ver Catálogos): Agregar, Editar, Eliminar.
+
+Ventana	|Para qué sirve
+Etapas de Producción	|Los pasos por los que pasa un producto elaborado.
+Parámetros de Calidad	|Los criterios de control que se revisan.
+Motivos de Ajuste	|Las razones por las que se ajusta el stock (merma, rotura, etc.).
+[Imagen: Listado de etapas de producción — Figura 18. Etapas de producción.] ========================================
+10. Seguridad y auditoría (administradores)
+
+Esta sección del menú (Seguridad) solo la ven los usuarios del perfil administradores.
+
+Usuarios
+1. Menú Seguridad → Usuarios. Ves todos los usuarios con su perfil, correo y si están Activos o Bloqueados.
+2. Crear: presioná Nuevo usuario, escribí el usuario (3 a 10 caracteres), elegí el funcionario y el perfil, cargá el correo (donde llegan el código y las alertas) y una contraseña inicial que cumpla los requisitos. Guardar.
+3. Desbloquear: en un usuario bloqueado, presioná Desbloquear. Se reinician sus intentos fallidos.
+4. Cambiar perfil o correo: Editar, modificá y Guardar.
+5. Restablecer contraseña: Contraseña, escribí la nueva y confirmá.
+[Imagen: Listado de usuarios del sistema — Figura 19. Administración de usuarios.]
+Correo obligatorio para ingresar
+Sin correo cargado, el usuario no puede completar la verificación en dos pasos. Cargalo al crear el usuario.
+Protección
+No podés desactivar tu propio usuario ni cambiarte tu propio perfil, para no quedarte sin acceso.
+Permisos por perfil
+1. Menú Seguridad → Permisos por perfil.
+2. Elegí el Perfil.
+3. Marcá, para cada ventana, lo que puede hacer: Ver, Agregar, Modificar, Eliminar/Anular. La casilla de la fila del módulo marca o desmarca todo el módulo.
+4. Presioná Guardar cambios. Se aplica de inmediato.
+[Imagen: Matriz de permisos por módulo y ventana — Figura 20. Permisos por perfil.]
+Reglas
+Marcar Agregar, Modificar o Eliminar marca también Ver. Si quitás Ver, se quita todo lo demás. El perfil «administradores» siempre tiene acceso total.
+Ejemplo
+Para que un perfil pueda cargar solicitudes pero no anularlas: en «Solicitud de compra» marcá Ver, Agregar y Modificar, y dejá Eliminar/Anular sin marcar.
+Auditoría de transacciones
+
+El sistema registra automáticamente quién hizo qué y cuándo sobre las operaciones importantes: ventas, compras, stock, productos, proveedores, clientes, usuarios y permisos. Los registros no se pueden modificar ni borrar.
+
+1. Menú Seguridad → Auditoría.
+2. Filtrá por tabla, operación (INSERT = alta, UPDATE = modificación, DELETE = baja), usuario y rango de fechas.
+3. Presioná Ver en una fila para comparar los datos anteriores con los datos nuevos.
+[Imagen: Pantalla de auditoría con filtros y registros — Figura 21. Auditoría del sistema.]
+Contraseñas
+Por seguridad, las contraseñas nunca se guardan en la auditoría.
+Intentos de acceso
+
+Muestra todos los intentos de ingreso al sistema para verificarlos y definir políticas de seguridad.
+
+1. Menú Seguridad → Intentos de acceso.
+2. Elegí el rango Desde / Hasta. También podés filtrar por evento, usuario o IP.
+3. Revisá las tarjetas (accesos completos, intentos fallidos, cuentas bloqueadas) y el aviso IP con actividad sospechosa, que aparece cuando una misma IP acumula 3 o más fallos.
+[Imagen: Pantalla de intentos de acceso con filtros por fecha — Figura 22. Intentos de acceso.]
+Alertas por correo
+Ante cada intento fallido se avisa al dueño de la cuenta. Si la cuenta se bloquea, se avisa también a los administradores. Esta pantalla registra además los accesos denegados por falta de permiso.
+========================================
+11. Preguntas frecuentes y solución de problemas
+No puedo ingresar: dice «Usuario bloqueado».
+No me llega el código al correo.
+El código dice que expiró o es incorrecto.
+Me sale «Acceso denegado» o «No tiene permiso».
+No veo un botón (Agregar, Editar, Anular…) o un módulo del menú.
+La sesión se cerró sola.
+En el Punto de Venta dice «Turno de Caja Cerrado».
+Escaneo un producto y no aparece.
+Al buscar un producto en Compras no encuentro el que quiero.
+Quiero grabar un pedido y me pide proveedor.
+No puedo recibir un pedido en Recepción.
+No puedo eliminar un registro de un catálogo.
+Una cifra del Dashboard parece no coincidir.
+Quiero guardar o imprimir este manual.
+Consejos para evitar problemas
+Guardá siempre antes de cambiar de ventana.
+No compartas tu usuario ni tu contraseña; todo queda registrado con tu nombre.
+Elegí una contraseña que no uses en otros sitios.
+Mantené el correo de tu usuario actualizado.
+========================================
+12. Glosario
+Término	|Significado
+Perfil	|Grupo de permisos que se asigna a un usuario (administradores, compras, fiscales…).
+Turno	|Período de trabajo de una caja: se abre, se vende y se cierra.
+Arqueo	|Control que compara el dinero contado con el que registró el sistema.
+Stock	|Cantidad de un producto disponible.
+Stock mínimo	|Cantidad por debajo de la cual hay que reponer.
+Depósito	|Lugar físico donde se guarda la mercadería dentro de una sucursal.
+Cobertura	|Cuántos días alcanza el stock actual al ritmo de venta.
+Rotación	|Qué tan rápido se vende un producto.
+Quiebre de stock	|Cuando un producto se queda sin existencias.
+Solicitud de compra	|Pedido interno de mercadería, previo a comprar.
+Presupuesto	|Cotización de precios que entrega el proveedor.
+Pedido de compra	|Encargo formal de mercadería a un proveedor.
+Recepción	|Registro de la mercadería que llegó y se verificó.
+Libro de compras	|Registro contable de las facturas de compra.
+Verificación en dos pasos	|Segundo control de seguridad: un código que llega a tu correo.
+Auditoría	|Registro inalterable de quién hizo cada operación y cuándo.
+========================================
+13. Historial de versiones
+Versión	|Fecha	|Cambios
+1.0	|19 de septiembre de 2026	|Primera edición. Incluye: nuevo diseño del sistema, dashboard de ventas e inventario, ciclo completo de compras con facturas y libro de compras, permisos por perfil, auditoría, intentos de acceso y recuperación de contraseña.
+
+Esta versión del manual corresponde a GranViaSys 2026. Cuando el sistema cambie, se actualizan la versión y la fecha de este documento.

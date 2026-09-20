@@ -1,33 +1,23 @@
 {% extends 'base.html' %}
 {% block titulo %}Facturas de Compra{% endblock %}
 {% block contenido %}
-<style>
-  :root {
-    --fc-primary:#1a56db; --fc-primary-d:#1040b0; --fc-border:#e5e7eb; --fc-bg:#f9fafb; --fc-surface:#ffffff; --fc-radius:10px;
-  }
-  .fc-page-header { display:flex; align-items:center; justify-content:space-between; padding:1.5rem 0 1.25rem; border-bottom:2px solid var(--fc-border); margin-bottom:1.5rem; }
-  .fc-page-header h2 { font-size:1.35rem; font-weight:700; color:#111827; margin:0; display:flex; align-items:center; gap:.55rem; }
-  .icon-box { width:36px; height:36px; background:var(--fc-primary); border-radius:8px; display:grid; place-items:center; color:#fff; font-size:.95rem; }
-  .fc-card { background:var(--fc-surface); border:1px solid var(--fc-border); border-radius:var(--fc-radius); box-shadow:0 1px 6px rgba(0,0,0,.06); overflow:hidden; }
-  .fc-card-header { padding:.85rem 1.25rem; background:var(--fc-bg); border-bottom:1px solid var(--fc-border); }
-  .fc-card-body { padding:1.25rem; }
-  .badge-estado { display:inline-flex; align-items:center; gap:.3rem; padding:.28rem .7rem; border-radius:999px; font-size:.74rem; font-weight:700; text-transform:uppercase; }
-  .badge-pendiente { background:#fef3c7; color:#92400e; }
-  .badge-pagada { background:#d1fae5; color:#065f46; }
-  .badge-anulada { background:#fee2e2; color:#991b1b; }
-  .btn-nuevo { display:inline-flex; align-items:center; gap:.4rem; background:var(--fc-primary); color:#fff; padding:.48rem 1rem; border-radius:8px; font-size:.84rem; font-weight:600; text-decoration:none; }
-  .btn-nuevo:hover { background:var(--fc-primary-d); color:#fff; }
-</style>
-
 <div class="container-fluid px-4">
-  <div class="fc-page-header">
-    <h2><span class="icon-box"><i class="fas fa-file-invoice"></i></span> Facturas de Compra</h2>
-    <a href="{{ url_for('facmod.factura_agregar') }}" target="_blank" class="btn-nuevo"><i class="fas fa-plus"></i> Nueva Factura</a>
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-file-invoice"></i></span>
+      <div>
+        <h2 class="page-header-title">Facturas de Compra</h2>
+        <p class="page-header-subtitle">Facturas de proveedor registradas contra una recepción.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('facmod.factura_agregar') }}" target="_blank" class="btn-app btn-app-primary"><i class="fas fa-plus"></i> Nueva Factura</a>
+    </div>
   </div>
 
-  <div class="fc-card">
-    <div class="fc-card-header"><i class="fas fa-list me-1"></i> Listado de facturas registradas</div>
-    <div class="fc-card-body">
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Listado de facturas registradas</div>
+    <div class="app-card-body">
       <div class="table-responsive">
         <table id="tbl_facturas" class="table table-hover w-100">
           <thead>
@@ -56,8 +46,8 @@ $(document).ready(function(){
   const ESTADOS = ['PENDIENTE', 'PAGADA', 'ANULADA'];
 
   const estadoBadge = (estado) => {
-    const map = { PENDIENTE:'badge-pendiente', PAGADA:'badge-pagada', ANULADA:'badge-anulada' };
-    return `<span class="badge-estado ${map[estado] || 'badge-pendiente'}">${estado}</span>`;
+    const map = { PENDIENTE:'is-pendiente', PAGADA:'is-pagado', ANULADA:'is-anulado' };
+    return `<span class="badge-app ${map[estado] || 'is-pendiente'}">${estado}</span>`;
   };
 
   const tabla = $('#tbl_facturas').DataTable({
@@ -77,8 +67,8 @@ $(document).ready(function(){
       {
         data: null, orderable: false, className: 'text-center',
         render: function(row){
-          return `<button class="btn btn-sm btn-outline-secondary btn-cambiar-estado" data-id="${row.id_factura}" data-estado="${row.estado}">
-                    <i class="fas fa-random mr-1"></i> Cambiar estado
+          return `<button class="btn-app btn-app-secondary btn-sm btn-cambiar-estado" data-id="${row.id_factura}" data-estado="${row.estado}">
+                    <i class="fas fa-random"></i> Cambiar estado
                   </button>`;
         }
       }
@@ -99,7 +89,7 @@ $(document).ready(function(){
       showCancelButton: true,
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#1a56db',
+      confirmButtonColor: '#1e3a8a',
       preConfirm: () => document.getElementById('swal_nuevo_estado').value
     }).then(r => {
       if(!r.isConfirmed) return;

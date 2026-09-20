@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-users-cog"></i></span>
+      <div>
+        <h2 class="page-header-title">Usuarios del sistema</h2>
+        <p class="page-header-subtitle">Alta de usuarios, asignación de perfil, desbloqueo de cuentas y restablecimiento de contraseña.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <button class="btn-app btn-app-primary" id="btn_nuevo"><i class="fas fa-user-plus"></i> Nuevo usuario</button>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Listado de usuarios</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_usuarios" class="table table-hover w-100">
+          <thead>
+            <tr><th>Usuario</th><th>Funcionario</th><th>Correo</th><th>Perfil</th><th>Estado</th><th>Intentos</th><th class="text-center">Acciones</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalUsuarioTitulo">Nuevo usuario</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="u_id">
+        <div class="form-group">
+          <label class="field-label">Usuario (3 a 10 caracteres)</label>
+          <input type="text" id="u_nick" class="form-control" maxlength="10">
+        </div>
+        <div class="form-group" id="grp_funcionario">
+          <label class="field-label">Funcionario</label>
+          <select id="u_fun" class="form-control">
+            <option value="">— Seleccione —</option>
+            {% for f in funcionarios %}<option value="{{ f['fun_id'] }}">{{ f['nombre_completo'] }} ({{ f['ci'] }})</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Perfil</label>
+          <select id="u_grupo" class="form-control">
+            {% for g in grupos %}<option value="{{ g['gru_id'] }}">{{ g['gru_des'] }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Correo electrónico (para el código de verificación y las alertas)</label>
+          <input type="email" id="u_email" class="form-control">
+        </div>
+        <div class="form-group" id="grp_clave">
+          <label class="field-label">Contraseña inicial</label>
+          <input type="password" id="u_clave" class="form-control" autocomplete="new-password">
+          <small class="text-muted">Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
+        </div>
+        <div class="form-check" id="grp_estado">
+          <input type="checkbox" class="form-check-input" id="u_estado" checked>
+          <label class="form-check-label" for="u_estado">Usuario activo (al reactivarlo se reinician los intentos fallidos)</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-app btn-app-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn-app btn-app-primary" id="btn_guardar_usuario"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  const API = '/api/v1/seguridad/usuarios';
+  const YO = {{ session.get('usu_id') or 0 }};
+
+  function api(url, method, body){
+    return fetch(url, { method, headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF}, body: body ? JSON.stringify(body) : undefined })
+      .then(r => r.json());
+  }
+
+  const tabla = $('#tbl_usuarios').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    ajax: { url: API, dataSrc: 'data' },
+    pageLength: 15, order: [[0, 'asc']],
+    columns: [
+      { data: 'usu_nick', render: v => `<strong>${v}</strong>` },
+      { data: 'persona', render: v => v || '—' },
+      { data: 'usu_email', render: v => v || '<span class="text-muted">sin correo</span>' },
+      { data: 'grupo' },
+      { data: 'usu_estado', render: v => v ? '<span class="badge-app is-activo">Activo</span>' : '<span class="badge-app is-critico">Bloqueado</span>' },
+      { data: 'usu_nro_intentos' },
+      { data: null, orderable: false, className: 'text-center', render: r => `
+          <button class="btn-app btn-app-secondary btn-sm btn-editar" data-id="${r.usu_id}"><i class="fas fa-pen"></i> Editar</button>
+          <button class="btn-app btn-app-secondary btn-sm btn-clave" data-id="${r.usu_id}" data-nick="${r.usu_nick}"><i class="fas fa-key"></i> Contraseña</button>
+          ${r.usu_estado ? '' : `<button class="btn-app btn-app-success btn-sm btn-desbloquear" data-id="${r.usu_id}"><i class="fas fa-unlock"></i> Desbloquear</button>`}` }
+    ]
+  });
+
+  function fila(id){ return tabla.rows().data().toArray().find(r => r.usu_id === id); }
+
+  $('#btn_nuevo').on('click', function(){
+    $('#modalUsuarioTitulo').text('Nuevo usuario');
+    $('#u_id').val(''); $('#u_nick').val('').prop('disabled', false); $('#u_fun').val('');
+    $('#u_email').val(''); $('#u_clave').val(''); $('#u_estado').prop('checked', true);
+    $('#grp_funcionario, #grp_clave').show(); $('#grp_estado').hide();
+    $('#modalUsuario').modal('show');
+  });
+
+  $('#tbl_usuarios tbody').on('click', '.btn-editar', function(){
+    const u = fila($(this).data('id'));
+    $('#modalUsuarioTitulo').text('Editar usuario');
+    $('#u_id').val(u.usu_id); $('#u_nick').val(u.usu_nick).prop('disabled', true);
+    $('#u_grupo').val(u.gru_id); $('#u_email').val(u.usu_email || ''); $('#u_estado').prop('checked', u.usu_estado);
+    $('#grp_funcionario, #grp_clave').hide(); $('#grp_estado').show();
+    $('#modalUsuario').modal('show');
+  });
+
+  $('#btn_guardar_usuario').on('click', function(){
+    const id = $('#u_id').val();
+    const body = { gru_id: $('#u_grupo').val(), usu_email: $('#u_email').val() };
+    let p;
+    if(id){
+      body.usu_estado = $('#u_estado').is(':checked');
+      p = api(`${API}/${id}`, 'PUT', body);
+    } else {
+      Object.assign(body, { usu_nick: $('#u_nick').val(), fun_id: $('#u_fun').val(), usu_clave: $('#u_clave').val() });
+      p = api(API, 'POST', body);
+    }
+    p.then(res => {
+      if(res.success){ $('#modalUsuario').modal('hide'); tabla.ajax.reload(null, false);
+        Swal.fire({ icon:'success', title:'Guardado', timer:1500, showConfirmButton:false }); }
+      else Swal.fire('Atención', res.error || 'No se pudo guardar', 'warning');
+    });
+  });
+
+  $('#tbl_usuarios tbody').on('click', '.btn-desbloquear', function(){
+    const u = fila($(this).data('id'));
+    api(`${API}/${u.usu_id}`, 'PUT', { gru_id: u.gru_id, usu_email: u.usu_email, usu_estado: true }).then(res => {
+      if(res.success){ tabla.ajax.reload(null, false); Swal.fire({ icon:'success', title:'Cuenta desbloqueada', timer:1500, showConfirmButton:false }); }
+      else Swal.fire('Atención', res.error, 'warning');
+    });
+  });
+
+  $('#tbl_usuarios tbody').on('click', '.btn-clave', function(){
+    const id = $(this).data('id'), nick = $(this).data('nick');
+    Swal.fire({
+      title: `Nueva contraseña para ${nick}`, input: 'password',
+      inputPlaceholder: 'Mínimo 8 caracteres, mayúscula, minúscula y número',
+      showCancelButton: true, confirmButtonText: 'Cambiar', cancelButtonText: 'Cancelar', confirmButtonColor: '#2563eb'
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      api(`${API}/${id}/clave`, 'PUT', { clave: r.value }).then(res => {
+        if(res.success) Swal.fire({ icon:'success', title:'Contraseña actualizada', timer:1600, showConfirmButton:false });
+        else Swal.fire('Atención', res.error, 'warning');
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

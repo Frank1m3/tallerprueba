@@ -2,76 +2,50 @@
 {% block titulo %}Nueva Solicitud de Compra{% endblock %}
 {% block contenido %}
 <style>
-  :root {
-    --sc-primary:#1a56db; --sc-primary-d:#1040b0; --sc-success:#16a34a;
-    --sc-warn:#d97706; --sc-danger:#dc2626; --sc-muted:#6b7280;
-    --sc-border:#e5e7eb; --sc-bg:#f9fafb; --sc-surface:#ffffff; --sc-radius:10px;
-  }
-  .sc-page-header { display:flex; align-items:center; justify-content:space-between; padding:1.4rem 0 1.2rem; border-bottom:2px solid var(--sc-border); margin-bottom:1.5rem; }
-  .sc-page-header h2 { font-size:1.3rem; font-weight:700; color:#111827; margin:0; display:flex; align-items:center; gap:.5rem; }
-  .icon-box { width:36px; height:36px; background:var(--sc-primary); border-radius:8px; display:grid; place-items:center; color:#fff; font-size:.9rem; flex-shrink:0; }
-  .sc-card { background:var(--sc-surface); border:1px solid var(--sc-border); border-radius:var(--sc-radius); box-shadow:0 1px 6px rgba(0,0,0,.06); margin-bottom:1.25rem; overflow:hidden; }
-  .sc-card-header { padding:.75rem 1.2rem; background:var(--sc-bg); border-bottom:1px solid var(--sc-border); display:flex; align-items:center; gap:.5rem; font-size:.82rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.05em; }
-  .sc-card-header .dot { width:8px; height:8px; border-radius:50%; background:var(--sc-primary); flex-shrink:0; }
-  .sc-card-body { padding:1.25rem 1.4rem; }
-  .sc-label { font-size:.78rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.3rem; display:block; }
-  .form-control, .form-select { font-size:.875rem; border:1px solid var(--sc-border); border-radius:7px; padding:.42rem .75rem; color:#1f2937; transition:border-color .15s, box-shadow .15s; }
-  .form-control:focus, .form-select:focus { border-color:var(--sc-primary); box-shadow:0 0 0 3px rgba(26,86,219,.12); outline:none; }
-  .form-control[readonly] { background:#f3f4f6; color:var(--sc-muted); }
   .nro-input-wrap { position:relative; }
-  .nro-input-wrap .nro-badge { position:absolute; right:.6rem; top:50%; transform:translateY(-50%); font-size:.7rem; font-weight:700; color:var(--sc-primary); background:#dbeafe; padding:.1rem .45rem; border-radius:4px; pointer-events:none; }
-  #tbl_detalle thead th, #tblDetalle thead th { background:#f1f5f9; color:#374151; font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid var(--sc-border); padding:.6rem .8rem; white-space:nowrap; }
-  #tbl_detalle tbody td, #tblDetalle tbody td { font-size:.865rem; color:#1f2937; vertical-align:middle; padding:.55rem .8rem; border-bottom:1px solid #f3f4f6; }
-  #tbl_detalle tbody tr:hover td, #tblDetalle tbody tr:hover td { background:#f8faff; }
-  .badge-pend { background:#fef3c7; color:#92400e; font-size:.72rem; font-weight:700; padding:.2rem .6rem; border-radius:999px; text-transform:uppercase; }
-  .tbl-empty { text-align:center; color:var(--sc-muted); font-size:.85rem; padding:2rem 0 !important; }
-  .btn-sc { display:inline-flex; align-items:center; gap:.35rem; padding:.44rem 1rem; border-radius:7px; font-size:.845rem; font-weight:600; border:none; cursor:pointer; transition:opacity .15s, transform .1s, box-shadow .15s; text-decoration:none; }
-  .btn-sc:hover { opacity:.87; transform:translateY(-1px); }
-  .btn-sc:active { transform:scale(.97); }
-  .btn-add { background:var(--sc-success); color:#fff; box-shadow:0 2px 6px rgba(22,163,74,.2); }
-  .btn-save { background:var(--sc-primary); color:#fff; box-shadow:0 2px 8px rgba(26,86,219,.25); }
-  .btn-exit, .btn-cancel { background:#f3f4f6; color:#374151; border:1px solid var(--sc-border); }
-  .btn-del { background:#fff1f2; color:var(--sc-danger); border:1px solid #fca5a5; padding:.25rem .6rem; font-size:.77rem; border-radius:5px; font-weight:600; cursor:pointer; }
-  .btn-del:hover { background:#fee2e2; }
-  .sc-footer { display:flex; align-items:center; justify-content:flex-end; gap:.75rem; padding:1rem 1.4rem; border-top:1px solid var(--sc-border); background:var(--sc-bg); border-radius:0 0 var(--sc-radius) var(--sc-radius); }
-  .chip-estado { display:inline-flex; align-items:center; gap:.3rem; padding:.28rem .75rem; border-radius:999px; font-size:.74rem; font-weight:700; text-transform:uppercase; background:#fef3c7; color:#92400e; }
-  .sc-nro-badge { background:#fffbeb; border:1px solid #fcd34d; color:#92400e; padding:.28rem .75rem; border-radius:6px; font-size:.82rem; font-weight:700; }
-  #tblDetalle input.cantidad { width:90px; text-align:right; border-radius:6px; border:1px solid var(--sc-border); padding:.3rem .5rem; font-size:.86rem; }
+  .nro-input-wrap .nro-badge { position:absolute; right:.6rem; top:50%; transform:translateY(-50%); font-size:.7rem; font-weight:700; color:var(--pos-primary); background:#dbeafe; padding:.1rem .45rem; border-radius:4px; pointer-events:none; }
+  .tbl-empty { text-align:center; color:var(--pos-text-muted); font-size:.85rem; padding:2rem 0 !important; }
 </style>
 <div class="container-fluid px-4">
-  <div class="sc-page-header">
-    <h2><span class="icon-box"><i class="fas fa-plus"></i></span> Nueva Solicitud de Compra</h2>
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-plus"></i></span>
+      <div>
+        <h2 class="page-header-title">Nueva Solicitud de Compra</h2>
+        <p class="page-header-subtitle">Pedido interno de mercadería, sin proveedor todavía.</p>
+      </div>
+    </div>
   </div>
 
   <!-- Cabecera -->
-  <div class="sc-card">
-    <div class="sc-card-header"><span class="dot"></span> Datos del encabezado</div>
-    <div class="sc-card-body">
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Datos del encabezado</div>
+    <div class="app-card-body">
       <div class="row g-3">
         <div class="col-md-2">
-          <label class="sc-label">Nro. Solicitud</label>
+          <label class="field-label">Nro. Solicitud</label>
           <div class="nro-input-wrap"><input type="text" id="txt_nro_solicitud" class="form-control" readonly><span class="nro-badge">AUTO</span></div>
         </div>
         <div class="col-md-4">
-          <label class="sc-label">Solicitante</label>
+          <label class="field-label">Solicitante</label>
           <select id="cbo_funcionario" class="form-control">
             <option value="">— Seleccione —</option>
             {% for f in funcionarios %}<option value="{{ f['fun_id'] }}">{{ f['nombre_completo'] }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-md-2">
-          <label class="sc-label">Sucursal</label>
+          <label class="field-label">Sucursal</label>
           <select id="cbo_sucursal" class="form-control">
             <option value="">— Seleccione —</option>
             {% for s in sucursales %}<option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-md-2">
-          <label class="sc-label">Depósito</label>
+          <label class="field-label">Depósito</label>
           <select id="cbo_deposito" class="form-control"><option value="">— Seleccione —</option></select>
         </div>
         <div class="col-md-2">
-          <label class="sc-label">Fecha Solicitud</label>
+          <label class="field-label">Fecha Solicitud</label>
           <input type="date" id="txt_fecha_solicitud" class="form-control" value="{{ fecha_actual }}">
         </div>
       </div>
@@ -79,41 +53,41 @@
   </div>
 
   <!-- Agregar producto -->
-  <div class="sc-card">
-    <div class="sc-card-header"><span class="dot" style="background:var(--sc-success)"></span> Agregar producto</div>
-    <div class="sc-card-body">
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Agregar producto</div>
+    <div class="app-card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-5">
-          <label class="sc-label">Producto</label>
+          <label class="field-label">Producto</label>
           <select id="cbo_producto" class="form-control">
             <option value="">— Seleccione —</option>
           </select>
         </div>
         <div class="col-md-2">
-          <label class="sc-label">Cantidad</label>
+          <label class="field-label">Cantidad</label>
           <input type="number" id="txt_cantidad" min="1" class="form-control" placeholder="0">
         </div>
         <div class="col-md-2">
-          <label class="sc-label">Stock actual</label>
+          <label class="field-label">Stock actual</label>
           <input type="text" id="txt_stock" class="form-control" readonly placeholder="—">
         </div>
         <div class="col-md-2">
-          <label class="sc-label">Precio unitario</label>
+          <label class="field-label">Precio unitario</label>
           <input type="text" id="txt_precio" class="form-control" readonly placeholder="—">
         </div>
         <div class="col-md-1">
-          <button type="button" id="btn_agregar" class="btn-sc btn-add w-100"><i class="fas fa-plus"></i></button>
+          <button type="button" id="btn_agregar" class="btn-app btn-app-success w-100"><i class="fas fa-plus"></i></button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Detalle -->
-  <div class="sc-card">
-    <div class="sc-card-header"><span class="dot" style="background:var(--sc-warn)"></span> Detalle de la solicitud
-      <span id="lbl_total_items" style="margin-left:auto;font-size:.78rem;color:var(--sc-muted);font-weight:500;text-transform:none;letter-spacing:0">0 ítems agregados</span>
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-warning)"></span> Detalle de la solicitud
+      <span id="lbl_total_items" style="margin-left:auto;font-size:.78rem;color:var(--pos-text-muted);font-weight:500;text-transform:none;letter-spacing:0">0 ítems agregados</span>
     </div>
-    <div class="sc-card-body" style="padding:0">
+    <div class="app-card-body" style="padding:0">
       <div class="table-responsive">
         <table id="tbl_detalle" class="table table-hover w-100 mb-0">
           <thead><tr><th>Código</th><th>Producto</th><th class="text-end">Cantidad</th><th class="text-end">Stock</th><th class="text-end">Precio Unit.</th><th class="text-center">Estado</th><th class="text-center">Acción</th></tr></thead>
@@ -121,9 +95,9 @@
         </table>
       </div>
     </div>
-    <div class="sc-footer">
-      <button type="button" id="btn_salir_general" class="btn-sc btn-exit"><i class="fas fa-arrow-left"></i> Volver</button>
-      <button type="button" id="btn_grabar_solicitud" class="btn-sc btn-save"><i class="fas fa-save"></i> Grabar Solicitud</button>
+    <div class="app-card-footer">
+      <button type="button" id="btn_salir_general" class="btn-app btn-app-secondary"><i class="fas fa-arrow-left"></i> Volver</button>
+      <button type="button" id="btn_grabar_solicitud" class="btn-app btn-app-primary"><i class="fas fa-save"></i> Grabar Solicitud</button>
     </div>
   </div>
 </div>
@@ -174,10 +148,10 @@ $(document).ready(function(){
           <td class="text-end fw-bold">${d.cantidad}</td>
           <td class="text-end text-muted">${fmt(d.stock)}</td>
           <td class="text-end">₲ ${fmt(d.precio)}</td>
-          <td class="text-center"><span class="badge-pend">PENDIENTE</span></td>
+          <td class="text-center"><span class="badge-app is-pendiente">PENDIENTE</span></td>
           <td class="text-center">
-            <button class="btn-del btn-modificar" data-idx="${idx}"><i class="fas fa-edit"></i></button>
-            <button class="btn-del btn-eliminar" data-idx="${idx}" style="margin-left:.25rem"><i class="fas fa-trash"></i></button>
+            <button class="btn-app btn-app-secondary btn-sm btn-modificar" data-idx="${idx}"><i class="fas fa-edit"></i></button>
+            <button class="btn-app btn-app-danger btn-sm btn-eliminar" data-idx="${idx}" style="margin-left:.25rem"><i class="fas fa-trash"></i></button>
           </td></tr>`);
       });
     }
@@ -239,8 +213,8 @@ $(document).ready(function(){
     const stock = parseFloat(($('#txt_stock').val()||'0').replace(/\./g,'').replace(',','.')) || 0;
     const precio = parseFloat($('#txt_precio').val() || 0);
     const cantidad = parseFloat($('#txt_cantidad').val());
-    if(!id_item || !cantidad || cantidad<=0){ return Swal.fire({title:'Atención', text:'Seleccione un producto e ingrese una cantidad válida.', icon:'warning', confirmButtonColor:'#1a56db'}); }
-    if(detalle.some(d => d.codigo === codigo)){ return Swal.fire({title:'Duplicado', text:'El producto '+codigo+' ya fue agregado.', icon:'warning', confirmButtonColor:'#1a56db'}); }
+    if(!id_item || !cantidad || cantidad<=0){ return Swal.fire({title:'Atención', text:'Seleccione un producto e ingrese una cantidad válida.', icon:'warning', confirmButtonColor:'#1e3a8a'}); }
+    if(detalle.some(d => d.codigo === codigo)){ return Swal.fire({title:'Duplicado', text:'El producto '+codigo+' ya fue agregado.', icon:'warning', confirmButtonColor:'#1e3a8a'}); }
     detalle.push({id_item, codigo, producto, cantidad, stock, precio, estado:'PENDIENTE'});
     renderTabla();
     $('#cbo_producto').val('').trigger('change'); $('#txt_cantidad').val(''); $('#txt_stock,#txt_precio').val('');
@@ -248,7 +222,7 @@ $(document).ready(function(){
 
   $('#tbl_detalle tbody').on('click', '.btn-modificar', function(){
     const idx = parseInt($(this).data('idx')); const fila = detalle[idx];
-    Swal.fire({ title:'Modificar cantidad', input:'number', inputValue:fila.cantidad, inputAttributes:{min:1}, showCancelButton:true, confirmButtonText:'Actualizar', cancelButtonText:'Cancelar', confirmButtonColor:'#1a56db',
+    Swal.fire({ title:'Modificar cantidad', input:'number', inputValue:fila.cantidad, inputAttributes:{min:1}, showCancelButton:true, confirmButtonText:'Actualizar', cancelButtonText:'Cancelar', confirmButtonColor:'#1e3a8a',
       preConfirm:(v)=>{ const n=parseFloat(v); if(isNaN(n)||n<=0) Swal.showValidationMessage('Ingrese una cantidad válida'); return n; }
     }).then(r => { if(r.isConfirmed){ detalle[idx].cantidad = r.value; renderTabla(); } });
   });
@@ -260,13 +234,13 @@ $(document).ready(function(){
   $('#btn_salir_general').click(() => window.location.href = "{{ url_for('solmod.solicitud_index') }}");
 
   $('#btn_grabar_solicitud').click(function(){
-    if(detalle.length===0){ return Swal.fire({title:'Sin ítems', text:'Debe agregar al menos un producto.', icon:'error', confirmButtonColor:'#1a56db'}); }
+    if(detalle.length===0){ return Swal.fire({title:'Sin ítems', text:'Debe agregar al menos un producto.', icon:'error', confirmButtonColor:'#1e3a8a'}); }
     const id_funcionario = $('#cbo_funcionario').val();
     const id_sucursal = $('#cbo_sucursal').val();
     const id_deposito = $('#cbo_deposito').val();
     const fecha_solicitud = $('#txt_fecha_solicitud').val();
     if(!id_funcionario || !id_sucursal || !id_deposito || !fecha_solicitud){
-      return Swal.fire({title:'Faltan datos', text:'Complete todos los campos del encabezado.', icon:'warning', confirmButtonColor:'#1a56db'});
+      return Swal.fire({title:'Faltan datos', text:'Complete todos los campos del encabezado.', icon:'warning', confirmButtonColor:'#1e3a8a'});
     }
     const payload = {
       id_funcionario, id_sucursal, id_deposito, fecha_solicitud,
@@ -278,7 +252,7 @@ $(document).ready(function(){
       contentType:'application/json', data:JSON.stringify(payload),
       success:function(res){
         if(res.success){
-          Swal.fire({title:'¡Registrado!', text:'La solicitud fue grabada correctamente.', icon:'success', confirmButtonColor:'#1a56db', timer:2000, showConfirmButton:false});
+          Swal.fire({title:'¡Registrado!', text:'La solicitud fue grabada correctamente.', icon:'success', confirmButtonColor:'#1e3a8a', timer:2000, showConfirmButton:false});
           detalle=[]; renderTabla(); cargarNroSolicitud();
           resetFormulario();
         } else Swal.fire('Error', res.error, 'error');

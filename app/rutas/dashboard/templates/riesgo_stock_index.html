@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block titulo %}Riesgo de Quiebre de Stock{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-exclamation-triangle"></i></span>
+      <div>
+        <h2 class="page-header-title">Productos con riesgo de quiebre</h2>
+        <p class="page-header-subtitle">Listado completo, ordenado por nivel de riesgo.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashmod.dashboard') }}" class="btn-app btn-app-secondary"><i class="fas fa-arrow-left"></i> Volver al dashboard</a>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="dash-filtros">
+        <select id="f_sucursal" class="form-control" style="width:auto; max-width:200px;">
+          <option value="">Todas las sucursales</option>
+          {% for s in sucursales %}<option value="{{ s['id_sucursal'] }}">{{ s['descripcion'] }}</option>{% endfor %}
+        </select>
+        <select id="f_deposito" class="form-control" style="width:auto; max-width:200px;">
+          <option value="">Todos los depósitos</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-danger)"></span> Listado de productos en riesgo</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_riesgo" class="table table-hover w-100">
+          <thead>
+            <tr>
+              <th>Código</th><th>Producto</th><th>Stock actual</th><th>Mínimo</th><th>Cobertura</th><th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const NIVEL_BADGE = { normal:'is-normal', atencion:'is-atencion', bajo:'is-bajo', critico:'is-critico', sin_stock:'is-sinstock' };
+  const NIVEL_LABEL = { normal:'Normal', atencion:'Atención', bajo:'Stock bajo', critico:'Crítico', sin_stock:'Sin stock' };
+
+  function hoyISO(){ return new Date().toISOString().slice(0,10); }
+  function hace90(){ const d = new Date(); d.setDate(d.getDate()-90); return d.toISOString().slice(0,10); }
+
+  const tabla = $('#tbl_riesgo').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    serverSide: true,
+    ajax: {
+      url: '/api/v1/dashboard/riesgo-stock',
+      data: function(d){
+        d.desde = hace90(); d.hasta = hoyISO();
+        d.id_sucursal = $('#f_sucursal').val() || undefined;
+        d.id_deposito = $('#f_deposito').val() || undefined;
+      }
+    },
+    columns: [
+      { data: 'item_code' },
+      { data: 'descripcion' },
+      { data: 'stock_actual' },
+      { data: 'cantidad_minima' },
+      { data: 'cobertura_dias', render: v => v != null ? `${v} días` : '—' },
+      { data: 'nivel', render: v => `<span class="badge-app ${NIVEL_BADGE[v]||'is-normal'}">${NIVEL_LABEL[v]||v}</span>` }
+    ],
+    ordering: false,
+    pageLength: 15
+  });
+
+  $('#f_sucursal').on('change', function(){
+    const id = $(this).val();
+    $('#f_deposito').html('<option value="">Todos los depósitos</option>');
+    if(id){
+      $.getJSON(`/api/v1/sucursal-depositos/${id}`, function(res){
+        (res.data || []).forEach(d => $('#f_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`));
+      });
+    }
+    tabla.ajax.reload();
+  });
+  $('#f_deposito').on('change', () => tabla.ajax.reload());
+});
+</script>
+{% endblock %}

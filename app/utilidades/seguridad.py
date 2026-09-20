@@ -22,3 +22,24 @@ def login_required(f):
             return redirect(url_for('login.login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+def admin_required(f):
+    """
+    Restringe el acceso a usuarios del grupo 'administradores' (por ejemplo,
+    para ver los logs de auditoría, que no deben quedar abiertos a cualquiera).
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario_nombre' not in session:
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({'success': False, 'error': 'Sesión no válida o expirada.'}), 401
+            flash('Debe iniciar sesión para acceder a este módulo.', 'warning')
+            return redirect(url_for('login.login'))
+        if session.get('grupo') != 'administradores':
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({'success': False, 'error': 'No tiene permisos para acceder a este módulo.'}), 403
+            flash('No tiene permisos para acceder a este módulo.', 'danger')
+            return redirect(url_for('dashmod.dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function

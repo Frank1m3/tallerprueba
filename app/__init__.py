@@ -28,6 +28,36 @@ from app.rutas.seguridad.login_routes import logmod
 app.register_blueprint(logmod)
 
 # ================================
+# Dashboard (pantalla de inicio)
+# ================================
+from app.rutas.dashboard.dashboard_routes import dashmod
+from app.rutas.dashboard.dashboard_api    import dashapi
+app.register_blueprint(dashmod, url_prefix='/dashboard')
+app.register_blueprint(dashapi, url_prefix=f'{api_v1}/dashboard')
+
+# ================================
+# Auditoría del sistema
+# ================================
+from app.rutas.auditoria.auditoria_routes import audmod
+from app.rutas.auditoria.auditoria_api    import audapi
+app.register_blueprint(audmod, url_prefix='/auditoria')
+app.register_blueprint(audapi, url_prefix=f'{api_v1}/auditoria')
+
+# ================================
+# Administración de seguridad: usuarios y permisos por perfil
+# ================================
+from app.rutas.seg_admin.seg_admin_routes import segmod
+from app.rutas.seg_admin.seg_admin_api    import segapi
+app.register_blueprint(segmod, url_prefix='/seguridad')
+app.register_blueprint(segapi, url_prefix=f'{api_v1}/seguridad')
+
+# ================================
+# Manual de usuario (visible para todo usuario con sesión)
+# ================================
+from app.rutas.manual.manual_routes import manualmod
+app.register_blueprint(manualmod, url_prefix='/manual')
+
+# ================================
 # Referenciales - Rutas
 # ================================
 from app.rutas.referenciales.ciudad.ciudad_routes             import ciumod
@@ -221,4 +251,10 @@ def verificar_sesion_global():
         if path.startswith(mod):
             if 'usuario_nombre' not in session and 'usuario_id' not in session:
                 flash('Debe iniciar sesión para acceder al sistema.', 'warning')
-                return redirect(url_for('login.login'))
+                return redirect(url_for('login.login'))
+
+# ================================
+# Permisos por grupo / ventana / escenario (autenticación + autorización)
+# ================================
+from app.utilidades.permisos import registrar as registrar_permisos
+registrar_permisos(app)

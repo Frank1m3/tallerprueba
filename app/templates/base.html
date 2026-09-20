@@ -28,25 +28,26 @@
         :root {
             --pos-font:            'Plus Jakarta Sans', sans-serif;
 
-            --pos-bg:              #f1f5f9;
+            --pos-bg:              #f5f7fa;
             --pos-surface:         #ffffff;
             --pos-surface-hover:   #f8fafc;
-            --pos-border:          #cbd5e1;
-            --pos-text:            #0f172a;
-            --pos-text-muted:      #64748b;
+            --pos-border:          #e5e7eb;
+            --pos-text:            #1f2937;
+            --pos-text-muted:      #6b7280;
 
-            /* Azules Gran Vía / POS */
-            --pos-primary:         #1e3a8a; /* Azul Marino Gran Vía */
-            --pos-primary-hover:   #172554;
-            --pos-primary-glow:    rgba(30, 58, 138, 0.15);
+            /* Paleta ERP (guía de rediseño) */
+            --pos-primary:         #2563eb;
+            --pos-primary-hover:   #1e40af;
+            --pos-primary-glow:    rgba(37, 99, 235, 0.15);
             --pos-navy-panel:      #1e40af;
 
             /* Estados & Acentos */
-            --pos-success:         #15803d;
-            --pos-success-hover:   #166534;
-            --pos-danger:          #b91c1c;
-            --pos-danger-hover:    #991b1b;
-            --pos-warning:         #b45309;
+            --pos-success:         #16a34a;
+            --pos-success-hover:   #15803d;
+            --pos-danger:          #dc2626;
+            --pos-danger-hover:    #b91c1c;
+            --pos-warning:         #f59e0b;
+            --pos-info:            #0ea5e9;
 
             --pos-display-bg:      #fef08a;
             --pos-display-border:  #eab308;
@@ -79,11 +80,11 @@
            SIDEBAR AZUL MARINO POS
            ============================================================ */
         #accordionSidebar {
-            background: linear-gradient(180deg, var(--pos-navy-panel) 0%, var(--pos-primary) 100%) !important;
+            background: var(--pos-primary-hover) !important;
             width: 250px !important;
             min-height: 100vh;
             border-right: none !important;
-            box-shadow: 4px 0 20px rgba(30, 58, 138, 0.2);
+            box-shadow: 4px 0 20px rgba(30, 64, 175, 0.15);
             padding-bottom: 2rem;
             z-index: 10;
         }
@@ -195,17 +196,12 @@
            SUBMENÚS EN AZUL TRANSLÚCIDO
            ============================================================ */
         .collapse-inner {
-            background: rgba(15, 23, 42, 0.4) !important;
+            background: rgba(15, 23, 42, 0.25) !important;
             border-radius: 10px !important;
             margin: 0.2rem 0.8rem 0.6rem !important;
             padding: 0.4rem !important;
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
-
-        .collapse-inner.mod-caja   { border-left: 3px solid var(--pos-display-border) !important; }
-        .collapse-inner.mod-compra { border-left: 3px solid var(--pos-success) !important; }
-        .collapse-inner.mod-prod   { border-left: 3px solid #38bdf8 !important; }
-        .collapse-inner.mod-ref    { border-left: 3px solid #818cf8 !important; }
 
         .collapse-item {
             font-size: 0.82rem !important;
@@ -401,6 +397,193 @@
             background: var(--pos-primary-hover) !important;
             transform: translateY(-3px);
         }
+
+        /* ============================================================
+           SISTEMA DE DISEÑO COMPARTIDO — componentes reutilizables para
+           todos los módulos (evita que cada pantalla reinvente sus
+           propias variables de color y clases de botón/badge).
+           ============================================================ */
+
+        /* ---- Badges de estado (una sola paleta para todo el sistema) ---- */
+        .badge-app {
+            display: inline-flex; align-items: center; gap: .35rem;
+            padding: .28rem .7rem; border-radius: 999px;
+            font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+        }
+        .badge-app::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .badge-app.is-pendiente,
+        .badge-app.is-atencion   { background: #fef3c7; color: #92400e; }
+        .badge-app.is-aprobado,
+        .badge-app.is-confirmado,
+        .badge-app.is-pagado,
+        .badge-app.is-activo,
+        .badge-app.is-normal     { background: #d1fae5; color: #065f46; }
+        .badge-app.is-proceso    { background: #dbeafe; color: #1e40af; }
+        .badge-app.is-bajo       { background: #ffedd5; color: #9a3412; }
+        .badge-app.is-rechazado,
+        .badge-app.is-anulado,
+        .badge-app.is-critico    { background: #fee2e2; color: #991b1b; }
+        .badge-app.is-sinstock   { background: #1f2937; color: #fff; }
+        .badge-app.is-inactivo,
+        .badge-app.is-cerrado    { background: #f1f5f9; color: #475569; }
+
+        /* ---- Botones de intención (mismo radio/padding en todo el sistema) ---- */
+        .btn-app {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .5rem 1.05rem; border-radius: 8px;
+            font-size: .845rem; font-weight: 600; border: 1px solid transparent;
+            cursor: pointer; text-decoration: none !important; line-height: 1.3;
+            transition: opacity .15s, transform .1s, box-shadow .15s;
+        }
+        .btn-app:hover { opacity: .9; transform: translateY(-1px); }
+        .btn-app:active { transform: scale(.97); }
+        .btn-app:disabled, .btn-app.disabled { opacity: .45; cursor: not-allowed; transform: none; }
+        .btn-app-primary   { background: var(--pos-primary); color: #fff; box-shadow: 0 2px 8px var(--pos-primary-glow); }
+        .btn-app-primary:hover   { background: var(--pos-primary-hover); color: #fff; }
+        .btn-app-secondary { background: #f1f5f9; color: var(--pos-text); border-color: var(--pos-border); }
+        .btn-app-success   { background: var(--pos-success); color: #fff; }
+        .btn-app-success:hover   { color: #fff; }
+        .btn-app-danger    { background: #fff1f2; color: var(--pos-danger); border-color: #fca5a5; }
+        .btn-app.btn-sm    { padding: .3rem .65rem; font-size: .775rem; border-radius: 6px; }
+
+        /* ---- Encabezado de página estándar ---- */
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: .75rem;
+            padding: 1.4rem 0 1.2rem; border-bottom: 2px solid var(--pos-border); margin-bottom: 1.5rem;
+        }
+        .page-header-heading { display: flex; align-items: center; gap: .6rem; }
+        .page-header-icon {
+            width: 38px; height: 38px; border-radius: 10px; background: var(--pos-primary);
+            color: #fff; display: grid; place-items: center; font-size: .95rem; flex-shrink: 0;
+        }
+        .page-header-title { font-size: 1.3rem; font-weight: 700; color: var(--pos-text); margin: 0; }
+        .page-header-subtitle { font-size: .82rem; color: var(--pos-text-muted); margin: .15rem 0 0; }
+        .page-header-actions { display: flex; align-items: center; gap: .6rem; }
+
+        /* ---- Etiqueta de campo estándar (reemplaza .sc-label/.mp-label/.fc-label) ---- */
+        .field-label {
+            font-size: .78rem; font-weight: 700; color: var(--pos-text);
+            text-transform: uppercase; letter-spacing: .04em; margin-bottom: .3rem; display: block;
+        }
+
+        /* ---- Card de sección estándar ---- */
+        .app-card {
+            background: var(--pos-surface); border: 1px solid var(--pos-border);
+            border-radius: var(--pos-radius); box-shadow: var(--pos-shadow);
+            margin-bottom: 1.25rem; overflow: hidden;
+        }
+        .app-card-header {
+            padding: .8rem 1.25rem; background: var(--pos-surface-hover); border-bottom: 1px solid var(--pos-border);
+            display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+            font-size: .82rem; font-weight: 700; color: var(--pos-text); text-transform: uppercase; letter-spacing: .04em;
+        }
+        .app-card-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pos-primary); flex-shrink: 0; }
+        .app-card-body { padding: 1.25rem 1.4rem; }
+        .app-card-footer {
+            display: flex; align-items: center; justify-content: flex-end; gap: .75rem;
+            padding: 1rem 1.4rem; border-top: 1px solid var(--pos-border); background: var(--pos-surface-hover);
+        }
+
+        /* ---- Tarjetas KPI (dashboard de inteligencia de ventas e inventario) ---- */
+        .kpi-card {
+            background: var(--pos-surface); border: 1px solid var(--pos-border);
+            border-radius: 12px; padding: 1.1rem 1.25rem; box-shadow: var(--pos-shadow);
+            display: flex; flex-direction: column; gap: .4rem; height: 100%;
+        }
+        .kpi-card-icon {
+            width: 34px; height: 34px; border-radius: 9px; display: inline-flex;
+            align-items: center; justify-content: center; font-size: .95rem; margin-bottom: .2rem;
+        }
+        .kpi-card-icon.is-info     { background: #e0f2fe; color: #0369a1; }
+        .kpi-card-icon.is-success  { background: #d1fae5; color: #065f46; }
+        .kpi-card-icon.is-warning  { background: #fef3c7; color: #92400e; }
+        .kpi-card-icon.is-danger   { background: #fee2e2; color: #991b1b; }
+        .kpi-card-icon.is-critico  { background: #1f2937; color: #fff; }
+        .kpi-card-label { font-size: .78rem; color: var(--pos-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
+        .kpi-card-value { font-size: 1.5rem; font-weight: 700; color: var(--pos-text); line-height: 1.1; }
+        .kpi-card-sub { font-size: .78rem; color: var(--pos-text-muted); }
+        .kpi-card-delta { font-size: .78rem; font-weight: 700; }
+        .kpi-card-delta.is-up   { color: var(--pos-success); }
+        .kpi-card-delta.is-down { color: var(--pos-danger); }
+
+        /* ---- Rankings con barra horizontal (top vendidos, etc.) ---- */
+        .ranking-item { display: flex; align-items: center; gap: .75rem; padding: .55rem 0; }
+        .ranking-item + .ranking-item { border-top: 1px solid var(--pos-border); }
+        .ranking-pos {
+            width: 24px; height: 24px; border-radius: 50%; background: var(--pos-surface-hover);
+            color: var(--pos-text-muted); font-size: .75rem; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .ranking-item:first-child .ranking-pos { background: var(--pos-primary); color: #fff; }
+        .ranking-body { flex: 1; min-width: 0; }
+        .ranking-title { font-size: .85rem; font-weight: 600; color: var(--pos-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ranking-bar-track { background: var(--pos-surface-hover); border-radius: 999px; height: 6px; margin-top: .3rem; overflow: hidden; }
+        .ranking-bar-fill { background: var(--pos-primary); height: 100%; border-radius: 999px; }
+        .ranking-value { font-size: .85rem; font-weight: 700; color: var(--pos-text); flex-shrink: 0; text-align: right; }
+
+        /* ---- Filtros del dashboard ---- */
+        .dash-filtros { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+        .dash-filtros .btn-app-chip {
+            padding: .4rem .85rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+            border: 1px solid var(--pos-border); background: var(--pos-surface); color: var(--pos-text-muted); cursor: pointer;
+        }
+        .dash-filtros .btn-app-chip.active { background: var(--pos-primary); color: #fff; border-color: var(--pos-primary); }
+        .dash-empty { text-align: center; padding: 2rem 1rem; color: var(--pos-text-muted); font-size: .85rem; }
+
+        /* ---- Buscador global del topbar (visual; sin backend por ahora) ---- */
+        .topbar-search { position: relative; width: 320px; max-width: 40vw; }
+        .topbar-search input {
+            width: 100%; border: 1px solid var(--pos-border); border-radius: 999px;
+            background: var(--pos-surface-hover); padding: .5rem 1rem .5rem 2.3rem; font-size: .83rem;
+        }
+        .topbar-search input:focus { outline: none; border-color: var(--pos-primary); background: #fff; }
+        .topbar-search i { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); color: var(--pos-text-muted); font-size: .8rem; }
+
+        /* ---- Notificaciones del topbar ---- */
+        .topbar-bell {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%;
+            color: var(--pos-text-muted); background: var(--pos-surface-hover);
+            border: 1px solid var(--pos-border); transition: all .15s ease;
+        }
+        .topbar-bell:hover { color: var(--pos-primary); border-color: var(--pos-primary); }
+
+        /* ============================================================
+           OVERRIDES GENÉRICOS DE BOOTSTRAP — para que las pantallas que
+           todavía no migraron a .btn-app/.badge-app (Ventas, Inventario,
+           Producción, Referenciales) hereden la misma paleta plana sin
+           tener que editar cada plantilla una por una.
+           ============================================================ */
+        .btn-primary   { background-color: var(--pos-primary) !important; border-color: var(--pos-primary) !important; }
+        .btn-primary:hover, .btn-primary:focus { background-color: var(--pos-primary-hover) !important; border-color: var(--pos-primary-hover) !important; }
+        .btn-success   { background-color: var(--pos-success) !important; border-color: var(--pos-success) !important; }
+        .btn-success:hover, .btn-success:focus { background-color: var(--pos-success-hover) !important; border-color: var(--pos-success-hover) !important; }
+        .btn-danger    { background-color: var(--pos-danger) !important; border-color: var(--pos-danger) !important; }
+        .btn-danger:hover, .btn-danger:focus { background-color: var(--pos-danger-hover) !important; border-color: var(--pos-danger-hover) !important; }
+        .btn-warning   { background-color: var(--pos-warning) !important; border-color: var(--pos-warning) !important; color: #fff !important; }
+        .btn-info      { background-color: var(--pos-info) !important; border-color: var(--pos-info) !important; }
+        .btn-secondary, .btn-outline-secondary:hover { background-color: #f1f5f9 !important; border-color: var(--pos-border) !important; color: var(--pos-text) !important; }
+        .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-secondary,
+        .btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-secondary {
+            border-radius: 8px !important; font-weight: 600 !important;
+        }
+        .btn-outline-primary { color: var(--pos-primary) !important; border-color: var(--pos-primary) !important; }
+        .btn-outline-primary:hover { background-color: var(--pos-primary) !important; color: #fff !important; }
+        .btn-outline-success { color: var(--pos-success) !important; border-color: var(--pos-success) !important; }
+        .btn-outline-success:hover { background-color: var(--pos-success) !important; color: #fff !important; }
+        .btn-outline-danger { color: var(--pos-danger) !important; border-color: var(--pos-danger) !important; }
+        .btn-outline-danger:hover { background-color: var(--pos-danger) !important; color: #fff !important; }
+
+        .badge-primary   { background-color: #dbeafe !important; color: #1e40af !important; }
+        .badge-success   { background-color: #d1fae5 !important; color: #065f46 !important; }
+        .badge-danger    { background-color: #fee2e2 !important; color: #991b1b !important; }
+        .badge-warning   { background-color: #fef3c7 !important; color: #92400e !important; }
+        .badge-info      { background-color: #e0f2fe !important; color: #0369a1 !important; }
+        .badge-secondary { background-color: #f1f5f9 !important; color: #475569 !important; }
+        .badge-primary, .badge-success, .badge-danger, .badge-warning, .badge-info, .badge-secondary {
+            font-weight: 700 !important; border-radius: 999px !important; padding: .35em .7em !important;
+        }
     </style>
 </head>
 
@@ -446,34 +629,34 @@
         <div class="collapse-inner mod-ref">
 
           <span class="collapse-section">Generales</span>
-          <a class="collapse-item" href="{{ url_for('ciudad.ciudadIndex') }}">Ciudad</a>
-          <a class="collapse-item" href="{{ url_for('pais.paisIndex') }}">País</a>
-          <a class="collapse-item" href="{{ url_for('nacionalidad.nacionalidadIndex') }}">Nacionalidad</a>
-          <a class="collapse-item" href="{{ url_for('persona.personaIndex') }}">Personas</a>
-          <a class="collapse-item" href="{{ url_for('sexo.sexoIndex') }}">Sexo</a>
-          <a class="collapse-item" href="{{ url_for('sucursal.sucursalIndex') }}">Sucursales</a>
-          <a class="collapse-item" href="{{ url_for('deposito.depositoIndex') }}">Depósitos</a>
+          {% if puede_ver(url_for('ciudad.ciudadIndex')) %}<a class="collapse-item" href="{{ url_for('ciudad.ciudadIndex') }}">Ciudad</a>{% endif %}
+          {% if puede_ver(url_for('pais.paisIndex')) %}<a class="collapse-item" href="{{ url_for('pais.paisIndex') }}">País</a>{% endif %}
+          {% if puede_ver(url_for('nacionalidad.nacionalidadIndex')) %}<a class="collapse-item" href="{{ url_for('nacionalidad.nacionalidadIndex') }}">Nacionalidad</a>{% endif %}
+          {% if puede_ver(url_for('persona.personaIndex')) %}<a class="collapse-item" href="{{ url_for('persona.personaIndex') }}">Personas</a>{% endif %}
+          {% if puede_ver(url_for('sexo.sexoIndex')) %}<a class="collapse-item" href="{{ url_for('sexo.sexoIndex') }}">Sexo</a>{% endif %}
+          {% if puede_ver(url_for('sucursal.sucursalIndex')) %}<a class="collapse-item" href="{{ url_for('sucursal.sucursalIndex') }}">Sucursales</a>{% endif %}
+          {% if puede_ver(url_for('deposito.depositoIndex')) %}<a class="collapse-item" href="{{ url_for('deposito.depositoIndex') }}">Depósitos</a>{% endif %}
 
           <span class="collapse-section">Compras</span>
-          <a class="collapse-item" href="{{ url_for('proveedor.proveedorIndex') }}">Proveedores</a>
-          <a class="collapse-item" href="{{ url_for('item.itemIndex') }}">Items / Productos</a>
-          <a class="collapse-item" href="{{ url_for('tipoitem.tipoItemIndex') }}">Tipo de Item</a>
-          <a class="collapse-item" href="{{ url_for('grupo.grupoIndex') }}">Grupos</a>
-          <a class="collapse-item" href="{{ url_for('marca.marcaIndex') }}">Marcas</a>
-          <a class="collapse-item" href="{{ url_for('unidadmedida.unidadMedidaIndex') }}">Unidad de Medida</a>
-          <a class="collapse-item" href="{{ url_for('tipoimpuesto.tipoImpuestoIndex') }}">Tipo de Impuesto</a>
-          <a class="collapse-item" href="{{ url_for('moneda.monedaIndex') }}">Monedas</a>
-          <a class="collapse-item" href="{{ url_for('formapago.formasPagoIndex') }}">Formas de Pago</a>
+          {% if puede_ver(url_for('proveedor.proveedorIndex')) %}<a class="collapse-item" href="{{ url_for('proveedor.proveedorIndex') }}">Proveedores</a>{% endif %}
+          {% if puede_ver(url_for('item.itemIndex')) %}<a class="collapse-item" href="{{ url_for('item.itemIndex') }}">Items / Productos</a>{% endif %}
+          {% if puede_ver(url_for('tipoitem.tipoItemIndex')) %}<a class="collapse-item" href="{{ url_for('tipoitem.tipoItemIndex') }}">Tipo de Item</a>{% endif %}
+          {% if puede_ver(url_for('grupo.grupoIndex')) %}<a class="collapse-item" href="{{ url_for('grupo.grupoIndex') }}">Grupos</a>{% endif %}
+          {% if puede_ver(url_for('marca.marcaIndex')) %}<a class="collapse-item" href="{{ url_for('marca.marcaIndex') }}">Marcas</a>{% endif %}
+          {% if puede_ver(url_for('unidadmedida.unidadMedidaIndex')) %}<a class="collapse-item" href="{{ url_for('unidadmedida.unidadMedidaIndex') }}">Unidad de Medida</a>{% endif %}
+          {% if puede_ver(url_for('tipoimpuesto.tipoImpuestoIndex')) %}<a class="collapse-item" href="{{ url_for('tipoimpuesto.tipoImpuestoIndex') }}">Tipo de Impuesto</a>{% endif %}
+          {% if puede_ver(url_for('moneda.monedaIndex')) %}<a class="collapse-item" href="{{ url_for('moneda.monedaIndex') }}">Monedas</a>{% endif %}
+          {% if puede_ver(url_for('formapago.formasPagoIndex')) %}<a class="collapse-item" href="{{ url_for('formapago.formasPagoIndex') }}">Formas de Pago</a>{% endif %}
 
           <span class="collapse-section">Ventas</span>
-          <a class="collapse-item" href="{{ url_for('cliente.clienteIndex') }}">Clientes</a>
-          <a class="collapse-item" href="{{ url_for('marcatarjeta.marcaTarjetaIndex') }}">Marcas de Tarjeta</a>
-          <a class="collapse-item" href="{{ url_for('entidademisora.entidadEmisoraIndex') }}">Entidades Emisoras</a>
+          {% if puede_ver(url_for('cliente.clienteIndex')) %}<a class="collapse-item" href="{{ url_for('cliente.clienteIndex') }}">Clientes</a>{% endif %}
+          {% if puede_ver(url_for('marcatarjeta.marcaTarjetaIndex')) %}<a class="collapse-item" href="{{ url_for('marcatarjeta.marcaTarjetaIndex') }}">Marcas de Tarjeta</a>{% endif %}
+          {% if puede_ver(url_for('entidademisora.entidadEmisoraIndex')) %}<a class="collapse-item" href="{{ url_for('entidademisora.entidadEmisoraIndex') }}">Entidades Emisoras</a>{% endif %}
 
           <span class="collapse-section">Producción</span>
-          <a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>
-          <a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>
-          <a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>
+          {% if puede_ver(url_for('tipoetapas.tipoEtapasIndex')) %}<a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>{% endif %}
+          {% if puede_ver(url_for('parametrocalidad.parametroCalidadIndex')) %}<a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>{% endif %}
+          {% if puede_ver(url_for('motivoajuste.motivoAjusteIndex')) %}<a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>{% endif %}
 
         </div>
       </div>
@@ -492,10 +675,10 @@
       </a>
       <div id="collapseCaja" class="collapse" aria-labelledby="headingCaja" data-parent="#accordionSidebar">
         <div class="collapse-inner mod-caja">
-          <a class="collapse-item" href="{{ url_for('apertura.aperturaIndex') }}">Apertura</a>
-          <a class="collapse-item" href="{{ url_for('ventamod.ventaPos') }}">Punto de Venta</a>
-          <a class="collapse-item" href="{{ url_for('arqueomod.arqueo_index') }}">Arqueo de Caja</a>
-          <a class="collapse-item" href="{{ url_for('cierre.cierreIndex') }}">Cierre</a>
+          {% if puede_ver(url_for('apertura.aperturaIndex')) %}<a class="collapse-item" href="{{ url_for('apertura.aperturaIndex') }}">Apertura</a>{% endif %}
+          {% if puede_ver(url_for('ventamod.ventaPos')) %}<a class="collapse-item" href="{{ url_for('ventamod.ventaPos') }}">Punto de Venta</a>{% endif %}
+          {% if puede_ver(url_for('arqueomod.arqueo_index')) %}<a class="collapse-item" href="{{ url_for('arqueomod.arqueo_index') }}">Arqueo de Caja</a>{% endif %}
+          {% if puede_ver(url_for('cierre.cierreIndex')) %}<a class="collapse-item" href="{{ url_for('cierre.cierreIndex') }}">Cierre</a>{% endif %}
         </div>
       </div>
     </li>
@@ -513,11 +696,11 @@
       </a>
       <div id="collapseCompras" class="collapse" aria-labelledby="headingCompras" data-parent="#accordionSidebar">
         <div class="collapse-inner mod-compra">
-          <a class="collapse-item" href="{{ url_for('solmod.solicitud_index') }}">R. Solicitud</a>
-          <a class="collapse-item" href="{{ url_for('presumod.presupuesto_index') }}">R. Presupuesto</a>
-          <a class="collapse-item" href="{{ url_for('pdcmod.pedidos_index') }}">Generar Pedido</a>
-          <a class="collapse-item" href="{{ url_for('rm_mod.recepcion_mercaderia') }}">Rec. Mercaderías</a>
-          <a class="collapse-item" href="{{ url_for('facmod.facturas_index') }}">Facturas</a>
+          {% if puede_ver(url_for('solmod.solicitud_index')) %}<a class="collapse-item" href="{{ url_for('solmod.solicitud_index') }}">R. Solicitud</a>{% endif %}
+          {% if puede_ver(url_for('presumod.presupuesto_index')) %}<a class="collapse-item" href="{{ url_for('presumod.presupuesto_index') }}">R. Presupuesto</a>{% endif %}
+          {% if puede_ver(url_for('pdcmod.pedidos_index')) %}<a class="collapse-item" href="{{ url_for('pdcmod.pedidos_index') }}">Generar Pedido</a>{% endif %}
+          {% if puede_ver(url_for('rm_mod.recepcion_mercaderia')) %}<a class="collapse-item" href="{{ url_for('rm_mod.recepcion_mercaderia') }}">Rec. Mercaderías</a>{% endif %}
+          {% if puede_ver(url_for('facmod.facturas_index')) %}<a class="collapse-item" href="{{ url_for('facmod.facturas_index') }}">Facturas</a>{% endif %}
         </div>
       </div>
     </li>
@@ -535,12 +718,82 @@
       </a>
       <div id="collapseProd" class="collapse" aria-labelledby="headingProd" data-parent="#accordionSidebar">
         <div class="collapse-inner mod-prod">
-          <a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>
-          <a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>
-          <a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>
+          {% if puede_ver(url_for('tipoetapas.tipoEtapasIndex')) %}<a class="collapse-item" href="{{ url_for('tipoetapas.tipoEtapasIndex') }}">Etapas de Producción</a>{% endif %}
+          {% if puede_ver(url_for('parametrocalidad.parametroCalidadIndex')) %}<a class="collapse-item" href="{{ url_for('parametrocalidad.parametroCalidadIndex') }}">Parámetros de Calidad</a>{% endif %}
+          {% if puede_ver(url_for('motivoajuste.motivoAjusteIndex')) %}<a class="collapse-item" href="{{ url_for('motivoajuste.motivoAjusteIndex') }}">Motivos de Ajuste</a>{% endif %}
         </div>
       </div>
     </li>
+
+    <!-- ============================================
+         AYUDA (todos los usuarios)
+         ============================================ -->
+    <span class="sidebar-heading">Ayuda</span>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ url_for('manualmod.manual_index') }}">
+        <i class="fas fa-fw fa-book-open"></i>
+        <span>Manual de usuario</span>
+      </a>
+    </li>
+
+    {% if session.get('grupo') == 'administradores' %}
+    <!-- ============================================
+         AUDITORÍA (solo administradores)
+         ============================================ -->
+    <span class="sidebar-heading">Seguridad</span>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ url_for('audmod.auditoria_index') }}">
+        <i class="fas fa-fw fa-shield-alt"></i>
+        <span>Auditoría</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ url_for('audmod.accesos_index') }}">
+        <i class="fas fa-fw fa-user-lock"></i>
+        <span>Intentos de acceso</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ url_for('segmod.usuarios_index') }}">
+        <i class="fas fa-fw fa-users-cog"></i>
+        <span>Usuarios</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ url_for('segmod.permisos_index') }}">
+        <i class="fas fa-fw fa-user-shield"></i>
+        <span>Permisos por perfil</span>
+      </a>
+    </li>
+    {% endif %}
+
+    <script>
+    // Menú dinámico: oculta los grupos, secciones y módulos que quedaron sin opciones para este perfil
+    (function () {
+      var side = document.getElementById('accordionSidebar');
+      if (!side) return;
+      side.querySelectorAll('.collapse-inner').forEach(function (inner) {
+        var hijos = Array.prototype.slice.call(inner.children), seccion = null, items = 0;
+        hijos.concat([null]).forEach(function (el) {
+          if (el === null || el.classList.contains('collapse-section')) {
+            if (seccion && items === 0) seccion.style.display = 'none';
+            seccion = el; items = 0;
+          } else if (el.classList.contains('collapse-item')) { items++; }
+        });
+        if (!inner.querySelector('.collapse-item')) {
+          var li = inner.closest('li.nav-item'); if (li) li.remove();
+        }
+      });
+      side.querySelectorAll('.sidebar-heading').forEach(function (h) {
+        var sig = h.nextElementSibling, hay = false;
+        while (sig && !sig.classList.contains('sidebar-heading') && !sig.classList.contains('sidebar-divider')) {
+          if (sig.classList.contains('nav-item')) { hay = true; break; }
+          sig = sig.nextElementSibling;
+        }
+        if (!hay) h.style.display = 'none';
+      });
+    })();
+    </script>
 
     <hr class="sidebar-divider d-none d-md-block">
 
@@ -571,7 +824,19 @@
           <span class="current">{% block page_title %}{{ self.titulo() }}{% endblock %}</span>
         </div>
 
+        <div class="topbar-search d-none d-lg-flex mx-auto">
+          <i class="fas fa-search"></i>
+          <input type="text" class="form-control" placeholder="Buscar...">
+        </div>
+
         <ul class="navbar-nav ml-auto align-items-center">
+
+          <!-- Notificaciones (visual; sin backend por ahora) -->
+          <li class="nav-item no-arrow mr-2">
+            <a class="topbar-bell" href="#" title="Notificaciones">
+              <i class="fas fa-bell"></i>
+            </a>
+          </li>
 
           <!-- Dropdown Usuario -->
           <li class="nav-item dropdown no-arrow">
@@ -638,6 +903,51 @@
 <script src="{{ url_for('static', filename='vendor/datatables/dataTables.bootstrap4.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/sweetalert/sweetalert2@11.js') }}"></script>
 <script src="{{ url_for('static', filename='js/buscador-select.js') }}"></script>
+
+<!-- Permisos: aviso amigable ante 403/401 y ocultamiento de acciones no permitidas (el servidor siempre valida) -->
+<script>
+window.PERMISOS = {{ permisos_ventana()|tojson }};
+(function () {
+  function avisoSinPermiso(msg) {
+    Swal.fire({ icon: 'warning', title: 'Acción no permitida',
+                text: msg || 'No tiene permiso para realizar esta acción.', confirmButtonColor: '#2563eb' });
+  }
+  $(document).ajaxError(function (e, xhr) {
+    if (xhr.status === 403) { var m; try { m = JSON.parse(xhr.responseText).error; } catch (x) {} avisoSinPermiso(m); }
+    else if (xhr.status === 401) { window.location.href = '/login'; }
+  });
+  var _fetch = window.fetch;
+  window.fetch = function () {
+    return _fetch.apply(this, arguments).then(function (resp) {
+      if (resp.status === 403 || resp.status === 401) {
+        resp.clone().json().then(function (d) {
+          if (resp.status === 403) avisoSinPermiso(d && d.error); else window.location.href = '/login';
+        }).catch(function () {});
+      }
+      return resp;
+    });
+  };
+  var P = window.PERMISOS;
+  if (P) {
+    var reglas = [
+      ['insertar', /^\s*(\+\s*)?(agregar|nuev[oa]|registrar)\b/i],
+      ['editar',   /\b(editar|modificar|cambiar estado)\b/i],
+      ['borrar',   /\b(eliminar|anular|borrar)\b/i]
+    ];
+    var ocultar = function () {
+      document.querySelectorAll('button, a.btn, a.btn-app, .btn-app').forEach(function (el) {
+        if (el.closest('#accordionSidebar')) return;
+        var t = (el.textContent || '').trim();
+        reglas.forEach(function (r) { if (!P[r[0]] && r[1].test(t)) el.style.display = 'none'; });
+      });
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      ocultar();
+      new MutationObserver(ocultar).observe(document.body, { childList: true, subtree: true });
+    });
+  }
+})();
+</script>
 
 <!-- Notificaciones Flash Automáticas con SweetAlert2 -->
 {% with messages = get_flashed_messages(with_categories=true) %}

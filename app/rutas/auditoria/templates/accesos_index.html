@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block titulo %}Intentos de Acceso{% endblock %}
+{% block contenido %}
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-user-lock"></i></span>
+      <div>
+        <h2 class="page-header-title">Intentos de Acceso</h2>
+        <p class="page-header-subtitle">Consulta de todos los intentos de ingreso al sistema por rango de fechas, para verificación y definición de políticas de seguridad.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('audmod.auditoria_index') }}" class="btn-app btn-app-secondary"><i class="fas fa-shield-alt"></i> Auditoría de transacciones</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3" id="acc_resumen"></div>
+
+  <div class="app-card" id="acc_alerta" style="display:none; border-color:#fecaca;">
+    <div class="app-card-body">
+      <strong style="color:#991b1b;"><i class="fas fa-exclamation-triangle"></i> IP con actividad sospechosa</strong>
+      <div class="kpi-card-sub" id="acc_ips"></div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="dash-filtros">
+        <label class="kpi-card-sub mb-0">Desde</label>
+        <input type="date" id="f_desde" class="form-control" style="width:150px;">
+        <label class="kpi-card-sub mb-0">Hasta</label>
+        <input type="date" id="f_hasta" class="form-control" style="width:150px;">
+        <select id="f_evento" class="form-control" style="width:auto;">
+          <option value="">Todos los eventos</option>
+          <option value="LOGIN_OK">Contraseña correcta</option>
+          <option value="LOGIN_FALLIDO">Contraseña incorrecta</option>
+          <option value="USUARIO_INEXISTENTE">Usuario inexistente</option>
+          <option value="USUARIO_BLOQUEADO">Intento con cuenta bloqueada</option>
+          <option value="CUENTA_BLOQUEADA">Cuenta bloqueada</option>
+          <option value="2FA_OK">Acceso completo (2FA)</option>
+          <option value="2FA_FALLIDO">Código 2FA incorrecto</option>
+          <option value="2FA_EXPIRADO">Código 2FA expirado</option>
+          <option value="LOGOUT">Cierre de sesión</option>
+          <option value="RECUPERACION_SOLICITADA">Recuperación solicitada</option>
+          <option value="RECUPERACION_FALLIDA">Recuperación fallida</option>
+          <option value="CLAVE_RESTABLECIDA">Contraseña restablecida</option>
+          <option value="ACCESO_DENEGADO">Acceso denegado (sin permiso)</option>
+          <option value="CUENTA_ACTUALIZADA">Cuenta actualizada/desbloqueada</option>
+        </select>
+        <input type="text" id="f_usuario" class="form-control" placeholder="Usuario" style="width:150px;">
+        <input type="text" id="f_ip" class="form-control" placeholder="IP" style="width:140px;">
+        <button class="btn-app btn-app-secondary btn-sm" id="btn_limpiar"><i class="fas fa-eraser"></i> Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Registro de accesos</div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tbl_accesos" class="table table-hover w-100">
+          <thead>
+            <tr><th>Fecha y hora</th><th>Usuario</th><th>Evento</th><th>Detalle</th><th>IP</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const EVENTO = {
+    LOGIN_OK:['is-proceso','Contraseña correcta'], LOGIN_FALLIDO:['is-critico','Contraseña incorrecta'],
+    USUARIO_INEXISTENTE:['is-critico','Usuario inexistente'], USUARIO_BLOQUEADO:['is-bajo','Cuenta bloqueada (intento)'],
+    CUENTA_BLOQUEADA:['is-sinstock','Cuenta bloqueada'], '2FA_OK':['is-normal','Acceso completo'],
+    '2FA_FALLIDO':['is-bajo','2FA incorrecto'], '2FA_EXPIRADO':['is-atencion','2FA expirado'],
+    LOGOUT:['is-inactivo','Cierre de sesión'], RECUPERACION_SOLICITADA:['is-proceso','Recuperación solicitada'],
+    RECUPERACION_FALLIDA:['is-bajo','Recuperación fallida'], CLAVE_RESTABLECIDA:['is-normal','Clave restablecida'],
+    ACCESO_DENEGADO:['is-critico','Acceso denegado'], CUENTA_ACTUALIZADA:['is-proceso','Cuenta actualizada']
+  };
+  const filtros = () => ({
+    desde: $('#f_desde').val() || undefined, hasta: $('#f_hasta').val() || undefined,
+    evento: $('#f_evento').val() || undefined, usuario: $('#f_usuario').val() || undefined,
+    ip: $('#f_ip').val() || undefined
+  });
+
+  const tabla = $('#tbl_accesos').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
+    serverSide: true, ordering: false, searching: false, pageLength: 15,
+    ajax: { url: '/api/v1/auditoria/accesos', data: d => Object.assign(d, filtros()) },
+    columns: [
+      { data: 'fecha_hora' },
+      { data: 'usuario' },
+      { data: 'evento', render: v => { const e = EVENTO[v] || ['is-normal', v]; return `<span class="badge-app ${e[0]}">${e[1]}</span>`; } },
+      { data: 'detalle', render: v => v || '—' },
+      { data: 'ip', render: v => v || '—' }
+    ]
+  });
+
+  function cargarResumen(){
+    const f = filtros();
+    $.getJSON('/api/v1/auditoria/accesos/resumen', { desde: f.desde, hasta: f.hasta }, function(res){
+      if(!res.success) return;
+      const e = res.data.por_evento;
+      const fallidos = (e.LOGIN_FALLIDO||0) + (e.USUARIO_INEXISTENTE||0) + (e['2FA_FALLIDO']||0);
+      const cards = [
+        { icon:'fa-check-circle', clase:'is-success', label:'Accesos completos', valor: e['2FA_OK']||0 },
+        { icon:'fa-times-circle', clase:'is-danger', label:'Intentos fallidos', valor: fallidos },
+        { icon:'fa-lock', clase:'is-critico', label:'Cuentas bloqueadas', valor: e.CUENTA_BLOQUEADA||0 },
+        { icon:'fa-key', clase:'is-info', label:'Recuperaciones de clave', valor: e.CLAVE_RESTABLECIDA||0 }
+      ];
+      $('#acc_resumen').html(cards.map(c => `
+        <div class="col-6 col-xl-3"><div class="kpi-card">
+          <span class="kpi-card-icon ${c.clase}"><i class="fas ${c.icon}"></i></span>
+          <span class="kpi-card-label">${c.label}</span><span class="kpi-card-value">${c.valor}</span>
+        </div></div>`).join(''));
+      const ips = res.data.ips_sospechosas;
+      if(ips.length){
+        $('#acc_ips').html(ips.map(i => `<b>${i.ip}</b>: ${i.fallos} intentos fallidos`).join(' &nbsp;·&nbsp; '));
+        $('#acc_alerta').show();
+      } else { $('#acc_alerta').hide(); }
+    });
+  }
+
+  $('#f_desde, #f_hasta, #f_evento').on('change', () => { tabla.ajax.reload(); cargarResumen(); });
+  $('#f_usuario, #f_ip').on('keyup', () => tabla.ajax.reload());
+  $('#btn_limpiar').on('click', () => { $('#f_desde,#f_hasta,#f_evento,#f_usuario,#f_ip').val(''); tabla.ajax.reload(); cargarResumen(); });
+  cargarResumen();
+});
+</script>
+{% endblock %}

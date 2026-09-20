@@ -3,45 +3,40 @@
 {% block titulo %}Presupuestos de Compra{% endblock %}
 
 {% block contenido %}
-<style>
-  .pi-head { display:flex; align-items:center; gap:.8rem; margin:1.2rem 0 1.3rem; }
-  .pi-icon { width:46px; height:46px; border-radius:13px; background:linear-gradient(135deg,#1a237e,#1565c0); display:grid; place-items:center; color:#fff; font-size:1.1rem; box-shadow:0 6px 18px rgba(26,35,126,.3); }
-  .pi-head h1 { font-size:1.35rem; font-weight:800; color:#1a237e; margin:0; }
-  .pi-card { background:#fff; border:1px solid #e8eaf6; border-radius:16px; box-shadow:0 4px 20px rgba(26,35,126,.07); }
-  .pi-card .card-header { background:#fbfcff; border-bottom:1px solid #e8eaf6; border-radius:16px 16px 0 0; display:flex; justify-content:flex-end; padding:.9rem 1.2rem; }
-  .pi-card .card-body { padding:1.2rem 1.4rem; }
-  #tbl_presupuestos thead th { background:#eef1fb; color:#1a237e; font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; border:none; }
-  #tbl_presupuestos tbody tr:hover td { background:#f7f9ff; }
-  .btn-nuevo { background:linear-gradient(135deg,#1a237e,#1565c0); border:none; border-radius:10px; font-weight:600; }
-  .badge-estado { font-size:.74rem; font-weight:700; padding:.35em .7em; border-radius:20px; }
-</style>
-
-<div class="container-fluid px-4" style="max-width:1300px;">
-  <div class="pi-head">
-    <div class="pi-icon"><i class="fas fa-file-invoice-dollar"></i></div>
-    <h1>Presupuestos de Compra</h1>
-  </div>
-
-  <div class="pi-card">
-    <div class="card-header">
-      <a href="{{ url_for('presumod.presupuesto_agregar') }}" class="btn btn-nuevo btn-sm text-white">
-        <i class="fas fa-plus mr-1"></i> Agregar Presupuesto
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+      <div>
+        <h2 class="page-header-title">Presupuestos de Compra</h2>
+        <p class="page-header-subtitle">Cotizaciones solicitadas a proveedores.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('presumod.presupuesto_agregar') }}" class="btn-app btn-app-primary" target="_blank">
+        <i class="fas fa-plus"></i> Nuevo presupuesto
       </a>
     </div>
-    <div class="card-body">
-      <table class="table table-hover w-100" id="tbl_presupuestos">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Proveedor</th>
-            <th>Fecha Emisión</th>
-            <th>Estado</th>
-            <th>Archivo</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Listado de presupuestos registrados</div>
+    <div class="app-card-body">
+      <div class="table-responsive">
+        <table class="table table-hover w-100" id="tbl_presupuestos">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Proveedor</th>
+              <th>Fecha Emisión</th>
+              <th>Estado</th>
+              <th>Archivo</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -53,12 +48,12 @@ $(document).ready(function(){
   const DETALLE_BASE = "/gestionar-compras/registrar-presupuesto/presupuesto-detalle/";
 
   function badgeEstado(estado){
-    const map = { PENDIENTE:'warning', APROBADO:'success', RECHAZADO:'danger', ANULADO:'secondary' };
-    const c = map[estado] || 'secondary';
-    return `<span class="badge badge-${c} badge-estado">${estado || '-'}</span>`;
+    const map = { PENDIENTE:'is-pendiente', APROBADO:'is-aprobado', RECHAZADO:'is-rechazado', ANULADO:'is-anulado' };
+    return `<span class="badge-app ${map[estado] || 'is-inactivo'}">${estado || '-'}</span>`;
   }
 
   $('#tbl_presupuestos').DataTable({
+    language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
     ajax: {
       url: '/api/v1/gestionar-compras/registrar-presupuesto/presupuestos',
       dataSrc: 'data'
@@ -72,7 +67,7 @@ $(document).ready(function(){
         data: 'archivo',
         render: function(data){
           if(data){
-            return `<a href="{{ url_for('static', filename='') }}${data}" target="_blank" class="btn btn-sm btn-outline-success">Ver PDF</a>`;
+            return `<a href="{{ url_for('static', filename='') }}${data}" target="_blank" class="btn-app btn-app-secondary btn-sm">Ver PDF</a>`;
           }
           return '<span class="text-muted">—</span>';
         }
@@ -80,11 +75,11 @@ $(document).ready(function(){
       {
         data: null, orderable: false, className: 'text-center',
         render: function(row){
-          return `<a href="${DETALLE_BASE}${row.id_pre_compra_cab}" class="btn btn-sm btn-primary me-1">
-                    <i class="fas fa-eye mr-1"></i> Ver detalle
+          return `<a href="${DETALLE_BASE}${row.id_pre_compra_cab}" class="btn-app btn-app-secondary btn-sm">
+                    <i class="fas fa-eye"></i> Ver detalle
                   </a>
-                  <button type="button" class="btn btn-sm btn-outline-secondary btn-cambiar-estado" data-id="${row.id_pre_compra_cab}" data-estado="${row.estado}">
-                    <i class="fas fa-random mr-1"></i> Cambiar estado
+                  <button type="button" class="btn-app btn-app-secondary btn-sm btn-cambiar-estado" data-id="${row.id_pre_compra_cab}" data-estado="${row.estado}">
+                    <i class="fas fa-random"></i> Cambiar estado
                   </button>`;
         }
       }
@@ -106,7 +101,7 @@ $(document).ready(function(){
       showCancelButton: true,
       confirmButtonText: 'Guardar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#1565c0',
+      confirmButtonColor: '#1e3a8a',
       preConfirm: () => document.getElementById('swal_nuevo_estado').value
     }).then(r => {
       if(!r.isConfirmed) return;
