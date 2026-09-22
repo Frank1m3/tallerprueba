@@ -23,6 +23,27 @@ class UsuarioDao:
         finally:
             cur.close(); con.close()
 
+    def obtener(self, usu_id):
+        con = Conexion().getConexion(); cur = con.cursor()
+        try:
+            cur.execute("""
+                SELECT u.usu_id, TRIM(u.usu_nick), u.usu_email, u.gru_id, g.gru_des,
+                       u.usu_estado, u.usu_nro_intentos, u.fun_id,
+                       CONCAT(p.nombres, ' ', p.apellidos), p.ci
+                FROM usuarios u
+                LEFT JOIN grupos g ON g.gru_id = u.gru_id
+                LEFT JOIN personas p ON p.id_persona = u.fun_id
+                WHERE u.usu_id = %s
+            """, (usu_id,))
+            r = cur.fetchone()
+            if not r:
+                return None
+            return {"usu_id": r[0], "usu_nick": r[1], "usu_email": r[2], "gru_id": r[3], "grupo": r[4],
+                    "usu_estado": r[5], "usu_nro_intentos": r[6], "fun_id": r[7],
+                    "persona": (r[8] or '').strip(), "ci": r[9]}
+        finally:
+            cur.close(); con.close()
+
     def crear(self, nick, clave_hash, fun_id, gru_id, email):
         con = Conexion().getConexion(); cur = con.cursor()
         try:

@@ -48,6 +48,10 @@
           <label class="field-label">Fecha Solicitud</label>
           <input type="date" id="txt_fecha_solicitud" class="form-control" value="{{ fecha_actual }}">
         </div>
+        <div class="col-md-3">
+          <label class="field-label">Fecha necesaria</label>
+          <input type="date" id="txt_fecha_necesaria" class="form-control" title="Fecha en la que se necesita la mercadería">
+        </div>
       </div>
     </div>
   </div>
@@ -57,26 +61,18 @@
     <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Agregar producto</div>
     <div class="app-card-body">
       <div class="row g-3 align-items-end">
-        <div class="col-md-5">
+        <div class="col-md-7">
           <label class="field-label">Producto</label>
           <select id="cbo_producto" class="form-control">
             <option value="">— Seleccione —</option>
           </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
           <label class="field-label">Cantidad</label>
           <input type="number" id="txt_cantidad" min="1" class="form-control" placeholder="0">
         </div>
         <div class="col-md-2">
-          <label class="field-label">Stock actual</label>
-          <input type="text" id="txt_stock" class="form-control" readonly placeholder="—">
-        </div>
-        <div class="col-md-2">
-          <label class="field-label">Precio unitario</label>
-          <input type="text" id="txt_precio" class="form-control" readonly placeholder="—">
-        </div>
-        <div class="col-md-1">
-          <button type="button" id="btn_agregar" class="btn-app btn-app-success w-100"><i class="fas fa-plus"></i></button>
+          <button type="button" id="btn_agregar" class="btn-app btn-app-success w-100"><i class="fas fa-plus"></i> Agregar</button>
         </div>
       </div>
     </div>
@@ -90,8 +86,8 @@
     <div class="app-card-body" style="padding:0">
       <div class="table-responsive">
         <table id="tbl_detalle" class="table table-hover w-100 mb-0">
-          <thead><tr><th>Código</th><th>Producto</th><th class="text-end">Cantidad</th><th class="text-end">Stock</th><th class="text-end">Precio Unit.</th><th class="text-center">Estado</th><th class="text-center">Acción</th></tr></thead>
-          <tbody><tr id="tr_vacio"><td colspan="7" class="tbl-empty"><i class="fas fa-inbox me-2"></i>Sin ítems agregados</td></tr></tbody>
+          <thead><tr><th>Código</th><th>Producto</th><th class="text-end">Cantidad</th><th class="text-center">Acción</th></tr></thead>
+          <tbody><tr id="tr_vacio"><td colspan="4" class="tbl-empty"><i class="fas fa-inbox me-2"></i>Sin ítems agregados</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -107,14 +103,22 @@
 $(document).ready(function(){
   let detalle = [];
   const FECHA_INICIAL = $('#txt_fecha_solicitud').val();
+  // Fecha necesaria por defecto: 7 días después de la fecha de la solicitud
+  function fechaNecesariaPorDefecto(){
+    const d = new Date(($('#txt_fecha_solicitud').val() || FECHA_INICIAL) + 'T00:00:00'); d.setDate(d.getDate() + 7);
+    const z = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());
+  }
+  $('#txt_fecha_necesaria').val(fechaNecesariaPorDefecto());
 
   // Deja el formulario listo para cargar la siguiente solicitud desde cero.
   function resetFormulario(){
     $('#cbo_funcionario').val('').trigger('change');
     $('#cbo_sucursal').val('').trigger('change');
     $('#txt_fecha_solicitud').val(FECHA_INICIAL);
+    $('#txt_fecha_necesaria').val(fechaNecesariaPorDefecto());
     $('#cbo_producto').val('').trigger('change');
-    $('#txt_cantidad,#txt_stock,#txt_precio').val('');
+    $('#txt_cantidad').val('');
   }
 
   $('#cbo_funcionario').buscadorSelect({ placeholder: 'Buscar solicitante...' });
@@ -123,32 +127,27 @@ $(document).ready(function(){
     remote: {
       url: '/api/v1/item/buscar',
       minLength: 1,
-      params: function(){ return { id_sucursal: $('#cbo_sucursal').val(), id_deposito: $('#cbo_deposito').val() }; },
       mapItem: function(p){
         return {
           value: p.id_item,
           text: p.item_code + ' - ' + p.descripcion,
-          data: { codigo: p.item_code, nombre: p.descripcion, precio: p.precio_unitario, stock: p.stock }
+          data: { codigo: p.item_code, nombre: p.descripcion }
         };
       }
     }
   });
-  function fmt(n){ return parseFloat(n||0).toLocaleString('es-PY', {minimumFractionDigits:2, maximumFractionDigits:2}); }
   function actualizarContador(){ $('#lbl_total_items').text(detalle.length + ' ítem' + (detalle.length!==1?'s':'') + ' agregado' + (detalle.length!==1?'s':'')); }
 
   function renderTabla(){
     const tbody = $('#tbl_detalle tbody'); tbody.empty();
     if(detalle.length===0){
-      tbody.append('<tr id="tr_vacio"><td colspan="7" class="tbl-empty"><i class="fas fa-inbox me-2"></i>Sin ítems agregados</td></tr>');
+      tbody.append('<tr id="tr_vacio"><td colspan="4" class="tbl-empty"><i class="fas fa-inbox me-2"></i>Sin ítems agregados</td></tr>');
     } else {
       detalle.forEach((d, idx) => {
         tbody.append(`<tr>
           <td><code style="font-size:.78rem">${d.codigo}</code></td>
           <td>${d.producto}</td>
           <td class="text-end fw-bold">${d.cantidad}</td>
-          <td class="text-end text-muted">${fmt(d.stock)}</td>
-          <td class="text-end">₲ ${fmt(d.precio)}</td>
-          <td class="text-center"><span class="badge-app is-pendiente">PENDIENTE</span></td>
           <td class="text-center">
             <button class="btn-app btn-app-secondary btn-sm btn-modificar" data-idx="${idx}"><i class="fas fa-edit"></i></button>
             <button class="btn-app btn-app-danger btn-sm btn-eliminar" data-idx="${idx}" style="margin-left:.25rem"><i class="fas fa-trash"></i></button>
@@ -172,13 +171,9 @@ $(document).ready(function(){
       if(res.success && res.data){ res.data.forEach(d => $('#cbo_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`)); }
     });
   }
-  // El resultado de la búsqueda remota ya trae precio/stock para la sucursal+depósito
-  // elegidos en ese momento, así que no hace falta otra llamada al elegir producto.
+  // Al elegir el producto, el cursor pasa a Cantidad.
   $('#cbo_producto').change(function(){
-    const op = $(this).find('option:selected');
-    $('#txt_precio').val(op.data('precio') || '');
-    $('#txt_stock').val(op.val() ? fmt(op.data('stock') || 0) : '');
-    if(op.val()){ $('#txt_cantidad').val('').focus(); }
+    if($(this).val()){ $('#txt_cantidad').val('').focus(); }
   });
 
   // Enter en Cantidad = click en Agregar (después de elegir el producto con
@@ -187,37 +182,19 @@ $(document).ready(function(){
     if(e.which===13 || e.key==='Enter'){ e.preventDefault(); $('#btn_agregar').trigger('click'); }
   });
 
-  // Si cambian sucursal/depósito DESPUÉS de haber elegido un producto, el stock
-  // que se guardó al buscar quedó desactualizado: se refresca puntualmente.
-  function refrescarStockProductoSeleccionado(){
-    const op = $('#cbo_producto').find('option:selected');
-    const id_item = op.val();
-    const id_sucursal = $('#cbo_sucursal').val();
-    const id_deposito = $('#cbo_deposito').val();
-    if(!id_item || !id_sucursal || !id_deposito){ return; }
-    $.getJSON('/api/v1/item/buscar', { q: op.data('codigo'), id_sucursal, id_deposito, limit: 5 }, function(res){
-      if(res.success && res.data){
-        const p = res.data.find(x => x.id_item == id_item);
-        if(p){ op.attr('data-stock', p.stock); $('#txt_stock').val(fmt(p.stock)); }
-      }
-    });
-  }
-  $('#cbo_sucursal').change(function(){ cargarDepositos($(this).val()); refrescarStockProductoSeleccionado(); });
-  $('#cbo_deposito').change(refrescarStockProductoSeleccionado);
+  $('#cbo_sucursal').change(function(){ cargarDepositos($(this).val()); });
 
   $('#btn_agregar').click(function(){
     const op = $('#cbo_producto option:selected');
     const id_item = op.val();
     const producto = op.data('nombre');
     const codigo = op.data('codigo');
-    const stock = parseFloat(($('#txt_stock').val()||'0').replace(/\./g,'').replace(',','.')) || 0;
-    const precio = parseFloat($('#txt_precio').val() || 0);
     const cantidad = parseFloat($('#txt_cantidad').val());
     if(!id_item || !cantidad || cantidad<=0){ return Swal.fire({title:'Atención', text:'Seleccione un producto e ingrese una cantidad válida.', icon:'warning', confirmButtonColor:'#1e3a8a'}); }
     if(detalle.some(d => d.codigo === codigo)){ return Swal.fire({title:'Duplicado', text:'El producto '+codigo+' ya fue agregado.', icon:'warning', confirmButtonColor:'#1e3a8a'}); }
-    detalle.push({id_item, codigo, producto, cantidad, stock, precio, estado:'PENDIENTE'});
+    detalle.push({id_item, codigo, producto, cantidad});
     renderTabla();
-    $('#cbo_producto').val('').trigger('change'); $('#txt_cantidad').val(''); $('#txt_stock,#txt_precio').val('');
+    $('#cbo_producto').val('').trigger('change'); $('#txt_cantidad').val('');
   });
 
   $('#tbl_detalle tbody').on('click', '.btn-modificar', function(){
@@ -239,11 +216,15 @@ $(document).ready(function(){
     const id_sucursal = $('#cbo_sucursal').val();
     const id_deposito = $('#cbo_deposito').val();
     const fecha_solicitud = $('#txt_fecha_solicitud').val();
-    if(!id_funcionario || !id_sucursal || !id_deposito || !fecha_solicitud){
-      return Swal.fire({title:'Faltan datos', text:'Complete todos los campos del encabezado.', icon:'warning', confirmButtonColor:'#1e3a8a'});
+    const fecha_necesaria = $('#txt_fecha_necesaria').val();
+    if(!id_funcionario || !id_sucursal || !id_deposito || !fecha_solicitud || !fecha_necesaria){
+      return Swal.fire({title:'Faltan datos', text:'Complete todos los campos del encabezado, incluida la fecha necesaria.', icon:'warning', confirmButtonColor:'#1e3a8a'});
+    }
+    if(fecha_necesaria < fecha_solicitud){
+      return Swal.fire({title:'Fecha inválida', text:'La fecha necesaria no puede ser anterior a la fecha de la solicitud.', icon:'warning', confirmButtonColor:'#1e3a8a'});
     }
     const payload = {
-      id_funcionario, id_sucursal, id_deposito, fecha_solicitud,
+      id_funcionario, id_sucursal, id_deposito, fecha_solicitud, fecha_necesaria,
       detalle_solicitud: detalle.map(d => ({ id_item:d.id_item, cant_solicitada:d.cantidad, unidad_med:1 }))
     };
     const btn = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Grabando…');

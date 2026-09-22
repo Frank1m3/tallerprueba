@@ -60,3 +60,27 @@ def enviar_alerta_acceso(destinatarios, asunto: str, cuerpo: str) -> bool:
     except Exception as e:
         app.logger.error(f"Alerta de acceso: error al enviar correo: {str(e)}")
         return False
+
+
+def enviar_correo_html(destinatario: str, asunto: str, texto: str, html: str) -> bool:
+    """Envía un correo con versión de texto y HTML. Nunca lanza excepción; devuelve True si se envió."""
+    if not destinatario or not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        return False
+
+    mensaje = EmailMessage()
+    mensaje['Subject'] = asunto
+    mensaje['From'] = GMAIL_USER
+    mensaje['To'] = destinatario
+    mensaje.set_content(texto)
+    mensaje.add_alternative(html, subtype='html')
+
+    try:
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as servidor:
+            servidor.starttls(context=contexto)
+            servidor.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            servidor.send_message(mensaje)
+        return True
+    except Exception as e:
+        app.logger.error(f"Error al enviar correo a {destinatario}: {e}")
+        return False

@@ -13,7 +13,8 @@
       </div>
     </div>
     <div class="page-header-actions">
-      <a href="{{ url_for('presumod.presupuesto_agregar') }}" class="btn-app btn-app-primary" target="_blank">
+      <a href="{{ url_for('cmpmod.comparador_index') }}" class="btn-app btn-app-secondary" title="Pedir cotización a los proveedores (portal), ver sus respuestas y comparar las ofertas"><i class="fas fa-paper-plane"></i> Cotización</a>
+      <a href="{{ url_for('presumod.presupuesto_agregar') }}" class="btn-app btn-app-primary">
         <i class="fas fa-plus"></i> Nuevo presupuesto
       </a>
     </div>
@@ -28,6 +29,8 @@
             <tr>
               <th>Código</th>
               <th>Proveedor</th>
+              <th>Solicitud</th>
+              <th>Sucursal / Depósito</th>
               <th>Fecha Emisión</th>
               <th>Estado</th>
               <th>Archivo</th>
@@ -59,8 +62,10 @@ $(document).ready(function(){
       dataSrc: 'data'
     },
     columns: [
-      { data: 'cod_presupuesto' },
+      { data: 'cod_presupuesto', render: (v, tipo, fila) => tipo === 'sort' || tipo === 'type' ? fila.id_pre_compra_cab : v },
       { data: 'proveedor' },
+      { data: 'nro_solicitud', render: v => v ? '#' + v : '<span class="text-muted">—</span>' },
+      { data: 'sucursal', render: (v, t, f) => v ? v + (f.deposito ? ' / ' + f.deposito : '') : '<span class="text-muted">—</span>' },
       { data: 'fecha_emision' },
       { data: 'estado', render: badgeEstado },
       {
@@ -75,9 +80,13 @@ $(document).ready(function(){
       {
         data: null, orderable: false, className: 'text-center',
         render: function(row){
+          const editable = row.estado === 'PENDIENTE';
           return `<a href="${DETALLE_BASE}${row.id_pre_compra_cab}" class="btn-app btn-app-secondary btn-sm">
                     <i class="fas fa-eye"></i> Ver detalle
                   </a>
+                  <button type="button" class="btn-app btn-app-secondary btn-sm btn-modificar" data-id="${row.id_pre_compra_cab}" ${editable ? '' : 'disabled title="Solo se puede modificar un presupuesto pendiente"'}>
+                    <i class="fas fa-edit"></i> Modificar
+                  </button>
                   <button type="button" class="btn-app btn-app-secondary btn-sm btn-cambiar-estado" data-id="${row.id_pre_compra_cab}" data-estado="${row.estado}">
                     <i class="fas fa-random"></i> Cambiar estado
                   </button>`;
@@ -85,6 +94,10 @@ $(document).ready(function(){
       }
     ],
     order: [[0,'desc']]
+  });
+
+  $('#tbl_presupuestos tbody').on('click', '.btn-modificar', function(){
+    window.location.href = "/gestionar-compras/registrar-presupuesto/presupuesto-editar/" + $(this).data('id');
   });
 
   const ESTADOS = ['PENDIENTE', 'APROBADO', 'RECHAZADO', 'ANULADO'];

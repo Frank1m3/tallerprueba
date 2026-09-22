@@ -417,7 +417,7 @@ $(function(){
       detalle = []; tabla.clear().draw();
       res.detalles.forEach(d => {
         let cant = parseFloat(d.cantidad) || 0;
-        let precio = parseFloat(d.precio_unitario) || 0;
+        let precio = 0;   // la solicitud no lleva precio: lo cotiza el proveedor
         let subtotal = cant * precio;
         detalle.push({ id_item:d.id_item, codigo:d.item_code, descripcion:d.descripcion, stock:d.stock, cantidad:cant, precio, subtotal });
         tabla.row.add({
@@ -428,8 +428,8 @@ $(function(){
         }).draw();
       });
       actualizarTotal();
-      Swal.fire({title:'Ítems cargados', text:`${res.detalles.length} ítem(s) de la solicitud #${nro}. Revisá los precios: son el precio de catálogo, no necesariamente el que cotiza el proveedor.`, icon:'info', timer:3500, showConfirmButton:false});
-    }).fail(() => Swal.fire('Error','Solicitud no encontrada','error'));
+      Swal.fire({title:'Ítems cargados', text:`${res.detalles.length} ítem(s) de la solicitud #${nro}. Cargá el precio cotizado por el proveedor en cada ítem (botón Editar).`, icon:'info', timer:4500, showConfirmButton:false});
+    }).fail(xhr => Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.error) || 'Solicitud no encontrada', 'error'));
   });
 
   // ===================== Agregar detalle =====================
@@ -468,11 +468,22 @@ $(function(){
     let row = $(this).parents('tr');
     let idx = tabla.row(row).index();
     let fila = detalle[idx];
-    Swal.fire({ title:'Modificar cantidad', input:'number', inputValue:fila.cantidad, showCancelButton:true, confirmButtonText:'Actualizar',
-      preConfirm:(v)=>{ if(v<=0){ Swal.showValidationMessage('Cantidad inválida'); return false; } return v; }
+    Swal.fire({ title:'Cantidad y precio cotizado', showCancelButton:true, confirmButtonText:'Actualizar', cancelButtonText:'Cancelar',
+      html:`<label style="display:block;text-align:left;font-size:.8rem;font-weight:600">Cantidad</label>
+            <input id="swal_cant" type="number" min="0" step="any" class="swal2-input" style="margin:.2rem 0 .8rem;width:100%" value="${fila.cantidad}">
+            <label style="display:block;text-align:left;font-size:.8rem;font-weight:600">Precio unitario cotizado</label>
+            <input id="swal_precio" type="number" min="0" step="any" class="swal2-input" style="margin:.2rem 0;width:100%" value="${fila.precio || ''}">`,
+      focusConfirm:false,
+      preConfirm:()=>{
+        const c = parseFloat(document.getElementById('swal_cant').value), p = parseFloat(document.getElementById('swal_precio').value);
+        if(!(c > 0)){ Swal.showValidationMessage('Cantidad inválida'); return false; }
+        if(!(p > 0)){ Swal.showValidationMessage('Ingresá el precio cotizado'); return false; }
+        return {c, p};
+      }
     }).then(r => {
       if(r.isConfirmed){
-        fila.cantidad = parseFloat(r.value);
+        fila.cantidad = r.value.c;
+        fila.precio = r.value.p;
         fila.subtotal = fila.cantidad * fila.precio;
         tabla.row(row).data({
           codigo:fila.codigo, descripcion:fila.descripcion, stock:fila.stock,
@@ -488,6 +499,8 @@ $(function(){
   // ===================== Guardar =====================
   $('#btn_guardar').click(function(){
     if(detalle.length === 0) return Swal.fire('Error','Debe agregar mercaderías','error');
+    const sinPrecio = detalle.find(d => !(d.precio > 0));
+    if(sinPrecio) return Swal.fire('Falta el precio', `Ingresá el precio cotizado de «${sinPrecio.descripcion}» (botón Editar).`, 'warning');
     if(!$('#cbo_proveedor').val()) return Swal.fire('Error','Seleccione un proveedor','warning');
 
     let payload = new FormData();

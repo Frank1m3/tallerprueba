@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, flash, redirect, url_for
 from app.dao.gestionar_compras.registrar_solicitud_compras.SolicitudCompraDao import SolicitudCompraDao
 from app.dao.referenciales.sucursal.sucursal_dao import SucursalDao
 from app.dao.referenciales.funcionario.funcionario_dao import FuncionarioDao
@@ -18,6 +18,12 @@ def solicitud_index():
 def solicitud_modificar(id):
     dao = SolicitudCompraDao()
     solicitud = dao.obtener_solicitud_por_id(id)
+    if not solicitud:
+        flash('La solicitud no existe.', 'danger')
+        return redirect(url_for('solmod.solicitud_index'))
+    if solicitud['estado'] != 'PENDIENTE':
+        flash(f"Solo se puede modificar una solicitud en estado PENDIENTE (esta está {solicitud['estado']}).", 'warning')
+        return redirect(url_for('solmod.solicitud_index'))
     return render_template('solicitud_modificar.html', solicitud=solicitud)
 
 

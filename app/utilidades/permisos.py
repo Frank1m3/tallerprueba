@@ -15,15 +15,23 @@ import time
 from flask import session, request, jsonify, redirect, url_for, flash, render_template
 from app.conexion.Conexion import Conexion
 
-RUTAS_PUBLICAS = ('/login', '/logout', '/static', '/favicon.ico')
+RUTAS_PUBLICAS = ('/login', '/logout', '/static', '/favicon.ico', '/cotizar/')   # /cotizar/: portal del proveedor (enlace personal)
 GRUPO_ADMIN = 'administradores'
 ACCIONES = ('leer', 'insertar', 'editar', 'borrar')
 _TTL_SEGUNDOS = 30
-_CACHE = {}   # grupo -> (momento, ventanas)
+_CACHE = {}            # grupo -> (momento, ventanas)
+_CACHE_USUARIO = {}    # usu_id -> (momento, {pag_id: {accion: True/False}})  (solo pag_id con excepción)
 
 
-def invalidar_cache():
-    _CACHE.clear()
+def invalidar_cache(usu_id=None):
+    """Sin usu_id (default): limpia todo (perfiles y excepciones individuales),
+    como al guardar la matriz de un perfil. Con usu_id: solo esa persona,
+    como al guardar sus permisos individuales."""
+    if usu_id is None:
+        _CACHE.clear()
+        _CACHE_USUARIO.clear()
+    else:
+        _CACHE_USUARIO.pop(usu_id, None)
 
 
 def ventanas_del_grupo(grupo):
@@ -53,6 +61,45 @@ def ventanas_del_grupo(grupo):
         cur.close(); con.close()
     _CACHE[grupo] = (ahora, ventanas)
     return ventanas
+
+
+def _excepciones_del_usuario(usu_id):
+    """Excepciones individuales de un usuario: {pag_id: {accion: True/False}},
+    solo con las acciones que de verdad se apartan del perfil (las NULL no entran)."""
+    ahora = time.time()
+    hit = _CACHE_USUARIO.get(usu_id)
+    if hit and ahora - hit[0] < _TTL_SEGUNDOS:
+        return hit[1]
+
+    con = Conexion().getConexion(); cur = con.cursor()
+    try:
+        cur.execute("""
+            SELECT pag_id, leer, insertar, editar, borrar
+            FROM permisos_usuario WHERE usu_id = %s
+        """, (usu_id,))
+        excepciones = {}
+        for pag_id, leer, insertar, editar, borrar in cur.fetchall():
+            valores = {'leer': leer, 'insertar': insertar, 'editar': editar, 'borrar': borrar}
+            excepciones[pag_id] = {a: v for a, v in valores.items() if v is not None}
+    finally:
+        cur.close(); con.close()
+    _CACHE_USUARIO[usu_id] = (ahora, excepciones)
+    return excepciones
+
+
+def ventanas_del_usuario(usu_id, grupo):
+    """Ventanas del perfil con las excepciones individuales del usuario aplicadas encima."""
+    base = ventanas_del_grupo(grupo)
+    if not usu_id:
+        return base
+    excepciones = _excepciones_del_usuario(usu_id)
+    if not excepciones:
+        return base
+    resultado = []
+    for v in base:
+        extra = excepciones.get(v['id'])
+        resultado.append({**v, **extra} if extra else v)
+    return resultado
 
 
 def _coincide(path, prefijo):
@@ -87,7 +134,7 @@ def puede(path, accion='leer'):
     """Para el menú y las plantillas: ¿el usuario actual puede hacer `accion` en esa ruta?"""
     if 'usuario_nombre' not in session or es_admin():
         return True
-    ventana, _ = resolver_ventana(path, ventanas_del_grupo(session.get('grupo')))
+    ventana, _ = resolver_ventana(path, ventanas_del_usuario(session.get('usu_id'), session.get('grupo')))
     return True if ventana is None else bool(ventana[accion])
 
 
@@ -95,7 +142,7 @@ def permisos_de_la_ventana_actual():
     """Permisos del usuario para la ventana que se está viendo (o None si no aplica)."""
     if es_admin():
         return {a: True for a in ACCIONES}
-    ventana, _ = resolver_ventana(request.path, ventanas_del_grupo(session.get('grupo')))
+    ventana, _ = resolver_ventana(request.path, ventanas_del_usuario(session.get('usu_id'), session.get('grupo')))
     return None if ventana is None else {a: ventana[a] for a in ACCIONES}
 
 
@@ -124,7 +171,7 @@ def verificar_acceso():
     if es_admin():
         return None
 
-    ventana, es_api = resolver_ventana(path, ventanas_del_grupo(session.get('grupo')))
+    ventana, es_api = resolver_ventana(path, ventanas_del_usuario(session.get('usu_id'), session.get('grupo')))
     if ventana is None:
         return None
 

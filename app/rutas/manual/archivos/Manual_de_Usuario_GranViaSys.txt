@@ -3,8 +3,8 @@ Manual de Usuario — GranViaSys
 Sistema de gestión de Gran Vía Supermercados
 Ventas · Compras · Inventario · Producción · Seguridad
 
-Versión del manual	|1.0
-Última actualización	|19 de septiembre de 2026
+Versión del manual	|1.1
+Última actualización	|20 de septiembre de 2026
 Versión del sistema	|GranViaSys 2026
 Idioma	|Español
 ========================================
@@ -25,7 +25,9 @@ Arqueo de caja
 Cierre de caja
 Módulo de Compras
 Solicitud de compra
-Presupuesto
+Pedir cotización a los proveedores (portal)
+Cotización (Presupuesto)
+Comparador de ofertas y selección
 Pedido de compra
 Recepción de mercaderías
 Factura de compra
@@ -135,7 +137,7 @@ Es la primera pantalla al ingresar. Responde en un vistazo: ¿qué se vende más
 
 [Imagen: Dashboard con tarjetas de indicadores, rankings y tablas de riesgo de quiebre — Figura 4. Dashboard de Ventas e Inventario.]
 Filtros (arriba)
-1. Elegí el período: Hoy, Últimos 7 días, Este mes, Últimos 3 meses, Este año o Personalizado (indicás fecha desde y hasta).
+1. Elegí el período con el calendario: indicá la fecha Desde y la fecha Hasta. Al abrir la pantalla vienen cargados los últimos 3 meses. Si la fecha «Desde» es posterior a «Hasta», el sistema te avisa y vuelve al rango anterior.
 2. Si querés, elegí una sucursal y luego un depósito de esa sucursal.
 3. Con Sin movimiento elegís desde cuántos días sin ventas (30, 60 o 90) un producto se considera «dormido».
 
@@ -257,51 +259,136 @@ Hacé el arqueo antes del cierre y revisá cualquier diferencia antes de cerrar 
 Comprar mercadería sigue un ciclo ordenado. Cada documento nace del anterior, así queda registro de quién pidió qué, a qué precio y cuándo llegó:
 
 Solicitud
-Se pide la mercadería
+Qué se necesita, cuánto y para cuándo
 →
-Presupuesto
-El proveedor cotiza
+Cotización
+Se pide y cada proveedor carga su precio
+→
+Comparador
+Se comparan las ofertas
+→
+Selección
+Se elige la mejor oferta
 →
 Pedido
-Se le encarga al proveedor
+Se le encarga al proveedor elegido
 →
 Recepción
 Llega y se verifica
 →
 Factura
-Se registra la factura
-→
-Libro de compras
-Se asienta solo
+Se registra y se asienta en el libro
 Estados
 Cada documento tiene un estado (por ejemplo Pendiente, Aprobada/Aprobado, Anulado). Se cambia con el botón Cambiar estado.
+Regla de aprobación
+Un documento solo se puede usar en el paso siguiente si está
+aprobado
+. Si está Pendiente, Rechazado o Anulado, el sistema no lo deja avanzar y responde que el documento
+«no existe»
+:
+Documento	|Debe estar…	|Para usarlo en…
+Solicitud	|Aprobada	|Presupuesto y Pedido
+Presupuesto (cotización)	|Aprobado (lo aprueba la selección)	|Pedido y Orden de compra
+Pedido	|Aprobado	|Recepción de mercaderías
+Para aprobar un documento usá Cambiar estado en su listado.
 Cómo se busca un producto (vale para todas las pantallas de compras)
 1. En el campo Producto escribí el código (por ejemplo «5») o parte del nombre. La lista se filtra mientras escribís.
 2. Presioná Enter para elegir el primero de la lista; el cursor pasa solo a Cantidad.
 3. Escribí la cantidad y presioná Enter otra vez: el producto se agrega al detalle.
 4. Si te equivocaste de producto, presioná la × del campo para borrar la selección.
 Solicitud de compra
+
+La solicitud dice qué se necesita, cuánto, para cuándo y para qué sucursal. No lleva precio ni stock: el precio lo pone cada proveedor en su cotización.
+
 1. Menú Módulo de Compra → Gestionar Compras → R. Solicitud.
 2. Presioná Nueva Solicitud.
-3. Elegí el Solicitante, la Sucursal y el Depósito, y revisá la Fecha.
-4. Agregá los productos (ver «Cómo se busca un producto»).
-5. Presioná Guardar. Los campos se limpian para cargar la siguiente. Con Volver regresás al listado.
-[Imagen: Listado de solicitudes de compra con estados y botones — Figura 11. Listado de solicitudes. Cada fila tiene Modificar y Cambiar estado.] [Imagen: Formulario Nueva Solicitud de compra — Figura 12. Nueva solicitud de compra.]
+3. Elegí el Solicitante, la Sucursal y el Depósito, y revisá la Fecha de la solicitud.
+4. Indicá la Fecha necesaria: el día en que necesitás la mercadería (viene sugerida a 7 días; no puede ser anterior a la fecha de la solicitud).
+5. Agregá los productos y sus cantidades (ver «Cómo se busca un producto»).
+6. Presioná Grabar Solicitud. Los campos se limpian para cargar la siguiente. Con Volver regresás al listado.
+[Imagen: Listado de solicitudes de compra con estados y botones — Figura 11. Listado de solicitudes, con los filtros arriba. Cada fila tiene Modificar y Cambiar estado.]
+Filtrar el listado
+Sobre la tabla podés acotar las solicitudes por
+rango de fechas
+(fecha de la solicitud, desde / hasta), por
+sucursal
+y por
+estado
+. Los filtros se combinan entre sí y se aplican al instante; el contador de arriba a la derecha indica cuántas solicitudes se muestran. El botón
+Limpiar
+los quita todos.
+[Imagen: Formulario Nueva Solicitud de compra — Figura 12. Nueva solicitud de compra.]
 Modificar
 Solo se pueden modificar las solicitudes en estado Pendiente.
-Presupuesto
+Pedir cotización a los proveedores (portal del proveedor)
+
+Es la forma más rápida de cotizar: el sistema le envía a cada proveedor un enlace personal. El proveedor lo abre (desde la computadora o el celular, sin usuario ni contraseña), ve los productos y cantidades que necesitás, escribe sus precios y los envía. Su cotización queda cargada sola y aparece en el comparador.
+
+1. La solicitud tiene que estar Aprobada.
+2. Entrá a Comparar Ofertas y escribí el número de la solicitud (presioná Buscar o Enter); también podés usar el botón Cotizaciones en el listado de solicitudes).
+3. En el panel Cotizaciones solicitadas a proveedores, presioná Pedir cotización.
+4. Marcá los proveedores a invitar (Proveedor A, B, C…), elegí la fecha límite para cotizar y, si querés, escribí un mensaje para ellos.
+5. Dejá tildado Enviar el enlace por correo y presioná Enviar invitaciones.
+6. El sistema te muestra el resultado de cada proveedor. Si algún correo no salió, o el proveedor no tiene correo, usá Copiar enlace y mandáselo por WhatsApp u otro medio.
+7. A medida que los proveedores responden, el panel muestra Respondió y sus cotizaciones aparecen en el cuadro comparativo. Actualizá la pantalla para verlas.
+[Imagen: Ventana para elegir los proveedores a invitar, la fecha límite y el mensaje — Figura: Pedir cotización. Los proveedores ya invitados aparecen deshabilitados.] [Imagen: Panel de cotizaciones solicitadas con estado de cada proveedor y comparador de ofertas debajo — Figura: Estado de cada invitación y comparación de las ofertas recibidas.]
+Qué ve y qué hace el proveedor
+1. Recibe un correo con la lista de productos, la fecha necesaria y la fecha límite, y un botón Cargar mi cotización.
+2. En la página escribe el precio unitario de cada producto (el sistema calcula subtotales y total), indica hasta cuándo es válida su oferta y, si quiere, agrega observaciones (plazo de entrega, condiciones de pago).
+3. Presiona Enviar cotización. Si no puede ofrecer algún producto, deja su precio vacío: en el comparador figura como «sin cotizar».
+4. Puede volver a entrar al mismo enlace y modificar su cotización hasta la fecha límite, mientras vos no la hayas evaluado.
+[Imagen: Página del proveedor con los productos solicitados y campos para cargar los precios — Figura: Página que ve el proveedor. Funciona también en el celular.]
+Reenviar y cancelar
+Reenviar: genera un enlace nuevo (el anterior deja de funcionar) y extiende la fecha límite. Sirve si el proveedor perdió el correo o se le venció el plazo.
+Cancelar: anula la invitación de un proveedor que todavía no respondió; su enlace deja de funcionar.
+Cuando seleccionás una oferta, las demás ya no se pueden modificar y los proveedores ven que su cotización «ya fue evaluada».
+Seguridad del enlace
+Cada enlace es personal, largo e imposible de adivinar, y solo muestra la lista de productos de esa solicitud: el proveedor no ve otros proveedores, precios internos, stock ni nada más del sistema. Todo lo que envía queda registrado a su nombre en la auditoría. Pedile a los proveedores que no compartan el enlace.
+Para que funcione desde afuera
+Para que los proveedores puedan abrir el enlace desde su casa u oficina, el sistema tiene que estar accesible por internet con una dirección propia y segura (HTTPS). Eso lo configura el administrador (variable PORTAL_URL_BASE). Si el sistema solo funciona dentro de la red de Gran Vía, los enlaces solo abrirán desde esa red.
+Cotizar a mano
+Si un proveedor te manda su precio por otro medio (llamada, PDF), también podés cargarlo vos en Presupuesto (ver abajo). Un proveedor no puede tener dos cotizaciones vigentes para la misma solicitud.
+Cotización (Presupuesto)
+
+Cada proveedor envía su cotización para la solicitud. En el sistema se carga una cotización por proveedor. La solicitud tiene que estar Aprobada.
+
 1. Menú R. Presupuesto y presioná Nuevo presupuesto.
-2. Si el presupuesto responde a una solicitud, escribí su Nro. Solicitud y presioná Enter: se cargan los productos.
+2. Escribí el Nro. Solicitud y presioná Enter: se cargan los productos y cantidades pedidos.
 3. Completá Fecha de emisión, Fecha de vencimiento, Proveedor, Sucursal y Funcionario.
-4. Si tenés el presupuesto del proveedor en archivo, adjuntalo (PDF, XLSX, XLS o TXT).
-5. Cargá el precio de cada producto y presioná Guardar.
+4. Cargá el precio cotizado de cada producto con el botón Editar de su fila (también podés ajustar la cantidad). Todos los productos deben tener precio.
+5. Si tenés la cotización del proveedor en archivo, adjuntala (PDF, XLSX, XLS o TXT).
+6. Presioná Guardar.
+7. Repetí los pasos 1 a 6 con cada proveedor que cotice (Proveedor A, B, C…).
+Sucursal y depósito
+El presupuesto hereda la sucursal y el depósito de la solicitud de origen; por eso el listado de presupuestos muestra a qué
+solicitud
+y a qué
+sucursal / depósito
+corresponde cada uno. Si cargás un presupuesto a mano sin solicitud, se guarda la sucursal que elijas en el formulario y el depósito lo elegís después, al armar el pedido.
+Un proveedor, una cotización
+Si un proveedor ya cotizó esa solicitud, el sistema no permite cargar otra. Para reemplazarla, anulá la anterior con Cambiar estado.
 [Imagen: Formulario Registrar Presupuesto — Figura 13. Registrar presupuesto.]
+Comparador de ofertas y selección
+
+Cuando ya llegaron las cotizaciones, el comparador las pone lado a lado para elegir la mejor.
+
+1. Menú Comparar Ofertas (o el botón Cotización del listado de presupuestos).
+2. Elegí la Solicitud aprobada. La lista muestra cuántas cotizaciones tiene cada una.
+3. Revisá el cuadro: cada columna es un proveedor y cada fila un producto. El precio más bajo de cada producto se marca en verde y abajo ves el total de cada oferta.
+4. La etiqueta Mejor oferta señala el menor total entre las ofertas que cotizan todos los productos. Si una oferta no cotiza algún producto, dice «Incompleta».
+5. Presioná Seleccionar en la oferta elegida y confirmá. Esa cotización pasa a Aprobada y las demás de la solicitud quedan Rechazadas.
+6. El sistema te indica el paso siguiente: Generar Pedido con origen Desde Presupuesto y el código de la cotización elegida.
+[Imagen: Comparador de ofertas con tres proveedores, precios por producto, mejor precio en verde y botón Seleccionar — Figura: Comparador de ofertas. El precio más bajo de cada producto y la mejor oferta se destacan en verde.]
+Cambiar la selección
+Podés elegir otra oferta mientras no se haya generado un pedido con la anterior. Si ya hay un pedido, primero hay que anularlo.
+Permisos
+Seleccionar requiere el permiso Modificar en «Comparador de ofertas»; el perfil fiscales puede ver la comparación pero no elegir.
 Pedido de compra
 1. Menú Generar Pedido y presioná Nuevo pedido.
 2. Elegí el Origen:
 Sin origen: cargás todo a mano.
 Desde Solicitud: escribís el número de solicitud y se cargan los productos.
-Desde Presupuesto: escribís el código del presupuesto y se cargan proveedor y precios.
+Desde Presupuesto: escribís el código de la cotización seleccionada en el comparador y se cargan solos el proveedor, los productos y precios, la sucursal, el depósito, el solicitante, la fecha necesaria y el número de solicitud (es el camino recomendado). Todo se puede corregir antes de grabar.
 3. Elegí el Proveedor antes de buscar productos: el pedido es para un solo proveedor.
 4. Completá Sucursal, Depósito, Tipo de factura, Fecha del pedido y Fecha necesaria.
 5. Agregá los productos con su Cantidad y Precio (botón verde +). Abajo ves el Total.
@@ -319,8 +406,8 @@ Se hace cuando llega la mercadería y se verifica contra el pedido.
 4. Ingresá la Cantidad Recibida (no puede superar la pedida) y presioná el botón +.
 5. Cuando termines, presioná Grabar. El stock del depósito se actualiza.
 [Imagen: Pantalla de recepción de mercaderías — Figura 15. Recepción de mercaderías.]
-Pedido vencido
-Si el pedido ya venció, el sistema no permite recibirlo.
+Pedido no recepcionable
+El pedido debe estar Aprobado; si está Pendiente o Anulado, el sistema responde que «el pedido no existe». Tampoco se puede recibir un pedido vencido.
 Factura de compra
 1. Menú Facturas → Nueva Factura.
 2. Elegí la Recepción confirmada (sin factura). Se completan el proveedor y el monto sugerido.
@@ -328,6 +415,10 @@ Factura de compra
 4. Revisá el Monto total y elegí el Tipo de impuesto (para el libro de compras). Podés adjuntar el PDF de la factura.
 5. Presioná Guardar Factura. La factura queda Pendiente y se asienta automáticamente en el libro de compras.
 [Imagen: Formulario Registrar Factura de Compra — Figura 16. Factura de compra.]
+Solo se modifica lo pendiente
+Las solicitudes, los presupuestos y los pedidos se pueden modificar (botón Modificar o Editar del listado)
+únicamente mientras están en estado Pendiente
+. Una vez aprobados, rechazados o anulados el botón aparece deshabilitado y el sistema no permite cambiarlos, ni siquiera por otra vía. Si un documento aprobado necesita un cambio, pasalo de nuevo a Pendiente con Cambiar estado, corregilo y volvelo a aprobar. Hacelo solo si todavía no se generó otro documento a partir de él (por ejemplo, un presupuesto ya cotizado sobre esa solicitud), para no dejar datos inconsistentes.
 Cambiar el estado de un documento
 1. En el listado (solicitudes, presupuestos, pedidos o facturas), buscá el documento.
 2. Presioná Cambiar estado.
@@ -356,17 +447,26 @@ Esta sección del menú (Seguridad) solo la ven los usuarios del perfil administ
 
 Usuarios
 1. Menú Seguridad → Usuarios. Ves todos los usuarios con su perfil, correo y si están Activos o Bloqueados.
-2. Crear: presioná Nuevo usuario, escribí el usuario (3 a 10 caracteres), elegí el funcionario y el perfil, cargá el correo (donde llegan el código y las alertas) y una contraseña inicial que cumpla los requisitos. Guardar.
+2. Crear: presioná Nuevo usuario. Se abre una pantalla propia (no una ventanita encima del listado) con:
+Usuario (3 a 10 caracteres) y correo electrónico (donde llegan el código y las alertas).
+Funcionario: un buscador — escribí nombre o cédula y elegilo de la lista. Si la persona todavía no está cargada como funcionario, tildá «La persona todavía no está registrada como funcionario» y completá Nombres, Apellidos, Cédula y Cargo: el sistema la da de alta como funcionario en el mismo paso.
+Contraseña: se escribe dos veces, para evitar errores de tipeo; si no coinciden, el sistema avisa antes de grabar.
+Perfil: al elegirlo aparece debajo, en la misma pantalla, todo lo que ese perfil puede ver y hacer (ver «Permisos por perfil»).
+Presioná Guardar usuario.
 3. Desbloquear: en un usuario bloqueado, presioná Desbloquear. Se reinician sus intentos fallidos.
-4. Cambiar perfil o correo: Editar, modificá y Guardar.
-5. Restablecer contraseña: Contraseña, escribí la nueva y confirmá.
-[Imagen: Listado de usuarios del sistema — Figura 19. Administración de usuarios.]
+4. Cambiar perfil, correo o estado: Editar abre la misma pantalla (sin los campos de funcionario ni contraseña), modificá y Guardar usuario.
+5. Restablecer contraseña: desde el listado, botón Contraseña, escribí la nueva y confirmá.
+[Imagen: Formulario de alta de usuario, con buscador de funcionario, contraseña doble y los accesos del perfil elegido — Figura 19. Nuevo usuario: buscador de funcionario, contraseña doble y accesos del perfil.]
 Correo obligatorio para ingresar
 Sin correo cargado, el usuario no puede completar la verificación en dos pasos. Cargalo al crear el usuario.
 Protección
 No podés desactivar tu propio usuario ni cambiarte tu propio perfil, para no quedarte sin acceso.
+Cédula duplicada
+Si al cargar un funcionario nuevo la cédula ya existe en el sistema, no se crea de nuevo: buscá a la persona por su nombre en el buscador de funcionario, seguramente ya está cargada.
 Permisos por perfil
-1. Menú Seguridad → Permisos por perfil.
+También desde Usuarios
+Esta misma matriz aparece dentro de Nuevo usuario y Editar usuario, debajo del perfil elegido: es la forma más rápida de revisar o ajustar qué puede hacer el perfil de la persona que estás dando de alta. Lo que se explica acá aplica igual en los dos lugares.
+1. Menú Seguridad → Permisos por perfil (o el bloque «Accesos de este perfil» dentro de Usuarios).
 2. Elegí el Perfil.
 3. Marcá, para cada ventana, lo que puede hacer: Ver, Agregar, Modificar, Eliminar/Anular. La casilla de la fila del módulo marca o desmarca todo el módulo.
 4. Presioná Guardar cambios. Se aplica de inmediato.
@@ -406,8 +506,13 @@ La sesión se cerró sola.
 En el Punto de Venta dice «Turno de Caja Cerrado».
 Escaneo un producto y no aparece.
 Al buscar un producto en Compras no encuentro el que quiero.
+Al guardar una cotización me dice que falta el precio.
+Un proveedor dice que el enlace de cotización no funciona.
+Le pedí cotización a un proveedor y no le llegó el correo.
+El comparador no me muestra una solicitud.
 Quiero grabar un pedido y me pide proveedor.
 No puedo recibir un pedido en Recepción.
+Cargo una solicitud, un presupuesto o un pedido y el sistema dice que «no existe», pero lo veo en el listado.
 No puedo eliminar un registro de un catálogo.
 Una cifra del Dashboard parece no coincidir.
 Quiero guardar o imprimir este manual.
@@ -438,6 +543,7 @@ Auditoría	|Registro inalterable de quién hizo cada operación y cuándo.
 ========================================
 13. Historial de versiones
 Versión	|Fecha	|Cambios
+1.1	|20 de septiembre de 2026	|Ciclo de compras rediseñado: solicitud sin stock ni precio y con fecha necesaria, portal del proveedor para cotizar con un enlace personal, comparador de ofertas y selección. Regla de aprobación (solo se usan documentos aprobados). Filtro del dashboard por calendario Desde–Hasta. Las listas muestran lo más reciente arriba.
 1.0	|19 de septiembre de 2026	|Primera edición. Incluye: nuevo diseño del sistema, dashboard de ventas e inventario, ciclo completo de compras con facturas y libro de compras, permisos por perfil, auditoría, intentos de acceso y recuperación de contraseña.
 
 Esta versión del manual corresponde a GranViaSys 2026. Cuando el sistema cambie, se actualizan la versión y la fecha de este documento.

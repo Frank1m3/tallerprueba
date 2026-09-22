@@ -6,6 +6,7 @@
   .manual { --man-fs: 1rem; font-size: var(--man-fs); line-height: 1.7; max-width: 980px; margin: 0 auto; }
   .manual h1 { font-size: 2rem; font-weight: 800; margin: 0 0 .25rem; }
   .manual h2 { font-size: 1.5rem; font-weight: 800; margin: 3rem 0 1rem; padding-top: 1rem; border-top: 2px solid var(--pos-border); scroll-margin-top: 80px; }
+  .manual h4 { font-size: 1rem; font-weight: 700; margin: 1.4rem 0 .4rem; }
   .manual h3 { font-size: 1.15rem; font-weight: 700; margin: 2rem 0 .6rem; color: var(--pos-primary-hover); scroll-margin-top: 80px; }
   .manual p, .manual li { color: var(--pos-text); }
   .manual ol.pasos { counter-reset: paso; list-style: none; padding-left: 0; }
@@ -127,7 +128,9 @@
     <li><a href="#compras">Módulo de Compras</a>
       <ul>
         <li><a href="#compras-solicitud">Solicitud de compra</a></li>
-        <li><a href="#compras-presupuesto">Presupuesto</a></li>
+        <li><a href="#compras-portal">Pedir cotización a los proveedores (portal)</a></li>
+        <li><a href="#compras-presupuesto">Cotización (Presupuesto)</a></li>
+        <li><a href="#compras-comparador">Comparador de ofertas y selección</a></li>
         <li><a href="#compras-pedido">Pedido de compra</a></li>
         <li><a href="#compras-recepcion">Recepción de mercaderías</a></li>
         <li><a href="#compras-factura">Factura de compra</a></li>
@@ -264,7 +267,7 @@
 
 <h3>Filtros (arriba)</h3>
 <ol class="pasos">
-  <li>Elegí el período: <strong>Hoy</strong>, <strong>Últimos 7 días</strong>, <strong>Este mes</strong>, <strong>Últimos 3 meses</strong>, <strong>Este año</strong> o <strong>Personalizado</strong> (indicás fecha desde y hasta).</li>
+  <li>Elegí el período con el calendario: indicá la fecha <strong>Desde</strong> y la fecha <strong>Hasta</strong>. Al abrir la pantalla vienen cargados los últimos 3 meses. Si la fecha «Desde» es posterior a «Hasta», el sistema te avisa y vuelve al rango anterior.</li>
   <li>Si querés, elegí una <strong>sucursal</strong> y luego un <strong>depósito</strong> de esa sucursal.</li>
   <li>Con <strong>Sin movimiento</strong> elegís desde cuántos días sin ventas (30, 60 o 90) un producto se considera «dormido».</li>
 </ol>
@@ -409,15 +412,25 @@
 <!-- ============================================================ -->
 <h2 id="compras">8. Módulo de Compras</h2>
 <p>Comprar mercadería sigue un ciclo ordenado. Cada documento nace del anterior, así queda registro de quién pidió qué, a qué precio y cuándo llegó:</p>
-<div class="flujo" role="img" aria-label="Diagrama del ciclo de compras: solicitud, presupuesto, pedido, recepción, factura, libro de compras">
-  <div class="caja"><b>Solicitud</b><small>Se pide la mercadería</small></div><div class="flecha">→</div>
-  <div class="caja"><b>Presupuesto</b><small>El proveedor cotiza</small></div><div class="flecha">→</div>
-  <div class="caja"><b>Pedido</b><small>Se le encarga al proveedor</small></div><div class="flecha">→</div>
+<div class="flujo" role="img" aria-label="Diagrama del ciclo de compras: solicitud, cotización, comparador de ofertas, selección, pedido, recepción, factura">
+  <div class="caja"><b>Solicitud</b><small>Qué se necesita, cuánto y para cuándo</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Cotización</b><small>Se pide y cada proveedor carga su precio</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Comparador</b><small>Se comparan las ofertas</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Selección</b><small>Se elige la mejor oferta</small></div><div class="flecha">→</div>
+  <div class="caja"><b>Pedido</b><small>Se le encarga al proveedor elegido</small></div><div class="flecha">→</div>
   <div class="caja"><b>Recepción</b><small>Llega y se verifica</small></div><div class="flecha">→</div>
-  <div class="caja"><b>Factura</b><small>Se registra la factura</small></div><div class="flecha">→</div>
-  <div class="caja"><b>Libro de compras</b><small>Se asienta solo</small></div>
+  <div class="caja"><b>Factura</b><small>Se registra y se asienta en el libro</small></div>
 </div>
 <div class="nota"><strong>Estados</strong> Cada documento tiene un estado (por ejemplo <em>Pendiente</em>, <em>Aprobada/Aprobado</em>, <em>Anulado</em>). Se cambia con el botón <a href="#compras-estado">Cambiar estado</a>.</div>
+<div class="aviso"><strong>Regla de aprobación</strong>
+  Un documento solo se puede usar en el paso siguiente si está <strong>aprobado</strong>. Si está <em>Pendiente</em>, <em>Rechazado</em> o <em>Anulado</em>, el sistema no lo deja avanzar y responde que el documento <strong>«no existe»</strong>:
+  <table class="man-tabla">
+    <tr><th>Documento</th><th>Debe estar…</th><th>Para usarlo en…</th></tr>
+    <tr><td>Solicitud</td><td>Aprobada</td><td>Presupuesto y Pedido</td></tr>
+    <tr><td>Presupuesto (cotización)</td><td>Aprobado (lo aprueba la <a href="#compras-comparador">selección</a>)</td><td>Pedido y Orden de compra</td></tr>
+    <tr><td>Pedido</td><td>Aprobado</td><td>Recepción de mercaderías</td></tr>
+  </table>
+  Para aprobar un documento usá <a href="#compras-estado">Cambiar estado</a> en su listado.</div>
 
 <h3>Cómo se busca un producto (vale para todas las pantallas de compras)</h3>
 <ol class="pasos">
@@ -428,35 +441,102 @@
 </ol>
 
 <h3 id="compras-solicitud">Solicitud de compra</h3>
+<p>La solicitud dice <strong>qué se necesita, cuánto, para cuándo y para qué sucursal</strong>. No lleva precio ni stock: el precio lo pone cada proveedor en su cotización.</p>
 <ol class="pasos">
   <li>Menú <strong>Módulo de Compra → Gestionar Compras → R. Solicitud</strong>.</li>
   <li>Presioná <strong>Nueva Solicitud</strong>.</li>
-  <li>Elegí el <strong>Solicitante</strong>, la <strong>Sucursal</strong> y el <strong>Depósito</strong>, y revisá la <strong>Fecha</strong>.</li>
-  <li>Agregá los productos (ver «Cómo se busca un producto»).</li>
-  <li>Presioná <strong>Guardar</strong>. Los campos se limpian para cargar la siguiente. Con <strong>Volver</strong> regresás al listado.</li>
+  <li>Elegí el <strong>Solicitante</strong>, la <strong>Sucursal</strong> y el <strong>Depósito</strong>, y revisá la <strong>Fecha de la solicitud</strong>.</li>
+  <li>Indicá la <strong>Fecha necesaria</strong>: el día en que necesitás la mercadería (viene sugerida a 7 días; no puede ser anterior a la fecha de la solicitud).</li>
+  <li>Agregá los productos y sus cantidades (ver «Cómo se busca un producto»).</li>
+  <li>Presioná <strong>Grabar Solicitud</strong>. Los campos se limpian para cargar la siguiente. Con <strong>Volver</strong> regresás al listado.</li>
 </ol>
 <figure>
   <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_solicitud_lista.png') }}" alt="Listado de solicitudes de compra con estados y botones" loading="lazy">
-  <figcaption>Figura 11. Listado de solicitudes. Cada fila tiene <em>Modificar</em> y <em>Cambiar estado</em>.</figcaption>
+  <figcaption>Figura 11. Listado de solicitudes, con los filtros arriba. Cada fila tiene <em>Modificar</em> y <em>Cambiar estado</em>.</figcaption>
 </figure>
+<div class="nota"><strong>Filtrar el listado</strong> Sobre la tabla podés acotar las solicitudes por <strong>rango de fechas</strong> (fecha de la solicitud, desde / hasta), por <strong>sucursal</strong> y por <strong>estado</strong>. Los filtros se combinan entre sí y se aplican al instante; el contador de arriba a la derecha indica cuántas solicitudes se muestran. El botón <strong>Limpiar</strong> los quita todos.</div>
 <figure>
   <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_solicitud_nueva.png') }}" alt="Formulario Nueva Solicitud de compra" loading="lazy">
   <figcaption>Figura 12. Nueva solicitud de compra.</figcaption>
 </figure>
 <div class="nota"><strong>Modificar</strong> Solo se pueden modificar las solicitudes en estado <em>Pendiente</em>.</div>
 
-<h3 id="compras-presupuesto">Presupuesto</h3>
+<h3 id="compras-portal">Pedir cotización a los proveedores (portal del proveedor)</h3>
+<p>Es la forma más rápida de cotizar: el sistema le envía a cada proveedor un <strong>enlace personal</strong>. El proveedor lo abre (desde la computadora o el celular, <strong>sin usuario ni contraseña</strong>), ve los productos y cantidades que necesitás, escribe sus precios y los envía. Su cotización queda cargada sola y aparece en el comparador.</p>
+<ol class="pasos">
+  <li>La solicitud tiene que estar <strong>Aprobada</strong>.</li>
+  <li>Entrá a <strong>Comparar Ofertas</strong> y escribí el <strong>número de la solicitud</strong> (presioná <em>Buscar</em> o Enter); también podés usar el botón <strong>Cotizaciones</strong> en el listado de solicitudes).</li>
+  <li>En el panel <strong>Cotizaciones solicitadas a proveedores</strong>, presioná <strong>Pedir cotización</strong>.</li>
+  <li>Marcá los <strong>proveedores</strong> a invitar (Proveedor A, B, C…), elegí la <strong>fecha límite</strong> para cotizar y, si querés, escribí un mensaje para ellos.</li>
+  <li>Dejá tildado <strong>Enviar el enlace por correo</strong> y presioná <strong>Enviar invitaciones</strong>.</li>
+  <li>El sistema te muestra el resultado de cada proveedor. Si algún correo no salió, o el proveedor no tiene correo, usá <strong>Copiar enlace</strong> y mandáselo por WhatsApp u otro medio.</li>
+  <li>A medida que los proveedores responden, el panel muestra <strong>Respondió</strong> y sus cotizaciones aparecen en el cuadro comparativo. Actualizá la pantalla para verlas.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_pedir_cotizacion.png') }}" alt="Ventana para elegir los proveedores a invitar, la fecha límite y el mensaje" loading="lazy">
+  <figcaption>Figura: Pedir cotización. Los proveedores ya invitados aparecen deshabilitados.</figcaption>
+</figure>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_comparador_portal.png') }}" alt="Panel de cotizaciones solicitadas con estado de cada proveedor y comparador de ofertas debajo" loading="lazy">
+  <figcaption>Figura: Estado de cada invitación y comparación de las ofertas recibidas.</figcaption>
+</figure>
+
+<h4>Qué ve y qué hace el proveedor</h4>
+<ol class="pasos">
+  <li>Recibe un correo con la lista de productos, la fecha necesaria y la fecha límite, y un botón <strong>Cargar mi cotización</strong>.</li>
+  <li>En la página escribe el <strong>precio unitario</strong> de cada producto (el sistema calcula subtotales y total), indica <strong>hasta cuándo es válida su oferta</strong> y, si quiere, agrega observaciones (plazo de entrega, condiciones de pago).</li>
+  <li>Presiona <strong>Enviar cotización</strong>. Si no puede ofrecer algún producto, deja su precio vacío: en el comparador figura como «sin cotizar».</li>
+  <li>Puede volver a entrar al mismo enlace y <strong>modificar</strong> su cotización hasta la fecha límite, mientras vos no la hayas evaluado.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/portal_proveedor.png') }}" alt="Página del proveedor con los productos solicitados y campos para cargar los precios" loading="lazy">
+  <figcaption>Figura: Página que ve el proveedor. Funciona también en el celular.</figcaption>
+</figure>
+
+<h4>Reenviar y cancelar</h4>
+<ul>
+  <li><strong>Reenviar:</strong> genera un enlace <em>nuevo</em> (el anterior deja de funcionar) y extiende la fecha límite. Sirve si el proveedor perdió el correo o se le venció el plazo.</li>
+  <li><strong>Cancelar:</strong> anula la invitación de un proveedor que todavía no respondió; su enlace deja de funcionar.</li>
+  <li>Cuando <a href="#compras-comparador">seleccionás</a> una oferta, las demás ya no se pueden modificar y los proveedores ven que su cotización «ya fue evaluada».</li>
+</ul>
+<div class="aviso"><strong>Seguridad del enlace</strong> Cada enlace es personal, largo e imposible de adivinar, y solo muestra la lista de productos de esa solicitud: el proveedor no ve otros proveedores, precios internos, stock ni nada más del sistema. Todo lo que envía queda registrado a su nombre en la auditoría. Pedile a los proveedores que no compartan el enlace.</div>
+<div class="nota"><strong>Para que funcione desde afuera</strong> Para que los proveedores puedan abrir el enlace desde su casa u oficina, el sistema tiene que estar accesible por internet con una dirección propia y segura (HTTPS). Eso lo configura el administrador (variable <code>PORTAL_URL_BASE</code>). Si el sistema solo funciona dentro de la red de Gran Vía, los enlaces solo abrirán desde esa red.</div>
+<div class="aviso"><strong>Cotizar a mano</strong> Si un proveedor te manda su precio por otro medio (llamada, PDF), también podés cargarlo vos en Presupuesto (ver abajo). Un proveedor no puede tener dos cotizaciones vigentes para la misma solicitud.</div>
+
+<h3 id="compras-presupuesto">Cotización (Presupuesto)</h3>
+<p>Cada proveedor envía su cotización para la solicitud. En el sistema se carga <strong>una cotización por proveedor</strong>. La solicitud tiene que estar <strong>Aprobada</strong>.</p>
 <ol class="pasos">
   <li>Menú <strong>R. Presupuesto</strong> y presioná <strong>Nuevo presupuesto</strong>.</li>
-  <li>Si el presupuesto responde a una solicitud, escribí su <strong>Nro. Solicitud</strong> y presioná <span class="tecla">Enter</span>: se cargan los productos.</li>
+  <li>Escribí el <strong>Nro. Solicitud</strong> y presioná <span class="tecla">Enter</span>: se cargan los productos y cantidades pedidos.</li>
   <li>Completá <strong>Fecha de emisión</strong>, <strong>Fecha de vencimiento</strong>, <strong>Proveedor</strong>, <strong>Sucursal</strong> y <strong>Funcionario</strong>.</li>
-  <li>Si tenés el presupuesto del proveedor en archivo, adjuntalo (PDF, XLSX, XLS o TXT).</li>
-  <li>Cargá el <strong>precio</strong> de cada producto y presioná <strong>Guardar</strong>.</li>
+  <li>Cargá el <strong>precio cotizado</strong> de cada producto con el botón <strong>Editar</strong> de su fila (también podés ajustar la cantidad). Todos los productos deben tener precio.</li>
+  <li>Si tenés la cotización del proveedor en archivo, adjuntala (PDF, XLSX, XLS o TXT).</li>
+  <li>Presioná <strong>Guardar</strong>.</li>
+  <li>Repetí los pasos 1 a 6 con cada proveedor que cotice (Proveedor A, B, C…).</li>
 </ol>
+<div class="nota"><strong>Sucursal y depósito</strong> El presupuesto hereda la sucursal y el depósito de la solicitud de origen; por eso el listado de presupuestos muestra a qué <strong>solicitud</strong> y a qué <strong>sucursal / depósito</strong> corresponde cada uno. Si cargás un presupuesto a mano <em>sin</em> solicitud, se guarda la sucursal que elijas en el formulario y el depósito lo elegís después, al armar el pedido.</div>
+<div class="aviso"><strong>Un proveedor, una cotización</strong> Si un proveedor ya cotizó esa solicitud, el sistema no permite cargar otra. Para reemplazarla, anulá la anterior con <a href="#compras-estado">Cambiar estado</a>.</div>
 <figure>
   <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_presupuesto_nuevo.png') }}" alt="Formulario Registrar Presupuesto" loading="lazy">
   <figcaption>Figura 13. Registrar presupuesto.</figcaption>
 </figure>
+
+<h3 id="compras-comparador">Comparador de ofertas y selección</h3>
+<p>Cuando ya llegaron las cotizaciones, el comparador las pone lado a lado para elegir la mejor.</p>
+<ol class="pasos">
+  <li>Menú <strong>Comparar Ofertas</strong> (o el botón <strong>Cotización</strong> del listado de presupuestos).</li>
+  <li>Elegí la <strong>Solicitud aprobada</strong>. La lista muestra cuántas cotizaciones tiene cada una.</li>
+  <li>Revisá el cuadro: cada columna es un proveedor y cada fila un producto. El <strong>precio más bajo</strong> de cada producto se marca en verde y abajo ves el <strong>total</strong> de cada oferta.</li>
+  <li>La etiqueta <strong>Mejor oferta</strong> señala el menor total entre las ofertas que cotizan <em>todos</em> los productos. Si una oferta no cotiza algún producto, dice «Incompleta».</li>
+  <li>Presioná <strong>Seleccionar</strong> en la oferta elegida y confirmá. Esa cotización pasa a <strong>Aprobada</strong> y las demás de la solicitud quedan <strong>Rechazadas</strong>.</li>
+  <li>El sistema te indica el paso siguiente: <strong>Generar Pedido</strong> con origen <em>Desde Presupuesto</em> y el código de la cotización elegida.</li>
+</ol>
+<figure>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_comparador.png') }}" alt="Comparador de ofertas con tres proveedores, precios por producto, mejor precio en verde y botón Seleccionar" loading="lazy">
+  <figcaption>Figura: Comparador de ofertas. El precio más bajo de cada producto y la mejor oferta se destacan en verde.</figcaption>
+</figure>
+<div class="nota"><strong>Cambiar la selección</strong> Podés elegir otra oferta mientras no se haya generado un pedido con la anterior. Si ya hay un pedido, primero hay que anularlo.</div>
+<div class="nota"><strong>Permisos</strong> Seleccionar requiere el permiso <em>Modificar</em> en «Comparador de ofertas»; el perfil <em>fiscales</em> puede ver la comparación pero no elegir.</div>
 
 <h3 id="compras-pedido">Pedido de compra</h3>
 <ol class="pasos">
@@ -465,7 +545,7 @@
     <ul>
       <li><strong>Sin origen</strong>: cargás todo a mano.</li>
       <li><strong>Desde Solicitud</strong>: escribís el número de solicitud y se cargan los productos.</li>
-      <li><strong>Desde Presupuesto</strong>: escribís el código del presupuesto y se cargan proveedor y precios.</li>
+      <li><strong>Desde Presupuesto</strong>: escribís el código de la cotización <em>seleccionada</em> en el comparador y se cargan solos el <strong>proveedor, los productos y precios, la sucursal, el depósito, el solicitante, la fecha necesaria y el número de solicitud</strong> (es el camino recomendado). Todo se puede corregir antes de grabar.</li>
     </ul></li>
   <li>Elegí el <strong>Proveedor</strong> <em>antes</em> de buscar productos: el pedido es para un solo proveedor.</li>
   <li>Completá <strong>Sucursal, Depósito, Tipo de factura, Fecha del pedido y Fecha necesaria</strong>.</li>
@@ -491,7 +571,7 @@
   <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_recepcion.png') }}" alt="Pantalla de recepción de mercaderías" loading="lazy">
   <figcaption>Figura 15. Recepción de mercaderías.</figcaption>
 </figure>
-<div class="aviso"><strong>Pedido vencido</strong> Si el pedido ya venció, el sistema no permite recibirlo.</div>
+<div class="aviso"><strong>Pedido no recepcionable</strong> El pedido debe estar <em>Aprobado</em>; si está Pendiente o Anulado, el sistema responde que «el pedido no existe». Tampoco se puede recibir un pedido vencido.</div>
 
 <h3 id="compras-factura">Factura de compra</h3>
 <ol class="pasos">
@@ -505,6 +585,8 @@
   <img src="{{ url_for('manualmod.manual_archivo', ruta='img/compras_factura_nueva.png') }}" alt="Formulario Registrar Factura de Compra" loading="lazy">
   <figcaption>Figura 16. Factura de compra.</figcaption>
 </figure>
+
+<div class="aviso"><strong>Solo se modifica lo pendiente</strong> Las solicitudes, los presupuestos y los pedidos se pueden modificar (botón <em>Modificar</em> o <em>Editar</em> del listado) <strong>únicamente mientras están en estado Pendiente</strong>. Una vez aprobados, rechazados o anulados el botón aparece deshabilitado y el sistema no permite cambiarlos, ni siquiera por otra vía. Si un documento aprobado necesita un cambio, pasalo de nuevo a Pendiente con <a href="#compras-estado">Cambiar estado</a>, corregilo y volvelo a aprobar. Hacelo solo si todavía no se generó otro documento a partir de él (por ejemplo, un presupuesto ya cotizado sobre esa solicitud), para no dejar datos inconsistentes.</div>
 
 <h3 id="compras-estado">Cambiar el estado de un documento</h3>
 <ol class="pasos">
@@ -548,21 +630,31 @@
 <h3 id="seg-usuarios">Usuarios</h3>
 <ol class="pasos">
   <li>Menú <strong>Seguridad → Usuarios</strong>. Ves todos los usuarios con su perfil, correo y si están <em>Activos</em> o <em>Bloqueados</em>.</li>
-  <li><strong>Crear:</strong> presioná <strong>Nuevo usuario</strong>, escribí el usuario (3 a 10 caracteres), elegí el funcionario y el perfil, cargá el correo (donde llegan el código y las alertas) y una contraseña inicial que cumpla los requisitos. <strong>Guardar</strong>.</li>
+  <li><strong>Crear:</strong> presioná <strong>Nuevo usuario</strong>. Se abre una pantalla propia (no una ventanita encima del listado) con:
+    <ul>
+      <li>Usuario (3 a 10 caracteres) y correo electrónico (donde llegan el código y las alertas).</li>
+      <li><strong>Funcionario:</strong> un buscador — escribí nombre o cédula y elegilo de la lista. Si la persona todavía no está cargada como funcionario, tildá <em>«La persona todavía no está registrada como funcionario»</em> y completá Nombres, Apellidos, Cédula y Cargo: el sistema la da de alta como funcionario en el mismo paso.</li>
+      <li><strong>Contraseña:</strong> se escribe <strong>dos veces</strong>, para evitar errores de tipeo; si no coinciden, el sistema avisa antes de grabar.</li>
+      <li><strong>Perfil:</strong> al elegirlo aparece debajo, en la misma pantalla, todo lo que ese perfil puede ver y hacer (ver «Permisos por perfil»).</li>
+    </ul>
+    Presioná <strong>Guardar usuario</strong>.
+  </li>
   <li><strong>Desbloquear:</strong> en un usuario bloqueado, presioná <strong>Desbloquear</strong>. Se reinician sus intentos fallidos.</li>
-  <li><strong>Cambiar perfil o correo:</strong> <strong>Editar</strong>, modificá y <strong>Guardar</strong>.</li>
-  <li><strong>Restablecer contraseña:</strong> <strong>Contraseña</strong>, escribí la nueva y confirmá.</li>
+  <li><strong>Cambiar perfil, correo o estado:</strong> <strong>Editar</strong> abre la misma pantalla (sin los campos de funcionario ni contraseña), modificá y <strong>Guardar usuario</strong>.</li>
+  <li><strong>Restablecer contraseña:</strong> desde el listado, botón <strong>Contraseña</strong>, escribí la nueva y confirmá.</li>
 </ol>
 <figure>
-  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/seg_usuarios.png') }}" alt="Listado de usuarios del sistema" loading="lazy">
-  <figcaption>Figura 19. Administración de usuarios.</figcaption>
+  <img src="{{ url_for('manualmod.manual_archivo', ruta='img/seg_usuario_nuevo.png') }}" alt="Formulario de alta de usuario, con buscador de funcionario, contraseña doble y los accesos del perfil elegido" loading="lazy">
+  <figcaption>Figura 19. Nuevo usuario: buscador de funcionario, contraseña doble y accesos del perfil.</figcaption>
 </figure>
 <div class="aviso"><strong>Correo obligatorio para ingresar</strong> Sin correo cargado, el usuario no puede completar la verificación en dos pasos. Cargalo al crear el usuario.</div>
 <div class="nota"><strong>Protección</strong> No podés desactivar tu propio usuario ni cambiarte tu propio perfil, para no quedarte sin acceso.</div>
+<div class="nota"><strong>Cédula duplicada</strong> Si al cargar un funcionario nuevo la cédula ya existe en el sistema, no se crea de nuevo: buscá a la persona por su nombre en el buscador de funcionario, seguramente ya está cargada.</div>
 
 <h3 id="seg-permisos">Permisos por perfil</h3>
+<div class="nota"><strong>También desde Usuarios</strong> Esta misma matriz aparece dentro de <em>Nuevo usuario</em> y <em>Editar usuario</em>, debajo del perfil elegido: es la forma más rápida de revisar o ajustar qué puede hacer el perfil de la persona que estás dando de alta. Lo que se explica acá aplica igual en los dos lugares.</div>
 <ol class="pasos">
-  <li>Menú <strong>Seguridad → Permisos por perfil</strong>.</li>
+  <li>Menú <strong>Seguridad → Permisos por perfil</strong> (o el bloque «Accesos de este perfil» dentro de Usuarios).</li>
   <li>Elegí el <strong>Perfil</strong>.</li>
   <li>Marcá, para cada ventana, lo que puede hacer: <strong>Ver, Agregar, Modificar, Eliminar/Anular</strong>. La casilla de la fila del módulo marca o desmarca todo el módulo.</li>
   <li>Presioná <strong>Guardar cambios</strong>. Se aplica de inmediato.</li>
@@ -641,12 +733,32 @@
   Escribí el código exacto o al menos dos letras del nombre. Los códigos cortos como «5» funcionan: el que coincide exactamente aparece primero. Confirmá que el producto esté activo.
 </div></details>
 
+<details><summary>Al guardar una cotización me dice que falta el precio.</summary><div>
+  Todos los productos de la cotización deben tener el precio que cotizó el proveedor. Al cargar una solicitud los precios arrancan en cero: usá el botón <strong>Editar</strong> de cada fila para completarlos (ver <a href="#compras-presupuesto">Cotización</a>).
+</div></details>
+
+<details><summary>Un proveedor dice que el enlace de cotización no funciona.</summary><div>
+  Puede haber vencido la fecha límite, haberse cancelado la invitación, o haber pasado a evaluación su cotización. En el panel de <strong>Cotizaciones solicitadas</strong> usá <strong>Reenviar</strong> para darle un enlace nuevo con más plazo. Si el proveedor está fuera de la red de Gran Vía, confirmá con el administrador que el sistema sea accesible desde internet.
+</div></details>
+
+<details><summary>Le pedí cotización a un proveedor y no le llegó el correo.</summary><div>
+  Al enviar, el sistema indica si el correo salió o no. Usá <strong>Copiar enlace</strong> y mandáselo por WhatsApp. Revisá también que el correo del proveedor esté bien cargado en <em>Referenciales → Proveedores</em> y que no haya caído en spam.
+</div></details>
+
+<details><summary>El comparador no me muestra una solicitud.</summary><div>
+  Solo aparecen solicitudes <strong>Aprobadas</strong>. Aprobala desde el listado de solicitudes con <em>Cambiar estado</em>. Si aparece pero sin ofertas, todavía no se cargaron cotizaciones para ella.
+</div></details>
+
 <details><summary>Quiero grabar un pedido y me pide proveedor.</summary><div>
   Elegí el <strong>Proveedor</strong> en la sección <em>Agregar producto</em> antes de cargar los productos (ver <a href="#compras-pedido">Pedido de compra</a>).
 </div></details>
 
 <details><summary>No puedo recibir un pedido en Recepción.</summary><div>
-  Puede estar <strong>vencido</strong> (fecha de vencimiento anterior a hoy) o el código no pertenece a ese pedido. La cantidad recibida tampoco puede superar la pedida.
+  Revisá que el pedido esté <strong>Aprobado</strong> (si está Pendiente o Anulado el sistema dice que «el pedido no existe»; aprobalo con <em>Cambiar estado</em> en el listado de pedidos). Puede estar además <strong>vencido</strong> (fecha de vencimiento anterior a hoy) o el código no pertenece a ese pedido. La cantidad recibida tampoco puede superar la pedida.
+</div></details>
+
+<details><summary>Cargo una solicitud, un presupuesto o un pedido y el sistema dice que «no existe», pero lo veo en el listado.</summary><div>
+  Casi seguro no está <strong>aprobado</strong>. Solo se pueden usar documentos aprobados (ver <a href="#compras">Módulo de Compras</a>). Andá al listado del documento, revisá su estado y, si corresponde, presioná <strong>Cambiar estado</strong> y elegí <em>Aprobada/Aprobado</em>. Si está anulado o rechazado, cargá uno nuevo o volvé a aprobarlo.
 </div></details>
 
 <details><summary>No puedo eliminar un registro de un catálogo.</summary><div>
@@ -697,7 +809,8 @@
 <h2 id="versiones">13. Historial de versiones</h2>
 <table class="man-tabla">
   <tr><th>Versión</th><th>Fecha</th><th>Cambios</th></tr>
-  <tr><td>{{ version }}</td><td>{{ fecha }}</td><td>Primera edición. Incluye: nuevo diseño del sistema, dashboard de ventas e inventario, ciclo completo de compras con facturas y libro de compras, permisos por perfil, auditoría, intentos de acceso y recuperación de contraseña.</td></tr>
+  <tr><td>{{ version }}</td><td>{{ fecha }}</td><td>Ciclo de compras rediseñado: solicitud sin stock ni precio y con fecha necesaria, portal del proveedor para cotizar con un enlace personal, comparador de ofertas y selección. Regla de aprobación (solo se usan documentos aprobados). Filtro del dashboard por calendario Desde–Hasta. Las listas muestran lo más reciente arriba.</td></tr>
+  <tr><td>1.0</td><td>19 de septiembre de 2026</td><td>Primera edición. Incluye: nuevo diseño del sistema, dashboard de ventas e inventario, ciclo completo de compras con facturas y libro de compras, permisos por perfil, auditoría, intentos de acceso y recuperación de contraseña.</td></tr>
 </table>
 <p>Esta versión del manual corresponde a <strong>GranViaSys 2026</strong>. Cuando el sistema cambie, se actualizan la versión y la fecha de este documento.</p>
 <p class="volver"><a href="#inicio">↑ Volver al índice</a></p>

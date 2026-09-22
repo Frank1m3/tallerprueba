@@ -167,6 +167,11 @@ $('#txt_nro_pedido').on('change', function() {
             $('#txt_nro_pedido').val('').focus();
             pedido = null;
         }
+    }).fail(function(xhr) {
+        const msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Pedido no encontrado';
+        Swal.fire('Error', msg, 'error');
+        $('#txt_nro_pedido').val('').focus();
+        pedido = null;
     });
 });
 

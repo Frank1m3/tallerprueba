@@ -40,6 +40,7 @@ VENTANAS = [
     ('Ventas',        'Cierre de caja',    'cierre.cierreIndex',                '/api/v1/cierres'),
     ('Compras',       'Solicitud de compra','solmod.solicitud_index',           f'{COMPRAS_API}/registrar-solicitud-compras'),
     ('Compras',       'Presupuesto',       'presumod.presupuesto_index',        f'{COMPRAS_API}/registrar-presupuesto'),
+    ('Compras',       'Comparador de ofertas','cmpmod.comparador_index',       f'{COMPRAS_API}/comparador-ofertas'),
     ('Compras',       'Pedido de compra',  'pdcmod.pedidos_index',              f'{COMPRAS_API}/registrar-pedido-compras'),
     ('Compras',       'Orden de compra',   'ocmod.ordenes_index',               f'{COMPRAS_API}/registrar-orden-compras'),
     ('Compras',       'Recepción de mercaderías','rm_mod.recepcion_mercaderia', f'{COMPRAS_API}/recepcion-mercaderias'),

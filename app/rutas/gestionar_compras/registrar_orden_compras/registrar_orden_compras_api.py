@@ -5,6 +5,7 @@ from app.dao.gestionar_compras.registrar_orden_compras.orden_de_compras_dao impo
 from app.dao.gestionar_compras.registrar_orden_compras.dto.orden_de_compras_dto import OrdenDeComprasDto
 from app.dao.gestionar_compras.registrar_orden_compras.dto.orden_de_compra_detalle_dto import OrdenDeCompraDetalleDto
 from app import csrf
+from app.dao.gestionar_compras.reglas_estado import error_presupuesto_no_aprobado
 
 ocapi = Blueprint('ocapi', __name__)
 
@@ -38,6 +39,9 @@ def get_productos():
 @ocapi.route('/presupuesto/<string:cod_presupuesto>', methods=['GET'])
 def get_presupuesto(cod_presupuesto):
     try:
+        msg = error_presupuesto_no_aprobado(cod=cod_presupuesto)
+        if msg:
+            return jsonify(success=False, error=msg), 404
         dao = OrdenDeComprasDao()
         presu = dao.obtener_presupuesto_por_cod(cod_presupuesto)
         if not presu:
@@ -58,6 +62,10 @@ def crear_orden():
         data = request.get_json()
         if not data:
             return jsonify(success=False, error='Datos incompletos'), 400
+
+        msg = error_presupuesto_no_aprobado(id_presupuesto=data.get('id_pre_compra_cab'))
+        if msg:
+            return jsonify(success=False, error=msg), 404
 
         detalle_raw = data.get('detalle_orden', [])
         if not detalle_raw:

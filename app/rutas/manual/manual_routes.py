@@ -4,8 +4,8 @@ from flask import Blueprint, render_template, send_from_directory
 manualmod = Blueprint('manualmod', __name__, template_folder='templates')
 ARCHIVOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'archivos')
 
-MANUAL_VERSION = '1.0'
-MANUAL_FECHA = '19 de septiembre de 2026'
+MANUAL_VERSION = '1.1'
+MANUAL_FECHA = '20 de septiembre de 2026'
 
 
 @manualmod.route('/')

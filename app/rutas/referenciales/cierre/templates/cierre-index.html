@@ -366,7 +366,7 @@ $(document).ready(function(){
     ajax:{ url:'/api/v1/cierres', dataSrc:'data' },
     order:[[0,'desc']], pageLength:15,
     columns:[
-      { data:'nro_turno',    render:v=>'<span class="nro-turno">#'+v+'</span>' },
+      { data:'nro_turno',    render:(v,tipo,fila)=> tipo==='sort'||tipo==='type' ? fila.id_cierre : '<span class="nro-turno">#'+v+'</span>' },
       { data:'cajero' },
       { data:'fiscal' },
       { data:'monto_inicial', className:'text-end', render:v=>'<span class="monto-cell">'+fmt(v)+'</span>' },

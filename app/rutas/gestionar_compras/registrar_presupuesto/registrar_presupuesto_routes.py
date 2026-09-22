@@ -1,12 +1,13 @@
 import os
 import time
 import json
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, current_app
 
 from app.dao.referenciales.sucursal.sucursal_dao import SucursalDao
 from app.dao.referenciales.funcionario.funcionario_dao import FuncionarioDao
 from app.dao.gestionar_compras.registrar_presupuesto.PresupuestoDao import PresupuestoCompraDao
 from app.dao.gestionar_compras.registrar_pedido_compras.pedido_de_compras_dao import PedidoDeComprasDao
+from app.dao.gestionar_compras.reglas_estado import error_solicitud_no_aprobada
 
 presumod = Blueprint('presumod', __name__, template_folder='templates')
 
@@ -87,6 +88,7 @@ def guardar_presupuesto():
         fecha_vencimiento = request.form.get('fecha_vencimiento')
         id_proveedor = int(request.form.get('id_proveedor') or 0)
         fun_id = int(request.form.get('fun_id') or 0)
+        id_sucursal = int(request.form.get('id_sucursal') or 0) or None
         estado = request.form.get('estado', 'PENDIENTE')
         id_solicitud_raw = request.form.get('id_solicitud')
         id_solicitud = int(id_solicitud_raw) if id_solicitud_raw else None
@@ -96,6 +98,15 @@ def guardar_presupuesto():
             detalles_list = json.loads(detalles_raw)
         except Exception:
             detalles_list = []
+
+        # Solo se cotiza una solicitud aprobada, y una sola vez por proveedor
+        msg = error_solicitud_no_aprobada(id_solicitud=id_solicitud)
+        if msg:
+            return jsonify({'success': False, 'error': msg}), 404
+        if not all(float(d.get('precio_unitario') or 0) > 0 for d in detalles_list):
+            return jsonify({'success': False, 'error': 'Todos los ítems deben tener el precio cotizado por el proveedor.'}), 400
+        if PresupuestoCompraDao().cotizacion_existente(id_solicitud, id_proveedor):
+            return jsonify({'success': False, 'error': 'Este proveedor ya cotizó esta solicitud. Anulá su cotización anterior para cargar otra.'}), 400
 
         from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_dto import PresupuestoCompraDto
         from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_detalle_dto import PresupuestoCompraDetalleDto
@@ -126,6 +137,7 @@ def guardar_presupuesto():
             fecha_vencimiento=fecha_vencimiento,
             id_proveedor=id_proveedor,
             fun_id=fun_id,
+            id_sucursal=id_sucursal,
             condicion_compra='',
             estado=estado,
             archivo=ruta_relativa,
@@ -149,3 +161,18 @@ def presupuesto_detalle(id):
     dao = PresupuestoCompraDao()
     presupuesto = dao.obtener_por_id(id)
     return render_template('presupuesto_detalle.html', presupuesto=presupuesto)
+
+
+# ================================
+# Editar un presupuesto (solo si está PENDIENTE)
+# ================================
+@presumod.route('/presupuesto-editar/<int:id>')
+def presupuesto_editar(id):
+    presupuesto = PresupuestoCompraDao().obtener_por_id(id)
+    if not presupuesto:
+        flash('El presupuesto no existe.', 'danger')
+        return redirect(url_for('presumod.presupuesto_index'))
+    if presupuesto['estado'] != 'PENDIENTE':
+        flash(f"Solo se puede modificar un presupuesto en estado PENDIENTE (este está {presupuesto['estado']}).", 'warning')
+        return redirect(url_for('presumod.presupuesto_index'))
+    return render_template('presupuesto_editar.html', presupuesto=presupuesto)

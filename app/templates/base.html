@@ -698,6 +698,7 @@
         <div class="collapse-inner mod-compra">
           {% if puede_ver(url_for('solmod.solicitud_index')) %}<a class="collapse-item" href="{{ url_for('solmod.solicitud_index') }}">R. Solicitud</a>{% endif %}
           {% if puede_ver(url_for('presumod.presupuesto_index')) %}<a class="collapse-item" href="{{ url_for('presumod.presupuesto_index') }}">R. Presupuesto</a>{% endif %}
+          {% if puede_ver(url_for('cmpmod.comparador_index')) %}<a class="collapse-item" href="{{ url_for('cmpmod.comparador_index') }}">Comparar Ofertas</a>{% endif %}
           {% if puede_ver(url_for('pdcmod.pedidos_index')) %}<a class="collapse-item" href="{{ url_for('pdcmod.pedidos_index') }}">Generar Pedido</a>{% endif %}
           {% if puede_ver(url_for('rm_mod.recepcion_mercaderia')) %}<a class="collapse-item" href="{{ url_for('rm_mod.recepcion_mercaderia') }}">Rec. Mercaderías</a>{% endif %}
           {% if puede_ver(url_for('facmod.facturas_index')) %}<a class="collapse-item" href="{{ url_for('facmod.facturas_index') }}">Facturas</a>{% endif %}

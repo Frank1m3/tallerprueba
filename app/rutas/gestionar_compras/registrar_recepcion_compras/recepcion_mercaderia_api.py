@@ -4,6 +4,7 @@ from app.dao.gestionar_compras.registrar_recepcion_compras.RecepcionCompraDao im
 from app.dao.gestionar_compras.registrar_recepcion_compras.dto.recepcion_de_compras_dto import RecepcionDto
 from app.dao.gestionar_compras.registrar_recepcion_compras.dto.recepcion_de_compra_detalle_dto import RecepcionDetalleDto
 from app import csrf
+from app.dao.gestionar_compras.reglas_estado import error_pedido_no_aprobado
 
 api_v1 = "/api/v1"
 modulo_compras = "/gestionar-compras"
@@ -15,6 +16,9 @@ rm_api = Blueprint('rm_api', __name__, url_prefix=f'{api_v1}{modulo_compras}/rec
 @rm_api.route('/pedido/<nro_pedido>', methods=['GET'])
 def get_pedido(nro_pedido):
     try:
+        msg = error_pedido_no_aprobado(nro=nro_pedido)
+        if msg:
+            return jsonify({'success': False, 'error': msg}), 404
         dao = RecepcionDao()
         pedido = dao.obtener_pedido_por_nro(nro_pedido)
         if not pedido:
@@ -36,6 +40,10 @@ def crear_recepcion():
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
+
+        msg = error_pedido_no_aprobado(id_pedido=data.get('id_pedido'))
+        if msg:
+            return jsonify({'success': False, 'error': msg}), 404
 
         id_funcionario = data.get('id_funcionario')
         if not id_funcionario:

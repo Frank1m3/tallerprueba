@@ -95,9 +95,7 @@ def crear_solicitud():
             id_item=d.get('id_item'),
             item_descripcion=d.get('item_descripcion', ''),
             unidad_med=d.get('unidad_med', 1),
-            cant_solicitada=d.get('cant_solicitada', 1),
-            stock=d.get('stock', 0),
-            precio=d.get('precio', 0)
+            cant_solicitada=d.get('cant_solicitada', 1)
         ) for d in data.get('detalle_solicitud', [])]
 
         fecha_raw = data.get('fecha_solicitud')
@@ -106,8 +104,14 @@ def crear_solicitud():
         else:
             fecha_solicitud = fecha_raw or date.today()
 
+        fecha_nec_raw = data.get('fecha_necesaria')
+        fecha_necesaria = datetime.strptime(fecha_nec_raw, "%Y-%m-%d").date() if fecha_nec_raw else None
+        if fecha_necesaria and fecha_necesaria < fecha_solicitud:
+            return jsonify({'success': False, 'error': 'La fecha necesaria no puede ser anterior a la fecha de la solicitud'}), 400
+
         solicitud_dto = SolicitudDto(
             fecha_solicitud=fecha_solicitud,
+            fecha_necesaria=fecha_necesaria,
             id_sucursal=data.get('id_sucursal'),
             id_deposito=data.get('id_deposito'),
             id_funcionario=data.get('id_funcionario'),
@@ -139,12 +143,17 @@ def modificar_solicitud_api(id_solicitud):
         ) for d in data['detalle_solicitud']]
 
         cabecera = data.get('cabecera')
+        if cabecera and cabecera.get('fecha_necesaria'):
+            cabecera['fecha_necesaria'] = datetime.strptime(cabecera['fecha_necesaria'], "%Y-%m-%d").date()
         if cabecera and 'fecha_solicitud' in cabecera:
             fecha_raw = cabecera['fecha_solicitud']
             if isinstance(fecha_raw, str):
                 cabecera['fecha_solicitud'] = datetime.strptime(fecha_raw, "%Y-%m-%d").date()
 
         dao = SolicitudCompraDao()
+        estado = dao.estado_de(id_solicitud)
+        if estado and estado != 'PENDIENTE':
+            return jsonify({'success': False, 'error': f'Solo se puede modificar una solicitud en estado PENDIENTE (esta está {estado}).'}), 400
         if dao.modificar_solicitud(id_solicitud, detalle_objs, cabecera):
             return jsonify({'success': True, 'message': 'Solicitud modificada correctamente'}), 200
         return jsonify({'success': False, 'error': 'No se pudo modificar la solicitud'}), 400

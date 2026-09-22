@@ -312,7 +312,7 @@ $(document).ready(function(){
                     $('#id_proveedor_global').val(id_proveedor_elegido);
                     actualizarTotal();
                 } else Swal.fire('Error',res.error||'Solicitud no encontrada','error');
-            });
+            }).fail(xhr => Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.error) || 'No se pudo cargar el documento.', 'error'));
         }
     });
 
@@ -331,6 +331,14 @@ $(document).ready(function(){
                     $('#cbo_funcionario,#cbo_sucursal,#cbo_deposito').prop('disabled',false);
                     $('#cbo_proveedor_filtro').val(p.id_proveedor).trigger('change').prop('disabled',true);
                     $('#hidden_id_pre_compra_cab').val(p.id_pre_compra_cab);
+                    // El presupuesto ya sabe para qué sucursal/depósito es: se cargan solos (siguen editables)
+                    if(p.id_funcionario){ $('#cbo_funcionario').val(p.id_funcionario).trigger('change'); }
+                    if(p.id_sucursal){
+                        $('#cbo_sucursal').val(p.id_sucursal).trigger('change');
+                        setTimeout(()=> { if(p.id_deposito){ $('#cbo_deposito').val(p.id_deposito); } }, 400);
+                    }
+                    if(p.fecha_necesaria){ $('#txt_fecha_necesaria').val(p.fecha_necesaria); }
+                    if(p.nro_solicitud){ $('#txt_nro_solicitud').val(p.nro_solicitud); }
                     detalle = []; tabla.clear().draw();
 
                     p.detalle.forEach(d=>{
@@ -356,7 +364,7 @@ $(document).ready(function(){
                     $('#id_proveedor_global').val(p.id_proveedor);
                     actualizarTotal();
                 } else Swal.fire('Error',res.error||'Presupuesto no encontrado','error');
-            });
+            }).fail(xhr => Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.error) || 'No se pudo cargar el documento.', 'error'));
         }
     });
 

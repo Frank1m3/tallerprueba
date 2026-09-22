@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request, current_app as app
 from app.dao.gestionar_compras.registrar_presupuesto.PresupuestoDao import PresupuestoCompraDao
 from app.dao.referenciales.proveedor.ProveedorDao import ProveedorDao
 from app import csrf
+from app.dao.gestionar_compras.reglas_estado import error_solicitud_no_aprobada
 
 presuapi = Blueprint('presuapi', __name__)
 
@@ -43,6 +44,13 @@ def crear_presupuesto():
         if not data:
             return jsonify({'success': False, 'error': 'Datos incompletos'}), 400
 
+        msg = error_solicitud_no_aprobada(nro=data.get('nro_solicitud'), id_solicitud=data.get('id_solicitud'))
+        if msg:
+            return jsonify({'success': False, 'error': msg}), 404
+
+        if PresupuestoCompraDao().cotizacion_existente(data.get('id_solicitud'), data.get('id_proveedor')):
+            return jsonify({'success': False, 'error': 'Este proveedor ya cotizó esta solicitud.'}), 400
+
         from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_dto import PresupuestoCompraDto
         from app.dao.gestionar_compras.registrar_presupuesto.dto.presupuesto_compra_detalle_dto import PresupuestoCompraDetalleDto
 
@@ -67,6 +75,7 @@ def crear_presupuesto():
         presupuesto_dto = PresupuestoCompraDto(
             cod_presupuesto=cod_presupuesto,
             fun_id=data.get('fun_id'),
+            id_sucursal=data.get('id_sucursal'),
             id_proveedor=data.get('id_proveedor'),
             fecha_emision=data.get('fecha_emision', date.today()),
             fecha_vencimiento=data.get('fecha_vencimiento'),
@@ -138,6 +147,9 @@ def buscar_mercaderia():
 @presuapi.route('/detalle-solicitud/<nro_solicitud>', methods=['GET'])
 def detalle_solicitud(nro_solicitud):
     try:
+        msg = error_solicitud_no_aprobada(nro=nro_solicitud)
+        if msg:
+            return jsonify(success=False, error=msg), 404
         dao = PresupuestoCompraDao()
         res = dao.obtener_solicitud_para_presupuesto(nro_solicitud)
         if not res.get('success'):
@@ -167,3 +179,20 @@ def cambiar_estado_presupuesto(id):
     except Exception as e:
         app.logger.error(f"Error al cambiar estado presupuesto {id}: {e}")
         return jsonify(success=False, error='Error interno'), 500
+
+
+# ================================
+# Modificar un presupuesto (solo si está PENDIENTE; lo valida el DAO)
+# ================================
+@presuapi.route('/presupuestos/<int:id>', methods=['PUT'])
+@csrf.exempt
+def modificar_presupuesto(id):
+    try:
+        data = request.get_json(silent=True) or {}
+        ok, error = PresupuestoCompraDao().modificar(id, data.get('fecha_vencimiento'), data.get('detalles') or [])
+        if ok:
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': error}), 400
+    except Exception as e:
+        app.logger.error(f"Error al modificar presupuesto {id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Ocurrió un error interno.'}), 500

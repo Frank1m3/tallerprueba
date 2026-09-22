@@ -60,6 +60,7 @@ Tipos de Impuesto
     $('#tbl').DataTable({
       language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
       ajax: API,
+      order: [[0, 'desc']],
       columns: [
         { data: 'id' },
         { data: 'descripcion' },

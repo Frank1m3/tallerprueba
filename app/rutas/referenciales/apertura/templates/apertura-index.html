@@ -448,7 +448,7 @@ function initDatatable(){
     ajax:{ url:'/api/v1/aperturas', dataSrc:'data' },
     order:[[0,'desc']], pageLength:15,
     columns:[
-      { data:'nro_turno',    render:v=>'<span class="nro-turno">#'+v+'</span>' },
+      { data:'nro_turno',    render:(v,tipo,fila)=> tipo==='sort'||tipo==='type' ? fila.id_apertura : '<span class="nro-turno">#'+v+'</span>' },
       { data:'clave_fiscal' },
       { data:'cajero' },
       { data:'monto_inicial', className:'text-end', render:v=>'<span class="monto-cell">'+fmtMonto(v)+'</span>' },

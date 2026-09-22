@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="page-header-actions">
-      <a href="{{ url_for('ocmod.ordenes_agregar') }}" class="btn-app btn-app-primary" target="_blank"><i class="fas fa-plus"></i> Generar OC</a>
+      <a href="{{ url_for('ocmod.ordenes_agregar') }}" class="btn-app btn-app-primary"><i class="fas fa-plus"></i> Generar OC</a>
     </div>
   </div>
   <div class="app-card">
@@ -57,7 +57,7 @@ $(document).ready(function(){
     });
 
     $('#tbl_ordenes').on('click','.ver', function(){
-        window.open('/gestionar-compras/registrar-orden-compras/ordenes/detalle/' + $(this).data('id'), '_blank');
+        window.location.href = '/gestionar-compras/registrar-orden-compras/ordenes/detalle/' + $(this).data('id');
     });
 
     $('#tbl_ordenes').on('click','.anular', function(){

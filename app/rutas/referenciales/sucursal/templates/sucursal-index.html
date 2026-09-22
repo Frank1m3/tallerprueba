@@ -86,6 +86,7 @@ const initDatatable = () => {
   $('#tbl').DataTable({
     language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
     ajax: apiBaseUrl,
+    order: [[0, 'desc']],
     columns: [
       { data: 'id_sucursal' },
       { data: 'descripcion' },

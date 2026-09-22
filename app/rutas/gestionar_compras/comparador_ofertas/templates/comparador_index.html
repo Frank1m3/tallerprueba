@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% block titulo %}Comparador de Ofertas{% endblock %}
+{% block contenido %}
+<style>
+  .cmp-tabla { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  .cmp-tabla th, .cmp-tabla td { padding: .65rem .8rem; border-bottom: 1px solid var(--pos-border); vertical-align: middle; }
+  .cmp-tabla thead th { background: var(--pos-surface-hover); font-size: .8rem; text-align: center; min-width: 170px; }
+  .cmp-tabla thead th:first-child, .cmp-tabla td:first-child { text-align: left; min-width: 220px; }
+  .cmp-tabla td.precio { text-align: center; font-variant-numeric: tabular-nums; }
+  .cmp-tabla td.precio.mejor { background: #ecfdf5; color: #065f46; font-weight: 800; }
+  .cmp-tabla td.precio.sin { color: var(--pos-text-muted); font-style: italic; }
+  .cmp-tabla tfoot td { font-weight: 800; background: var(--pos-surface-hover); text-align: center; }
+  .cmp-tabla tfoot td.mejor-total { background: #d1fae5; color: #065f46; }
+  .cmp-prov { font-weight: 800; font-size: .9rem; }
+  .cmp-meta { font-size: .72rem; color: var(--pos-text-muted); font-weight: 500; }
+  .cmp-ribbon { display: inline-block; margin-top: .3rem; background: #16a34a; color: #fff; border-radius: 999px; font-size: .68rem; font-weight: 800; padding: .1rem .55rem; }
+  .cmp-info { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+  .cmp-info div span { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; color: var(--pos-text-muted); font-weight: 700; }
+  .cmp-info div strong { font-size: .95rem; }
+</style>
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-balance-scale"></i></span>
+      <div>
+        <h2 class="page-header-title">Comparador de Ofertas</h2>
+        <p class="page-header-subtitle">Compará las cotizaciones de los proveedores para una solicitud y seleccioná la mejor.</p>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('presumod.presupuesto_agregar') }}" class="btn-app btn-app-secondary"><i class="fas fa-plus"></i> Cargar cotización</a>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="field-label" for="txt_solicitud">N° de solicitud</label>
+          <div class="input-group">
+            <input type="number" id="txt_solicitud" class="form-control" min="1" step="1" inputmode="numeric" placeholder="Ej.: 26" autofocus>
+            <div class="input-group-append">
+              <button type="button" id="btn_buscar" class="btn-app btn-app-primary"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8" id="info_solicitud" style="display:none">
+          <div class="cmp-info" id="cmp_info"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card" id="card_invitaciones" style="display:none">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-info)"></span> Cotizaciones solicitadas a proveedores
+      <button type="button" class="btn-app btn-app-primary btn-sm" id="btn_pedir" style="margin-left:auto"><i class="fas fa-paper-plane"></i> Pedir cotización</button>
+    </div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table class="table mb-0" id="tbl_inv">
+          <thead><tr><th>Proveedor</th><th>Estado</th><th>Límite</th><th>Respondió</th><th>Observaciones</th><th class="text-center">Acciones</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="app-card-footer" style="justify-content:flex-start">
+      <span class="cmp-meta"><i class="fas fa-info-circle"></i> Cada proveedor recibe un enlace personal para cargar sus precios, sin usuario. Su cotización aparece abajo apenas la envía.</span>
+    </div>
+  </div>
+
+  <div class="app-card" id="card_comparacion" style="display:none">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Cotizaciones recibidas
+      <span id="cmp_resumen" style="margin-left:auto;font-size:.78rem;color:var(--pos-text-muted);font-weight:500;text-transform:none;letter-spacing:0"></span>
+    </div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive" id="cmp_contenedor"></div>
+    </div>
+    <div class="app-card-footer" style="justify-content:flex-start">
+      <span class="cmp-meta"><i class="fas fa-info-circle"></i> El precio más bajo de cada producto se marca en verde. La «mejor oferta» es la de menor total entre las que cotizan todos los productos.</span>
+    </div>
+  </div>
+
+  <div class="app-card" id="card_vacio" style="display:none">
+    <div class="app-card-body dash-empty">
+      Todavía no hay cotizaciones para esta solicitud. Pedilas a tus proveedores con «Pedir cotización» (ellos cargan sus precios solos) o cargalas a mano en <a href="{{ url_for('presumod.presupuesto_agregar') }}">Presupuesto</a>.
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalPedir" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Pedir cotización — Solicitud <span id="pd_nro"></span></h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <label class="field-label">Proveedores a invitar</label>
+        <div id="pd_proveedores" style="max-height:230px;overflow:auto;border:1px solid var(--pos-border);border-radius:8px;padding:.4rem .8rem"></div>
+        <div class="row g-3 mt-2">
+          <div class="col-md-4">
+            <label class="field-label" for="pd_limite">Fecha límite para cotizar</label>
+            <input type="date" id="pd_limite" class="form-control">
+          </div>
+          <div class="col-md-8">
+            <label class="field-label" for="pd_mensaje">Mensaje para los proveedores (opcional)</label>
+            <input type="text" id="pd_mensaje" class="form-control" maxlength="500" placeholder="Ej.: precios puestos en depósito, pago a 30 días">
+          </div>
+        </div>
+        <div class="form-check mt-3">
+          <input type="checkbox" class="form-check-input" id="pd_correo" checked>
+          <label class="form-check-label" for="pd_correo">Enviar el enlace por correo a los proveedores que tengan email</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-app btn-app-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn-app btn-app-primary" id="pd_enviar"><i class="fas fa-paper-plane"></i> Enviar invitaciones</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const API = '/api/v1/gestionar-compras/comparador-ofertas';
+  const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  const fmt = n => Number(n || 0).toLocaleString('es-PY', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const ESTADO = { PENDIENTE: 'is-pendiente', APROBADO: 'is-aprobado', RECHAZADO: 'is-rechazado' };
+  const puedeSeleccionar = !window.PERMISOS || window.PERMISOS.editar;
+  let datos = null;
+  let nroActual = null, invitaciones = [];
+
+  // Busca la solicitud por su número y carga cotizaciones, invitaciones y comparación
+  function buscar(nro){
+    nro = parseInt(nro, 10);
+    if(!(nro > 0)){ return Swal.fire('Atención', 'Ingresá el número de la solicitud.', 'warning'); }
+    $('#txt_solicitud').val(nro);
+    $.getJSON(`${API}/solicitud/${nro}`, function(res){
+      datos = res.data; nroActual = nro;
+      $('#card_comparacion, #card_vacio').hide();
+      pintar(); cargarInvitaciones();
+    }).fail(xhr => {
+      datos = null; nroActual = null;
+      $('#card_comparacion, #card_vacio, #info_solicitud, #card_invitaciones').hide();
+      Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.error) || 'No se pudo cargar la solicitud.', 'error');
+    });
+  }
+  $('#btn_buscar').on('click', () => buscar($('#txt_solicitud').val()));
+  $('#txt_solicitud').on('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); buscar($('#txt_solicitud').val()); } });
+
+  function pintar(){
+    const s = datos.solicitud;
+    $('#cmp_info').html(`
+      <div><span>Solicitud</span><strong>#${s.nro_solicitud}</strong></div>
+      <div><span>Solicitante</span><strong>${s.solicitante}</strong></div>
+      <div><span>Sucursal</span><strong>${s.sucursal}</strong></div>
+      <div><span>Fecha necesaria</span><strong>${s.fecha_necesaria || '—'}</strong></div>`);
+    $('#info_solicitud').show();
+
+    if(!datos.ofertas.length){ $('#card_vacio').show(); return; }
+
+    let h = '<table class="cmp-tabla"><thead><tr><th>Producto</th>';
+    datos.ofertas.forEach(o => {
+      h += `<th><div class="cmp-prov">${o.proveedor}</div>
+              <div class="cmp-meta">${o.cod_presupuesto} · vence ${o.fecha_vencimiento || '—'}</div>
+              <span class="badge-app ${ESTADO[o.estado] || 'is-pendiente'}" style="margin-top:.3rem">${o.estado}</span>
+              ${datos.mejor_oferta === o.id_presupuesto ? '<div><span class="cmp-ribbon"><i class="fas fa-star"></i> Mejor oferta</span></div>' : ''}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    datos.items.forEach(it => {
+      h += `<tr><td><strong>${it.descripcion}</strong><div class="cmp-meta">Código ${it.item_code} · cantidad ${it.cantidad}</div></td>`;
+      datos.ofertas.forEach(o => {
+        const p = o.precios[it.item_code];
+        if(p === undefined){ h += '<td class="precio sin">sin cotizar</td>'; }
+        else { h += `<td class="precio ${p === datos.mejores_precios[it.item_code] ? 'mejor' : ''}">₲ ${fmt(p)}</td>`; }
+      });
+      h += '</tr>';
+    });
+    h += '</tbody><tfoot><tr><td>Total de la solicitud</td>';
+    datos.ofertas.forEach(o => {
+      const esMejor = datos.mejor_oferta === o.id_presupuesto;
+      h += `<td class="${esMejor ? 'mejor-total' : ''}">₲ ${fmt(o.total)}${o.completa ? '' : `<div class="cmp-meta" style="color:#b45309">Incompleta: faltan ${o.faltantes} producto(s)</div>`}</td>`;
+    });
+    h += '</tr>';
+    if(puedeSeleccionar){
+      h += '<tr><td>Selección</td>';
+      datos.ofertas.forEach(o => {
+        h += o.estado === 'APROBADO'
+          ? `<td><span class="badge-app is-aprobado">Seleccionada</span></td>`
+          : `<td><button type="button" class="btn-app btn-app-primary btn-sm btn-seleccionar" data-id="${o.id_presupuesto}"><i class="fas fa-check"></i> Seleccionar</button></td>`;
+      });
+      h += '</tr>';
+    }
+    h += '</tfoot></table>';
+    $('#cmp_contenedor').html(h);
+    $('#cmp_resumen').text(`${datos.ofertas.length} oferta(s) · ${datos.items.length} producto(s)`);
+    $('#card_comparacion').show();
+  }
+
+  $('#cmp_contenedor').on('click', '.btn-seleccionar', function(){
+    const id = Number($(this).data('id'));
+    const o = datos.ofertas.find(x => x.id_presupuesto === id);
+    const aviso = o.completa ? '' : `<p style="color:#b45309"><b>Atención:</b> esta oferta no cotiza ${o.faltantes} producto(s).</p>`;
+    Swal.fire({
+      title: `¿Seleccionar la oferta de ${o.proveedor}?`, icon: 'question', showCancelButton: true,
+      html: `${aviso}<p>Total: <b>₲ ${fmt(o.total)}</b>. Las demás cotizaciones de esta solicitud quedarán como <b>RECHAZADAS</b> y esta pasará a <b>APROBADA</b>.</p>`,
+      confirmButtonText: 'Sí, seleccionar', cancelButtonText: 'Cancelar', confirmButtonColor: '#2563eb'
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      fetch(`${API}/seleccionar/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF} })
+        .then(resp => resp.json().then(j => ({ ok: resp.ok, j })))
+        .then(({ ok, j }) => {
+          if(!ok || !j.success){ return Swal.fire('No se pudo seleccionar', (j && j.error) || 'Error', 'error'); }
+          Swal.fire({
+            icon: 'success', title: 'Oferta seleccionada',
+            html: `Siguiente paso: <b>Generar Pedido</b> → Origen «Desde Presupuesto» → código <b>${o.cod_presupuesto}</b>.`,
+            showCancelButton: true, confirmButtonText: 'Ir a Generar Pedido', cancelButtonText: 'Quedarme acá', confirmButtonColor: '#2563eb'
+          }).then(x => { if(x.isConfirmed) window.location.href = "{{ url_for('pdcmod.pedidos_agregar') }}"; });
+          buscar(nroActual);
+        });
+    });
+  });
+
+
+  // ================= Portal del proveedor: pedir cotización =================
+  const puedeInvitar = !window.PERMISOS || window.PERMISOS.insertar;
+  const puedeEditarInv = !window.PERMISOS || window.PERMISOS.editar;
+  const ESTADO_INV = { ENVIADA:['is-proceso','Enviada'], RESPONDIDA:['is-aprobado','Respondió'], VENCIDA:['is-anulado','Vencida'] };
+  const esc = t => $('<div>').text(t == null ? '' : t).html();
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const sumarDias = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+
+  function api(url, metodo, cuerpo){
+    return fetch(url, { method: metodo, headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF}, body: cuerpo ? JSON.stringify(cuerpo) : undefined })
+      .then(r => r.json().then(j => ({ ok: r.ok, j })));
+  }
+
+  function cargarInvitaciones(){
+    if(!nroActual){ $('#card_invitaciones').hide(); return; }
+    $.getJSON(`${API}/invitaciones/${nroActual}`, function(res){
+      invitaciones = res.data || [];
+      const $tb = $('#tbl_inv tbody').empty();
+      if(!invitaciones.length){
+        $tb.append('<tr><td colspan="6" class="dash-empty">Todavía no pediste cotización a ningún proveedor.</td></tr>');
+      }
+      invitaciones.forEach(i => {
+        const e = ESTADO_INV[i.estado] || ['is-pendiente', i.estado];
+        const acciones = (!puedeEditarInv || i.estado === 'RESPONDIDA' && i.estado_presupuesto && i.estado_presupuesto !== 'PENDIENTE') ? '' :
+          `<button class="btn-app btn-app-secondary btn-sm btn-reenviar" data-id="${i.id_invitacion}" title="Genera un enlace nuevo y extiende el plazo"><i class="fas fa-redo"></i> Reenviar</button>` +
+          (i.estado === 'RESPONDIDA' ? '' : ` <button class="btn-app btn-app-secondary btn-sm btn-cancelar-inv" data-id="${i.id_invitacion}"><i class="fas fa-times"></i> Cancelar</button>`);
+        $tb.append(`<tr><td><strong>${esc(i.proveedor)}</strong><div class="cmp-meta">${esc(i.email || 'sin correo')}</div></td>
+          <td><span class="badge-app ${e[0]}">${e[1]}</span></td><td>${i.fecha_limite}</td><td>${i.fecha_respuesta || '—'}</td>
+          <td style="max-width:260px">${esc(i.observaciones) || '<span class="cmp-meta">—</span>'}</td><td class="text-center">${acciones}</td></tr>`);
+      });
+      $('#btn_pedir').toggle(puedeInvitar);
+      $('#card_invitaciones').show();
+    });
+  }
+
+  // ---- abrir el formulario ----
+  $('#btn_pedir').on('click', function(){
+    $('#pd_nro').text('#' + nroActual);
+    const necesaria = datos && datos.solicitud.fecha_necesaria;
+    let limite = sumarDias(5); if(necesaria && necesaria < limite && necesaria >= sumarDias(0)) limite = necesaria;
+    $('#pd_limite').val(limite).attr('min', sumarDias(0));
+    $('#pd_mensaje').val('');
+    $.getJSON(API + '/proveedores-invitables', function(res){
+      const yaInvitados = new Set(invitaciones.map(i => i.id_proveedor));
+      const yaCotizaron = new Set(((datos && datos.ofertas) || []).map(o => o.id_proveedor));
+      $('#pd_proveedores').html((res.data || []).map(p => {
+        const motivo = yaInvitados.has(p.id_proveedor) ? 'ya invitado' : (yaCotizaron.has(p.id_proveedor) ? 'ya cotizó' : '');
+        return `<div class="form-check" style="padding:.35rem 0 .35rem 1.6rem">
+          <input type="checkbox" class="form-check-input pd-prov" id="pv${p.id_proveedor}" value="${p.id_proveedor}" ${motivo ? 'disabled' : ''}>
+          <label class="form-check-label" for="pv${p.id_proveedor}"><strong>${esc(p.nombre)}</strong>
+            <span class="cmp-meta">— ${p.email ? esc(p.email) : 'sin correo (podés copiar el enlace)'}${motivo ? ' · <b>' + motivo + '</b>' : ''}</span></label></div>`;
+      }).join(''));
+      $('#modalPedir').modal('show');
+    });
+  });
+
+  // ---- enviar ----
+  function copiar(texto, boton){
+    const ok = () => { boton.textContent = '¡Copiado!'; setTimeout(() => boton.textContent = 'Copiar enlace', 1500); };
+    if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(texto).then(ok); }
+    else { const t = document.createElement('textarea'); t.value = texto; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); ok(); }
+  }
+  function mostrarResultados(lista){
+    const filas = lista.map(r => {
+      if(r.error) return `<div style="text-align:left;padding:.5rem 0;border-bottom:1px solid #eee"><b>${esc(r.proveedor)}</b> — <span style="color:#b91c1c">${esc(r.error)}</span></div>`;
+      const estado = r.enviado ? '<span style="color:#16a34a">✔ Correo enviado a ' + esc(r.email) + '</span>'
+        : (r.email ? '<span style="color:#b45309">No se pudo enviar el correo: copiá el enlace y mandáselo</span>' : '<span style="color:#b45309">Sin correo: copiá el enlace y mandáselo por WhatsApp u otro medio</span>');
+      return `<div style="text-align:left;padding:.5rem 0;border-bottom:1px solid #eee"><b>${esc(r.proveedor)}</b><br>${estado}
+        <div style="display:flex;gap:.4rem;margin-top:.3rem"><input readonly value="${esc(r.link)}" style="flex:1;font-size:.75rem;padding:.3rem;border:1px solid #cbd5e1;border-radius:6px">
+        <button type="button" class="swal-copiar" data-link="${esc(r.link)}" style="border:1px solid #2563eb;color:#2563eb;background:#fff;border-radius:6px;padding:.3rem .6rem;font-size:.75rem;cursor:pointer">Copiar enlace</button></div></div>`;
+    }).join('');
+    Swal.fire({ title: 'Invitaciones creadas', html: `<div style="max-height:340px;overflow:auto">${filas}</div>`, width: 640, confirmButtonColor: '#2563eb', confirmButtonText: 'Listo',
+      didOpen: el => el.querySelectorAll('.swal-copiar').forEach(b => b.addEventListener('click', () => copiar(b.dataset.link, b))) });
+  }
+
+  $('#pd_enviar').on('click', function(){
+    const proveedores = $('.pd-prov:checked').map((_, e) => Number(e.value)).get();
+    if(!proveedores.length){ return Swal.fire('Atención', 'Elegí al menos un proveedor.', 'warning'); }
+    const $b = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando…');
+    api(API + '/invitaciones', 'POST', { nro_solicitud: Number(nroActual), proveedores, fecha_limite: $('#pd_limite').val(), mensaje: $('#pd_mensaje').val(), enviar_correo: $('#pd_correo').is(':checked') })
+      .then(({ ok, j }) => {
+        if(!ok || !j.success){ return Swal.fire('No se pudo', (j && j.error) || 'Error', 'error'); }
+        $('#modalPedir').modal('hide'); mostrarResultados(j.data); cargarInvitaciones();
+      })
+      .finally(() => $b.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar invitaciones'));
+  });
+
+  // ---- reenviar / cancelar ----
+  $('#tbl_inv').on('click', '.btn-reenviar', function(){
+    const id = Number($(this).data('id')), inv = invitaciones.find(i => i.id_invitacion === id);
+    Swal.fire({ title: `Reenviar a ${inv.proveedor}`, icon: 'question', showCancelButton: true, confirmButtonText: 'Reenviar', cancelButtonText: 'Cancelar', confirmButtonColor: '#2563eb',
+      html: `<p style="text-align:left;font-size:.9rem">Se genera un <b>enlace nuevo</b> (el anterior deja de funcionar) y se extiende el plazo.</p>
+             <label style="display:block;text-align:left;font-size:.8rem;font-weight:600">Nueva fecha límite</label>
+             <input id="sw_limite" type="date" class="swal2-input" style="width:100%;margin:.2rem 0 .6rem" min="${sumarDias(0)}" value="${sumarDias(5)}">
+             <label style="display:flex;gap:.4rem;align-items:center;font-size:.85rem"><input id="sw_correo" type="checkbox" checked> Enviar por correo</label>`,
+      preConfirm: () => ({ fecha_limite: document.getElementById('sw_limite').value, enviar_correo: document.getElementById('sw_correo').checked })
+    }).then(r => {
+      if(!r.isConfirmed) return;
+      api(`${API}/invitaciones/${id}/reenviar`, 'PUT', r.value).then(({ ok, j }) => {
+        if(!ok || !j.success){ return Swal.fire('No se pudo', (j && j.error) || 'Error', 'error'); }
+        mostrarResultados([{ proveedor: j.data.proveedor, email: j.data.email, link: j.data.link, enviado: j.data.enviado }]); cargarInvitaciones();
+      });
+    });
+  });
+
+  $('#tbl_inv').on('click', '.btn-cancelar-inv', function(){
+    const id = Number($(this).data('id')), inv = invitaciones.find(i => i.id_invitacion === id);
+    Swal.fire({ title: `¿Cancelar la invitación a ${inv.proveedor}?`, text: 'Su enlace dejará de funcionar.', icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar', cancelButtonText: 'No', confirmButtonColor: '#dc2626' }).then(r => {
+      if(!r.isConfirmed) return;
+      api(`${API}/invitaciones/${id}/cancelar`, 'PUT').then(({ ok, j }) => {
+        if(!ok || !j.success){ return Swal.fire('No se pudo', (j && j.error) || 'Error', 'error'); }
+        cargarInvitaciones();
+      });
+    });
+  });
+
+  const preseleccion = new URLSearchParams(location.search).get('solicitud');
+  if(preseleccion){ buscar(preseleccion); }
+});
+</script>
+{% endblock %}

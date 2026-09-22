@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="page-header-actions">
-      <a href="{{ url_for('facmod.factura_agregar') }}" target="_blank" class="btn-app btn-app-primary"><i class="fas fa-plus"></i> Nueva Factura</a>
+      <a href="{{ url_for('facmod.factura_agregar') }}" class="btn-app btn-app-primary"><i class="fas fa-plus"></i> Nueva Factura</a>
     </div>
   </div>
 
@@ -57,7 +57,7 @@ $(document).ready(function(){
       dataSrc: 'data'
     },
     columns: [
-      { data: 'nro_factura' },
+      { data: 'nro_factura', render: (v, tipo, fila) => tipo === 'sort' || tipo === 'type' ? fila.id_factura : v },
       { data: 'proveedor' },
       { data: 'nro_recepcion', render: v => v ? `#${v}` : '—' },
       { data: 'fecha_emision' },

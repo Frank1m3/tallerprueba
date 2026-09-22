@@ -47,6 +47,8 @@
           <option value="CLAVE_RESTABLECIDA">Contraseña restablecida</option>
           <option value="ACCESO_DENEGADO">Acceso denegado (sin permiso)</option>
           <option value="CUENTA_ACTUALIZADA">Cuenta actualizada/desbloqueada</option>
+          <option value="PORTAL_COTIZACION_ENVIADA">Portal: cotización recibida</option>
+          <option value="PORTAL_TOKEN_INVALIDO">Portal: enlace inválido</option>
         </select>
         <input type="text" id="f_usuario" class="form-control" placeholder="Usuario" style="width:150px;">
         <input type="text" id="f_ip" class="form-control" placeholder="IP" style="width:140px;">
@@ -81,7 +83,8 @@ $(document).ready(function(){
     '2FA_FALLIDO':['is-bajo','2FA incorrecto'], '2FA_EXPIRADO':['is-atencion','2FA expirado'],
     LOGOUT:['is-inactivo','Cierre de sesión'], RECUPERACION_SOLICITADA:['is-proceso','Recuperación solicitada'],
     RECUPERACION_FALLIDA:['is-bajo','Recuperación fallida'], CLAVE_RESTABLECIDA:['is-normal','Clave restablecida'],
-    ACCESO_DENEGADO:['is-critico','Acceso denegado'], CUENTA_ACTUALIZADA:['is-proceso','Cuenta actualizada']
+    ACCESO_DENEGADO:['is-critico','Acceso denegado'], CUENTA_ACTUALIZADA:['is-proceso','Cuenta actualizada'],
+    PORTAL_COTIZACION_ENVIADA:['is-normal','Portal: cotización'], PORTAL_TOKEN_INVALIDO:['is-bajo','Portal: enlace inválido']
   };
   const filtros = () => ({
     desde: $('#f_desde').val() || undefined, hasta: $('#f_hasta').val() || undefined,

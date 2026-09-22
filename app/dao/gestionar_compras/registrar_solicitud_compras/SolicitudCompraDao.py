@@ -13,7 +13,7 @@ class SolicitudCompraDao:
         try:
             cur.execute("""
                 SELECT id_solicitud, nro_solicitud, fecha_solicitud,
-                       solicitante, sucursal, deposito, estado
+                       solicitante, sucursal, deposito, estado, fecha_necesaria
                 FROM v_com_solicitud
                 ORDER BY nro_solicitud DESC
             """)
@@ -24,7 +24,8 @@ class SolicitudCompraDao:
                 'solicitante': f[3] or '',
                 'sucursal': f[4] or '',
                 'deposito': f[5] or '',
-                'estado': f[6]
+                'estado': f[6],
+                'fecha_necesaria': f[7].strftime("%Y-%m-%d") if f[7] else None
             } for f in cur.fetchall()]
         except Exception as e:
             app.logger.error(f"Error al obtener solicitudes: {str(e)}")
@@ -109,12 +110,13 @@ class SolicitudCompraDao:
                 'id_deposito': cab[7],
                 'deposito_nombre': cab[8] or '',
                 'estado': cab[9],
+                'fecha_necesaria': None,
                 'detalles': [],
                 'depositos': []
             }
 
             cur.execute("""
-                SELECT d.id_item, i.descripcion AS nombre_producto, d.unidad_medida, d.cantidad
+                SELECT d.id_item, i.descripcion AS nombre_producto, d.unidad_medida, d.cantidad, d.fecha_necesaria
                 FROM solicitud_compra_det d
                 LEFT JOIN item i ON i.id_item = d.id_item
                 WHERE d.id_solicitud = %s
@@ -126,6 +128,8 @@ class SolicitudCompraDao:
                     'unidad_med': f[2],
                     'cantidad': float(f[3])
                 })
+                if f[4] and (solicitud['fecha_necesaria'] is None or f[4].strftime("%Y-%m-%d") < solicitud['fecha_necesaria']):
+                    solicitud['fecha_necesaria'] = f[4].strftime("%Y-%m-%d")
 
             cur.execute("""
                 SELECT id_deposito, descripcion FROM deposito
@@ -144,31 +148,42 @@ class SolicitudCompraDao:
     # ================================
     # Modificar solicitud (sin proveedor en cabecera)
     # ================================
+    def estado_de(self, id_solicitud):
+        conexion = Conexion(); con = conexion.getConexion(); cur = con.cursor()
+        try:
+            cur.execute("SELECT estado::text FROM solicitud_compra_cab WHERE id_solicitud = %s", (id_solicitud,))
+            f = cur.fetchone()
+            return f[0] if f else None
+        finally:
+            cur.close(); con.close()
+
     def modificar_solicitud(self, id_solicitud, detalles, cabecera=None):
         conexion = Conexion(); con = conexion.getConexion(); cur = con.cursor()
         try:
-            cur.execute("SELECT id_solicitud FROM solicitud_compra_cab WHERE id_solicitud = %s", (id_solicitud,))
-            if not cur.fetchone():
+            cur.execute("SELECT estado::text FROM solicitud_compra_cab WHERE id_solicitud = %s", (id_solicitud,))
+            fila = cur.fetchone()
+            if not fila or fila[0] != 'PENDIENTE':      # solo se modifican las pendientes
                 return False
 
-            if cabecera:
-                cur.execute("""
-                    UPDATE solicitud_compra_cab
-                    SET id_sucursal=%s, id_deposito=%s, fecha_solicitud=%s
-                    WHERE id_solicitud=%s
-                """, (
-                    cabecera.get('id_sucursal'),
-                    cabecera.get('id_deposito'),
-                    cabecera.get('fecha_solicitud'),
-                    id_solicitud
-                ))
+            cabecera = cabecera or {}
+            campos = {k: cabecera[k] for k in ('id_sucursal', 'id_deposito', 'fecha_solicitud') if k in cabecera}
+            if campos:
+                cur.execute(
+                    "UPDATE solicitud_compra_cab SET " + ", ".join(f"{k}=%s" for k in campos) + " WHERE id_solicitud=%s",
+                    (*campos.values(), id_solicitud))
+
+            # se conserva la unidad de medida de cada ítem y la fecha necesaria de la solicitud
+            cur.execute("SELECT id_item, unidad_medida FROM solicitud_compra_det WHERE id_solicitud = %s", (id_solicitud,))
+            unidades = dict(cur.fetchall())
+            cur.execute("SELECT MIN(fecha_necesaria) FROM solicitud_compra_det WHERE id_solicitud = %s", (id_solicitud,))
+            fecha_necesaria = cabecera.get('fecha_necesaria') or cur.fetchone()[0]
 
             cur.execute("DELETE FROM solicitud_compra_det WHERE id_solicitud = %s", (id_solicitud,))
             for det in detalles:
                 cur.execute("""
-                    INSERT INTO solicitud_compra_det (id_solicitud, id_item, cantidad)
-                    VALUES (%s, %s, %s)
-                """, (id_solicitud, det.id_item, det.cant_solicitada))
+                    INSERT INTO solicitud_compra_det (id_solicitud, id_item, cantidad, unidad_medida, fecha_necesaria)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (id_solicitud, det.id_item, det.cant_solicitada, unidades.get(det.id_item, 1), fecha_necesaria))
 
             con.commit()
             return True
@@ -206,8 +221,8 @@ class SolicitudCompraDao:
         """
         insert_detalle = """
         INSERT INTO solicitud_compra_det
-        (id_solicitud, id_item, cantidad, unidad_medida)
-        VALUES (%s, %s, %s, %s)
+        (id_solicitud, id_item, cantidad, unidad_medida, fecha_necesaria)
+        VALUES (%s, %s, %s, %s, %s)
         """
         conexion = Conexion(); con = conexion.getConexion()
         con.autocommit = False
@@ -223,7 +238,8 @@ class SolicitudCompraDao:
             id_solicitud = cur.fetchone()[0]
             for det in solicitud_dto.detalle_solicitud:
                 cur.execute(insert_detalle, (
-                    id_solicitud, det.id_item, det.cant_solicitada, det.unidad_med
+                    id_solicitud, det.id_item, det.cant_solicitada, det.unidad_med,
+                    solicitud_dto.fecha_necesaria
                 ))
             con.commit()
             return True

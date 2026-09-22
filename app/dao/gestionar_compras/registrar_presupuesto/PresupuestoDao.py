@@ -25,14 +25,31 @@ class PresupuestoCompraDao:
             con.close()
 
     # ================================
+    # Una sola cotización vigente por proveedor y solicitud
+    # ================================
+    def cotizacion_existente(self, id_solicitud, id_proveedor) -> bool:
+        if not id_solicitud or not id_proveedor:
+            return False
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("""SELECT 1 FROM presupuesto_compra_cab
+                           WHERE id_solicitud = %s AND id_proveedor = %s AND estado <> 'ANULADO' LIMIT 1""",
+                        (id_solicitud, id_proveedor))
+            return cur.fetchone() is not None
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
     # Insertar cabecera + detalles
     # ================================
     def insertar(self, dto: PresupuestoCompraDto) -> bool:
         sql_cab = """
             INSERT INTO presupuesto_compra_cab
             (cod_presupuesto, fun_id, id_proveedor, fecha_emision,
-             fecha_vencimiento, condicion_compra, estado, archivo, id_solicitud)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+             fecha_vencimiento, condicion_compra, estado, archivo, id_solicitud, id_sucursal)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             RETURNING id_pre_compra_cab
         """
         sql_det = """
@@ -53,7 +70,8 @@ class PresupuestoCompraDao:
                 dto.condicion_compra if dto.condicion_compra else None,
                 dto.estado,
                 dto.archivo,
-                dto.id_solicitud
+                dto.id_solicitud,
+                dto.id_sucursal or None
             ))
             id_cab = cur.fetchone()[0]
 
@@ -85,9 +103,15 @@ class PresupuestoCompraDao:
                c.fecha_emision,
                p.prov_nombre,
                c.estado,
-               c.archivo
+               c.archivo,
+               sc.nro_solicitud,
+               s.descripcion,
+               d.descripcion
         FROM presupuesto_compra_cab c
         LEFT JOIN proveedor p ON p.id_proveedor = c.id_proveedor
+        LEFT JOIN solicitud_compra_cab sc ON sc.id_solicitud = c.id_solicitud
+        LEFT JOIN sucursal s ON s.id_sucursal = c.id_sucursal
+        LEFT JOIN deposito d ON d.id_deposito = c.id_deposito
         ORDER BY c.id_pre_compra_cab DESC
         """
         con = Conexion().getConexion()
@@ -101,7 +125,10 @@ class PresupuestoCompraDao:
                     fecha_emision=r[2].strftime("%Y-%m-%d") if r[2] else None,
                     proveedor=r[3],
                     estado=r[4],
-                    archivo=r[5]
+                    archivo=r[5],
+                    nro_solicitud=r[6],
+                    sucursal=r[7] or '',
+                    deposito=r[8] or ''
                 )
                 for r in cur.fetchall()
             ]
@@ -295,6 +322,49 @@ class PresupuestoCompraDao:
             con.rollback()
             app.logger.error(f"Error cambiar estado presupuesto: {e}")
             return False, str(e)
+        finally:
+            cur.close()
+            con.close()
+
+    # ================================
+    # Modificar un presupuesto (solo mientras está PENDIENTE)
+    # ================================
+    def modificar(self, id_pre_compra_cab, fecha_vencimiento, detalles):
+        """Devuelve (ok, mensaje_de_error)."""
+        if not detalles:
+            return False, 'El presupuesto debe tener al menos un producto.'
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT estado FROM presupuesto_compra_cab WHERE id_pre_compra_cab = %s", (id_pre_compra_cab,))
+            f = cur.fetchone()
+            if not f:
+                return False, 'El presupuesto no existe.'
+            if f[0] != 'PENDIENTE':
+                return False, f'Solo se puede modificar un presupuesto en estado PENDIENTE (este está {f[0]}).'
+
+            cur.execute("UPDATE presupuesto_compra_cab SET fecha_vencimiento = %s WHERE id_pre_compra_cab = %s",
+                        (fecha_vencimiento or None, id_pre_compra_cab))
+            cur.execute("DELETE FROM presupuesto_compra_det WHERE id_pre_compra_cab = %s", (id_pre_compra_cab,))
+            vistos = set()
+            for d in detalles:
+                codigo = str(d.get('item_code') or '')
+                cant, precio = float(d.get('cantidad') or 0), float(d.get('precio_unitario') or 0)
+                if not codigo or cant <= 0 or precio <= 0:
+                    con.rollback()
+                    return False, 'Todos los productos deben tener cantidad y precio mayores a cero.'
+                if codigo in vistos:
+                    con.rollback()
+                    return False, f'El producto {codigo} está repetido.'
+                vistos.add(codigo)
+                cur.execute("""INSERT INTO presupuesto_compra_det (id_pre_compra_cab, item_code, cantidad, precio_unitario)
+                               VALUES (%s, %s, %s, %s)""", (id_pre_compra_cab, codigo, cant, precio))
+            con.commit()
+            return True, None
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al modificar presupuesto {id_pre_compra_cab}: {e}")
+            return False, 'No se pudo modificar el presupuesto.'
         finally:
             cur.close()
             con.close()

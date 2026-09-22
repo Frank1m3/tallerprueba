@@ -26,6 +26,10 @@ class Conexion:
         cur = self.con.cursor()
         cur.execute("SELECT set_config('myapp.usuario_actual', %s, false)", (usuario or 'sistema',))
         cur.close()
+        # Cierra la transacción implícita que abrió la consulta: los DAO que luego hacen
+        # con.autocommit = False fallan con "set_session cannot be used inside a transaction".
+        # El valor de set_config (a nivel de sesión) se mantiene tras el commit.
+        self.con.commit()
 
     """getConexion
 

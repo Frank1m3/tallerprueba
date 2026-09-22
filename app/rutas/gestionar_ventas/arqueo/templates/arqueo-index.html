@@ -460,7 +460,7 @@ const tabla = $('#tblArqueos').DataTable({
         return `<span class="dif-neu">${fmt(0)}</span>`;
       }
     },
-    { data:'fecha_arqueo' },
+    { data:'fecha_arqueo', render:(v,tipo,fila)=> tipo==='sort'||tipo==='type' ? fila.id_arqueo : v },
     { data:'estado', className:'text-center',
       render:v=>{
         const cls=v==='finalizado'?'badge-finalizado':'badge-borrador';

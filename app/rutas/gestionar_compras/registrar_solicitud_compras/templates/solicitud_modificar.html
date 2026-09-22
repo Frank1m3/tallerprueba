@@ -25,6 +25,7 @@
         <div class="col-md-4"><label class="field-label">Sucursal</label><input type="text" class="form-control" value="{{ solicitud.sucursal_nombre }}" readonly></div>
         <div class="col-md-4"><label class="field-label">Depósito</label><input type="text" class="form-control" value="{{ solicitud.deposito_nombre }}" readonly></div>
         <div class="col-md-4"><label class="field-label">Fecha</label><input type="date" class="form-control" value="{{ solicitud.fecha_solicitud }}" readonly></div>
+        <div class="col-md-4"><label class="field-label">Fecha necesaria</label><input type="date" id="inputFechaNecesaria" class="form-control" value="{{ solicitud.fecha_necesaria or '' }}" min="{{ solicitud.fecha_solicitud }}"></div>
         <div class="col-md-4"><label class="field-label">Estado</label><input type="text" class="form-control" value="{{ solicitud.estado }}" readonly></div>
       </div>
     </div>
@@ -124,7 +125,8 @@ $(document).ready(function(){
     if(detalle_solicitud.length===0){ return Swal.fire({title:'Sin ítems', text:'El detalle no puede estar vacío.', icon:'error', confirmButtonColor:'#1a56db'}); }
     const btn = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando…');
     fetch(`/api/v1/gestionar-compras/registrar-solicitud-compras/modificar/${id_solicitud}`, {
-      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({detalle_solicitud})
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({detalle_solicitud, cabecera: $('#inputFechaNecesaria').val() ? {fecha_necesaria: $('#inputFechaNecesaria').val()} : undefined})
     })
     .then(r => { if(r.status===404) throw new Error('Ruta API no encontrada (404)'); return r.json(); })
     .then(data => {

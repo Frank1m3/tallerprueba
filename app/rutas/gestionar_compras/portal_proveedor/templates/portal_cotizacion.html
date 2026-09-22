@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Solicitud de cotización — Gran Vía Supermercados</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <style>
+    :root { --azul:#2563eb; --azul-osc:#1e40af; --borde:#e5e7eb; --texto:#1f2937; --muted:#6b7280; --verde:#16a34a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background:#f5f7fa; color:var(--texto); line-height:1.5; }
+    header { background:var(--azul-osc); color:#fff; padding:1rem 1.2rem; display:flex; align-items:center; gap:.8rem; }
+    header img { width:44px; height:44px; background:#fff; border-radius:10px; padding:3px; object-fit:contain; }
+    header h1 { font-size:1.05rem; margin:0; font-weight:700; }
+    header small { opacity:.85; display:block; font-weight:400; }
+    main { max-width:820px; margin:1.2rem auto; padding:0 1rem 3rem; }
+    .tarjeta { background:#fff; border:1px solid var(--borde); border-radius:12px; padding:1.2rem; margin-bottom:1rem; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+    h2 { font-size:1.15rem; margin:0 0 .6rem; }
+    .datos { display:flex; flex-wrap:wrap; gap:1.2rem; margin:.6rem 0 0; }
+    .datos div span { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); font-weight:700; }
+    .datos div strong { font-size:.98rem; }
+    .aviso { border-left:4px solid; border-radius:8px; padding:.7rem 1rem; margin:.8rem 0; }
+    .aviso.info { background:#eff6ff; border-color:var(--azul); }
+    .aviso.ok { background:#ecfdf5; border-color:var(--verde); }
+    .aviso.mal { background:#fef2f2; border-color:#dc2626; }
+    .aviso.nota { background:#f8fafc; border-color:#94a3b8; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:.65rem .5rem; border-bottom:1px solid var(--borde); text-align:left; vertical-align:middle; }
+    th { font-size:.75rem; text-transform:uppercase; color:var(--muted); letter-spacing:.03em; }
+    td.num, th.num { text-align:right; white-space:nowrap; }
+    td small { color:var(--muted); display:block; }
+    input[type=number], input[type=date], textarea { width:100%; padding:.6rem .7rem; border:1px solid #cbd5e1; border-radius:8px; font-size:1rem; font-family:inherit; }
+    input.precio { text-align:right; max-width:170px; margin-left:auto; display:block; }
+    input:focus, textarea:focus { outline:3px solid #bfdbfe; border-color:var(--azul); }
+    input[readonly], textarea[readonly] { background:#f1f5f9; }
+    label { font-weight:600; font-size:.88rem; display:block; margin-bottom:.25rem; }
+    .fila-campos { display:grid; grid-template-columns: 1fr 2fr; gap:1rem; margin-top:1rem; }
+    .total { text-align:right; font-size:1.15rem; font-weight:800; margin-top:.8rem; }
+    button.enviar { background:var(--azul); color:#fff; border:0; border-radius:10px; padding:.85rem 1.6rem; font-size:1rem; font-weight:700; cursor:pointer; margin-top:1rem; width:100%; }
+    button.enviar:hover { background:var(--azul-osc); }
+    button.enviar:disabled { opacity:.6; cursor:wait; }
+    #msg_error { color:#b91c1c; font-weight:600; margin-top:.7rem; }
+    footer { text-align:center; color:var(--muted); font-size:.78rem; padding:1rem; }
+    @media (max-width:640px) {
+      .fila-campos { grid-template-columns: 1fr; }
+      thead { display:none; }
+      tr { display:block; border-bottom:1px solid var(--borde); padding:.6rem 0; }
+      td { display:flex; justify-content:space-between; align-items:center; border:0; padding:.25rem 0; }
+      td.prod { display:block; font-weight:700; }
+      td[data-et]::before { content: attr(data-et); color:var(--muted); font-size:.78rem; font-weight:700; margin-right:.6rem; }
+      input.precio { max-width:150px; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <img src="{{ url_for('static', filename='img/GV.png') }}" alt="Gran Vía">
+  <h1>Gran Vía Supermercados<small>Solicitud de cotización</small></h1>
+</header>
+<main>
+
+{% if bloqueado %}
+  <div class="tarjeta"><h2>Demasiados intentos</h2><p>Por seguridad, este acceso está bloqueado temporalmente. Probá de nuevo en unos minutos.</p></div>
+
+{% elif not datos %}
+  <div class="tarjeta">
+    <h2>Enlace no válido</h2>
+    <p>El enlace que usaste no existe o ya no está disponible. Revisá que lo hayas copiado completo o pedile a Gran Vía que te envíe uno nuevo.</p>
+  </div>
+
+{% else %}
+  {% set estado = datos.portal_estado %}
+  <div class="tarjeta">
+    <h2>Hola, {{ datos.proveedor }}</h2>
+    <p style="margin:0">Gran Vía Supermercados te solicita tu mejor precio para los productos de esta lista. Completá el precio unitario y enviá tu cotización.</p>
+    <div class="datos">
+      <div><span>Necesitamos la mercadería para</span><strong>{{ datos.solicitud.fecha_necesaria or 'a coordinar' }}</strong></div>
+      <div><span>Entrega en</span><strong>{{ datos.solicitud.sucursal or '—' }}</strong></div>
+      <div><span>Podés cotizar hasta</span><strong>{{ datos.fecha_limite[8:10] }}/{{ datos.fecha_limite[5:7] }}/{{ datos.fecha_limite[0:4] }}</strong></div>
+    </div>
+    {% if datos.mensaje %}<div class="aviso nota"><strong>Mensaje de Gran Vía:</strong> {{ datos.mensaje }}</div>{% endif %}
+
+    {% if estado == 'CANCELADA' %}
+      <div class="aviso mal"><strong>Esta solicitud de cotización ya no está vigente.</strong> Si tenés dudas, comunicate con Gran Vía.</div>
+    {% elif estado == 'EVALUADA' %}
+      <div class="aviso ok"><strong>¡Gracias!</strong> Tu cotización ya fue evaluada por Gran Vía y no admite cambios.</div>
+    {% elif estado == 'VENCIDA' %}
+      {% if datos.fecha_respuesta %}
+        <div class="aviso ok"><strong>El plazo terminó.</strong> Recibimos tu cotización el {{ datos.fecha_respuesta }}. Ya no admite cambios.</div>
+      {% else %}
+        <div class="aviso mal"><strong>El plazo para cotizar terminó.</strong> Si todavía querés participar, comunicate con Gran Vía para que te habiliten un nuevo enlace.</div>
+      {% endif %}
+    {% elif datos.fecha_respuesta %}
+      <div class="aviso ok"><strong>Ya enviaste tu cotización</strong> el {{ datos.fecha_respuesta }}. Podés modificarla y volver a enviarla hasta la fecha límite.</div>
+    {% endif %}
+  </div>
+
+  {% if estado != 'CANCELADA' and not (estado == 'VENCIDA' and not datos.fecha_respuesta) %}
+  {% set editable = (estado == 'ABIERTA') %}
+  <div class="tarjeta">
+    <h2>Productos solicitados</h2>
+    <table id="tabla_items">
+      <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unitario (₲)</th><th class="num">Subtotal</th></tr></thead>
+      <tbody>
+      {% for it in datos.productos %}
+        {% set p = datos.precios.get(it.item_code) %}
+        <tr data-code="{{ it.item_code }}" data-cant="{{ it.cantidad }}">
+          <td class="prod">{{ it.descripcion }}<small>Código {{ it.item_code }}</small></td>
+          <td class="num" data-et="Cantidad">{{ '%g' % it.cantidad }}</td>
+          <td class="num" data-et="Precio unitario (₲)"><input class="precio" type="number" min="0" step="any" inputmode="decimal" placeholder="0" value="{{ ('%g' % p) if p else '' }}" {{ '' if editable else 'readonly' }} aria-label="Precio unitario de {{ it.descripcion }}"></td>
+          <td class="num sub" data-et="Subtotal">—</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="total">Total: <span id="total">₲ 0</span></div>
+    <p style="font-size:.82rem;color:var(--muted);margin:.4rem 0 0">Si no podés ofrecer algún producto, dejá su precio vacío.</p>
+
+    <div class="fila-campos">
+      <div>
+        <label for="fecha_validez">Tu oferta es válida hasta</label>
+        <input type="date" id="fecha_validez" value="{{ datos.fecha_validez or '' }}" {{ '' if editable else 'readonly' }}>
+      </div>
+      <div>
+        <label for="observaciones">Observaciones (plazo de entrega, condiciones de pago, etc.)</label>
+        <textarea id="observaciones" rows="2" maxlength="500" {{ '' if editable else 'readonly' }}>{{ datos.observaciones }}</textarea>
+      </div>
+    </div>
+
+    {% if editable %}
+      <div id="msg_error" role="alert"></div>
+      <button type="button" class="enviar" id="btn_enviar">{{ 'Actualizar mi cotización' if datos.fecha_respuesta else 'Enviar cotización' }}</button>
+    {% endif %}
+  </div>
+  <div id="exito" class="tarjeta" style="display:none">
+    <h2 style="color:var(--verde)">¡Cotización enviada!</h2>
+    <p>Gracias, {{ datos.proveedor }}. Recibimos tu cotización. Podés volver a entrar a este enlace y modificarla hasta la fecha límite.</p>
+  </div>
+  {% endif %}
+{% endif %}
+</main>
+<footer>Gran Vía Supermercados · Este enlace es personal, por favor no lo compartas.</footer>
+
+{% if datos and datos.portal_estado != 'CANCELADA' %}
+<script>
+(function(){
+  const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  const fmt = n => Number(n || 0).toLocaleString('es-PY', {maximumFractionDigits: 2});
+  const filas = Array.from(document.querySelectorAll('#tabla_items tbody tr'));
+  if(!filas.length) return;
+
+  function recalcular(){
+    let total = 0;
+    filas.forEach(tr => {
+      const precio = parseFloat(tr.querySelector('input.precio').value);
+      const sub = (precio > 0) ? precio * parseFloat(tr.dataset.cant) : 0;
+      tr.querySelector('.sub').textContent = sub ? '₲ ' + fmt(sub) : '—';
+      total += sub;
+    });
+    document.getElementById('total').textContent = '₲ ' + fmt(total);
+  }
+  filas.forEach(tr => tr.querySelector('input.precio').addEventListener('input', recalcular));
+  recalcular();
+
+  const btn = document.getElementById('btn_enviar');
+  if(!btn) return;
+  const fecha = document.getElementById('fecha_validez');
+  if(!fecha.value){ const d = new Date(); d.setDate(d.getDate() + 15); fecha.value = d.toISOString().slice(0, 10); }
+  fecha.min = new Date().toISOString().slice(0, 10);
+
+  btn.addEventListener('click', function(){
+    const err = document.getElementById('msg_error'); err.textContent = '';
+    const precios = {};
+    filas.forEach(tr => { precios[tr.dataset.code] = tr.querySelector('input.precio').value; });
+    if(!Object.values(precios).some(v => parseFloat(v) > 0)){ err.textContent = 'Ingresá el precio de al menos un producto.'; return; }
+    if(!fecha.value){ err.textContent = 'Indicá hasta cuándo es válida tu oferta.'; return; }
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    fetch(location.pathname.replace(/\/$/, '') + '/enviar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+      body: JSON.stringify({ precios, fecha_validez: fecha.value, observaciones: document.getElementById('observaciones').value })
+    }).then(r => r.json().then(j => ({ok: r.ok, j})))
+      .then(({ok, j}) => {
+        if(ok && j.success){
+          document.getElementById('exito').style.display = 'block';
+          btn.textContent = 'Actualizar mi cotización';
+          document.getElementById('exito').scrollIntoView({behavior: 'smooth'});
+        } else { err.textContent = (j && j.error) || 'No se pudo enviar. Intentá nuevamente.'; btn.textContent = 'Enviar cotización'; }
+      })
+      .catch(() => { err.textContent = 'No se pudo conectar. Revisá tu conexión e intentá nuevamente.'; btn.textContent = 'Enviar cotización'; })
+      .finally(() => { btn.disabled = false; });
+  });
+})();
+</script>
+{% endif %}
+</body>
+</html>

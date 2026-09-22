@@ -5,6 +5,7 @@ from app.dao.gestionar_compras.registrar_pedido_compras.pedido_de_compras_dao im
 from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compras_dto import PedidoDeComprasDto
 from app.dao.gestionar_compras.registrar_pedido_compras.dto.pedido_de_compra_detalle_dto import PedidoDeCompraDetalleDto
 from app import csrf
+from app.dao.gestionar_compras.reglas_estado import error_solicitud_no_aprobada, error_presupuesto_no_aprobado
 
 pdcapi = Blueprint('pdcapi', __name__)
 
@@ -94,6 +95,11 @@ def crear_pedido():
         if not data:
             return jsonify(success=False, error='Datos incompletos'), 400
 
+        msg = (error_solicitud_no_aprobada(nro=data.get('nro_solicitud'))
+               or error_presupuesto_no_aprobado(id_presupuesto=data.get('id_pre_compra_cab')))
+        if msg:
+            return jsonify(success=False, error=msg), 404
+
         detalle_raw = data.get('detalle_pedido', [])
         if not detalle_raw:
             return jsonify(success=False, error='Debe agregar al menos un producto'), 400
@@ -146,6 +152,9 @@ def crear_pedido():
 @pdcapi.route('/solicitud-nro/<string:nro_solicitud>', methods=['GET'])
 def get_solicitud_por_nro(nro_solicitud):
     try:
+        msg = error_solicitud_no_aprobada(nro=nro_solicitud)
+        if msg:
+            return jsonify(success=False, error=msg), 404
         dao = PedidoDeComprasDao()
         solicitud = dao.obtener_solicitud_por_nro(nro_solicitud)
         if not solicitud:
@@ -177,6 +186,9 @@ def get_solicitud_por_nro(nro_solicitud):
 @pdcapi.route('/presupuesto/<string:cod_presupuesto>', methods=['GET'])
 def get_presupuesto_para_pedido(cod_presupuesto):
     try:
+        msg = error_presupuesto_no_aprobado(cod=cod_presupuesto)
+        if msg:
+            return jsonify(success=False, error=msg), 404
         dao = PedidoDeComprasDao()
         presupuesto = dao.obtener_presupuesto_para_pedido(cod_presupuesto)
         if not presupuesto:
@@ -277,3 +289,20 @@ def anular_pedido(id_pedido):
     except Exception as e:
         app.logger.error(f"Error al anular pedido ID {id_pedido}: {str(e)}")
         return jsonify(success=False, error='Ocurrió un error interno')
+
+
+# =================================
+# Modificar un pedido (solo si está PENDIENTE; lo valida el DAO)
+# =================================
+@pdcapi.route('/pedidos/<int:id_pedido>', methods=['PUT'])
+@csrf.exempt
+def modificar_pedido(id_pedido):
+    try:
+        data = request.get_json(silent=True) or {}
+        ok, error = PedidoDeComprasDao().modificar(id_pedido, data.get('cabecera') or {}, data.get('detalle') or [])
+        if ok:
+            return jsonify(success=True)
+        return jsonify(success=False, error=error), 400
+    except Exception as e:
+        app.logger.error(f"Error al modificar pedido {id_pedido}: {str(e)}")
+        return jsonify(success=False, error='Ocurrió un error interno.'), 500

@@ -227,14 +227,16 @@ SELECT
     d.descripcion                     AS deposito,
     sc.estado,
     (SELECT COUNT(*) FROM solicitud_compra_det sd
-      WHERE sd.id_solicitud = sc.id_solicitud) AS cantidad_items
+      WHERE sd.id_solicitud = sc.id_solicitud) AS cantidad_items,
+    (SELECT MIN(sd.fecha_necesaria) FROM solicitud_compra_det sd
+      WHERE sd.id_solicitud = sc.id_solicitud) AS fecha_necesaria
 FROM solicitud_compra_cab sc
 LEFT JOIN funcionarios f ON f.fun_id = sc.id_solicitante
 LEFT JOIN sucursal s     ON s.id_sucursal = sc.id_sucursal
 LEFT JOIN deposito d     ON d.id_deposito = sc.id_deposito AND d.activo = TRUE;
 
 COMMENT ON VIEW v_com_solicitud IS
-'Compras. Solicitudes de compra con solicitante, sucursal, depósito, estado y cantidad de ítems. Depende de: solicitud_compra_cab/det, funcionarios, sucursal, deposito.';
+'Compras. Solicitudes de compra con solicitante, sucursal, depósito, estado, cantidad de ítems y fecha necesaria. Depende de: solicitud_compra_cab/det, funcionarios, sucursal, deposito.';
 
 
 -- Presupuestos con proveedor y funcionario.

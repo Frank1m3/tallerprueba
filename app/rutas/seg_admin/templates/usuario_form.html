@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ 'Editar usuario' if modo == 'editar' else 'Nuevo usuario' }}{% endblock %}
+{% block contenido %}
+<style>
+  .perm-tabla th, .perm-tabla td { padding: .5rem .7rem; font-size: .85rem; }
+  .perm-tabla thead th { background: var(--pos-surface-hover); text-align: center; }
+  .perm-tabla thead th:first-child, .perm-tabla td:first-child { text-align: left; }
+  .perm-modulo td { background: var(--pos-surface-hover); font-weight: 700; }
+  .perm-ventana { padding-left: 2rem !important; }
+  .perm-nota { font-size: .78rem; color: var(--pos-text-muted); display: flex; gap: .4rem; align-items: flex-start; margin-top: .6rem; }
+  .campo-hint { font-size: .78rem; color: var(--pos-text-muted); margin-top: .25rem; display: block; }
+  .campo-error { font-size: .78rem; color: var(--pos-danger, #dc2626); margin-top: .25rem; display: none; }
+  #panel_func_nuevo { display: none; border-top: 1px dashed var(--pos-border); margin-top: .85rem; padding-top: .85rem; }
+  /* Campos más juntos: menos aire entre columnas y entre filas */
+  .row-compacta { margin-left: -.5rem; margin-right: -.5rem; margin-bottom: -.6rem; }
+  .row-compacta > [class*="col-"] { padding-left: .5rem; padding-right: .5rem; margin-bottom: .6rem; }
+  .row-compacta + .row-compacta { margin-top: .1rem; }
+  .row-compacta .field-label { margin-bottom: .25rem; }
+  /* Permisos individuales: botón tri-estado (heredado del perfil / concedido / quitado) */
+  .tri { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--pos-border); background: #fff; cursor: pointer; line-height: 1; }
+  .tri-heredado { color: var(--pos-text-muted); background: var(--pos-surface-hover); }
+  .tri-si { color: #16a34a; border-color: #16a34a; background: #ecfdf5; }
+  .tri-no { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
+  .tri-leyenda span { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; color: var(--pos-text-muted); margin-right: 1rem; }
+</style>
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon"><i class="fas fa-user-{{ 'edit' if modo == 'editar' else 'plus' }}"></i></span>
+      <div>
+        <h2 class="page-header-title">{{ 'Editar usuario' if modo == 'editar' else 'Nuevo usuario' }}</h2>
+        <p class="page-header-subtitle">{{ 'Perfil, correo y estado de la cuenta.' if modo == 'editar' else 'Alta de un usuario del sistema y su perfil de acceso.' }}</p>
+      </div>
+    </div>
+  </div>
+
+  {% if modo == 'nuevo' %}
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-info)"></span> Funcionario</div>
+    <div class="app-card-body">
+      <div class="row row-compacta">
+        <div class="col-md-6">
+          <label class="field-label" for="u_fun">Buscar funcionario</label>
+          <select id="u_fun" class="form-control">
+            <option value="">— Seleccione —</option>
+            {% for f in funcionarios %}<option value="{{ f['fun_id'] }}" data-nombres="{{ f['nombres'] }}" data-apellidos="{{ f['apellidos'] }}">{{ f['nombre_completo'] }} ({{ f['ci'] }})</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Nombres</label>
+          <input type="text" id="fn_nombres" class="form-control" maxlength="80" readonly placeholder="Se completa al elegir">
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Apellidos</label>
+          <input type="text" id="fn_apellidos" class="form-control" maxlength="80" readonly placeholder="Se completa al elegir">
+        </div>
+      </div>
+      <div class="form-check mt-1">
+        <input type="checkbox" class="form-check-input" id="chk_func_nuevo">
+        <label class="form-check-label" for="chk_func_nuevo">La persona todavía no está registrada como funcionario: cargar sus datos</label>
+      </div>
+
+      <div id="panel_func_nuevo">
+        <div class="row row-compacta">
+          <div class="col-md-3">
+            <label class="field-label">Cédula</label>
+            <input type="text" id="fn_ci" class="form-control" inputmode="numeric" maxlength="20">
+          </div>
+          <div class="col-md-3">
+            <label class="field-label">Cargo</label>
+            <select id="fn_cargo" class="form-control">
+              <option value="">— Seleccione —</option>
+              {% for c in cargos %}<option value="{{ c['car_id'] }}">{{ c['car_des'] }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <span class="campo-hint"><i class="fas fa-info-circle"></i> Nombres, apellidos, cédula y cargo son los datos mínimos que exige el sistema para registrar un funcionario nuevo. El resto de su ficha se puede completar después en Referenciales.</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> {{ 'Datos de acceso' if modo == 'editar' else 'Usuario, contraseña y correo' }}</div>
+    <div class="app-card-body">
+      <div class="row row-compacta">
+        <div class="col-md-{{ '3' if modo == 'nuevo' else '4' }}">
+          <label class="field-label">Usuario</label>
+          <input type="text" id="u_nick" class="form-control" maxlength="10" {{ 'readonly' if modo == 'editar' else '' }}
+                 value="{{ usuario.usu_nick if usuario else '' }}">
+          <span class="campo-hint">3 a 10 caracteres: letras, números, punto o guion bajo.</span>
+        </div>
+        {% if modo == 'nuevo' %}
+        <div class="col-md-3">
+          <label class="field-label">Contraseña</label>
+          <input type="password" id="u_clave" class="form-control" autocomplete="new-password">
+          <span class="campo-hint">Mínimo 8, con mayúscula, minúscula y número.</span>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label">Repetir contraseña</label>
+          <input type="password" id="u_clave2" class="form-control" autocomplete="new-password">
+          <span class="campo-error" id="err_clave2">Las contraseñas no coinciden.</span>
+        </div>
+        {% endif %}
+        <div class="col-md-{{ '3' if modo == 'nuevo' else '5' }}">
+          <label class="field-label">Correo electrónico (código de verificación y alertas)</label>
+          <input type="email" id="u_email" class="form-control" value="{{ usuario.usu_email or '' if usuario else '' }}">
+        </div>
+        {% if modo == 'editar' %}
+        <div class="col-md-3">
+          <label class="field-label">Funcionario</label>
+          <input type="text" class="form-control" value="{{ usuario.persona or '—' }}" readonly>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-warning)"></span> Perfil de acceso</div>
+    <div class="app-card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <label class="field-label">Perfil</label>
+          <select id="u_grupo" class="form-control">
+            {% for g in grupos %}
+            <option value="{{ g['gru_id'] }}" data-nombre="{{ g['gru_des'] }}" {{ 'selected' if usuario and usuario.gru_id == g['gru_id'] else '' }}>{{ g['gru_des'] }}</option>
+            {% endfor %}
+          </select>
+          <span class="campo-hint">Define lo que puede hacer por defecto. Se administra en <a href="{{ url_for('segmod.permisos_index') }}">Permisos por perfil</a>.</span>
+        </div>
+        {% if modo == 'editar' %}
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="u_estado" {{ 'checked' if not usuario or usuario.usu_estado else '' }}>
+            <label class="form-check-label" for="u_estado">Usuario activo (al reactivarlo se reinician los intentos fallidos)</label>
+          </div>
+        </div>
+        <div class="col-md-4 d-flex align-items-end justify-content-md-end">
+          <button type="button" id="btn_permisos_individuales" class="btn-app btn-app-secondary"><i class="fas fa-user-lock"></i> Permisos individuales</button>
+        </div>
+        {% else %}
+        <div class="col-md-8 d-flex align-items-end">
+          <span class="campo-hint" style="margin-top:0"><i class="fas fa-info-circle"></i> Una vez creado el usuario, desde <em>Editar</em> podés darle o quitarle permisos puntuales sin afectar a los demás usuarios de su perfil.</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="app-card-footer">
+      <a href="{{ url_for('segmod.usuarios_index') }}" class="btn-app btn-app-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+      <button type="button" id="btn_guardar_usuario" class="btn-app btn-app-primary"><i class="fas fa-save"></i> Guardar usuario</button>
+    </div>
+  </div>
+</div>
+
+{% if modo == 'editar' %}
+<div class="modal fade" id="modalPermisosUsuario" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user-lock"></i> Permisos individuales — {{ usuario.usu_nick }}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="perm-nota" style="margin-top:0">
+          <i class="fas fa-info-circle"></i> Son excepciones solo para <strong>{{ usuario.usu_nick }}</strong>: no afectan a los demás usuarios del perfil «{{ usuario.grupo }}» ni cambian nada en Permisos por perfil. Hacé clic en cada casilla para pasar de <em>Según el perfil</em> a <em>Concedido</em> o <em>Quitado</em>.
+        </div>
+        <div class="tri-leyenda mt-2 mb-1">
+          <span><i class="fas fa-minus tri-heredado" style="border:none;width:auto;height:auto;padding:.15rem"></i> Según el perfil</span>
+          <span><i class="fas fa-check tri-si" style="border:none;width:auto;height:auto;padding:.15rem"></i> Concedido para este usuario</span>
+          <span><i class="fas fa-times tri-no" style="border:none;width:auto;height:auto;padding:.15rem"></i> Quitado para este usuario</span>
+        </div>
+        <div class="table-responsive" style="max-height:50vh">
+          <table class="table perm-tabla mb-0" id="tbl_permisos_usuario">
+            <thead><tr><th>Módulo / ventana</th><th>Ver</th><th>Agregar</th><th>Modificar</th><th>Eliminar / Anular</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-app btn-app-secondary" data-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn-app btn-app-primary" id="btn_guardar_permisos_usuario"><i class="fas fa-save"></i> Guardar permisos individuales</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+  const API = '/api/v1/seguridad/usuarios';
+  const MODO = '{{ modo }}';
+  const USU_ID = {{ usuario.usu_id if usuario else 'null' }};
+  const GRU_ID_ORIGINAL = {{ usuario.gru_id if usuario else 'null' }};
+
+  function api(url, method, body){
+    return fetch(url, { method, headers: {'Content-Type':'application/json', 'X-CSRFToken': CSRF}, body: body ? JSON.stringify(body) : undefined })
+      .then(r => r.json());
+  }
+
+  {% if modo == 'nuevo' %}
+  $('#u_fun').buscadorSelect({ placeholder: 'Buscar funcionario por nombre o cédula...' });
+
+  // Nombres/Apellidos se completan solos con el funcionario elegido (son de referencia,
+  // no se editan salvo que se esté cargando una persona nueva).
+  $('#u_fun').on('change', function(){
+    const op = $(this).find('option:selected');
+    if($(this).val() && !$('#chk_func_nuevo').is(':checked')){
+      $('#fn_nombres').val(op.data('nombres') || ''); $('#fn_apellidos').val(op.data('apellidos') || '');
+    } else if(!$('#chk_func_nuevo').is(':checked')){
+      $('#fn_nombres,#fn_apellidos').val('');
+    }
+  });
+
+  $('#chk_func_nuevo').on('change', function(){
+    const activo = this.checked;
+    $('#panel_func_nuevo').toggle(activo);
+    $('#fn_nombres,#fn_apellidos').prop('readonly', !activo).val('').attr('placeholder', activo ? '' : 'Se completa al elegir');
+    if(activo){ $('#u_fun').val('').trigger('change').prop('disabled', true).trigger('buscador-select:sync'); }
+    else { $('#u_fun').prop('disabled', false).trigger('buscador-select:sync'); $('#fn_ci').val(''); $('#fn_cargo').val(''); }
+  });
+
+  function claveCoincide(){
+    const ok = $('#u_clave').val() === $('#u_clave2').val();
+    $('#err_clave2').toggle(!ok && $('#u_clave2').val().length > 0);
+    return ok;
+  }
+  $('#u_clave, #u_clave2').on('input', claveCoincide);
+  {% endif %}
+
+  {% if modo == 'editar' %}
+  // ---------------- Permisos individuales de este usuario (excepciones sobre su perfil) ----------------
+  let permisosUsuario = [];
+
+  function actualizarBotonPermisosIndividuales(){
+    const esAdmin = $('#u_grupo option:selected').data('nombre') === 'administradores';
+    const cambioPerfilSinGuardar = Number($('#u_grupo').val()) !== GRU_ID_ORIGINAL;
+    const $btn = $('#btn_permisos_individuales');
+    if(esAdmin){ $btn.prop('disabled', true).attr('title', 'Los administradores ya tienen acceso total.'); }
+    else if(cambioPerfilSinGuardar){ $btn.prop('disabled', true).attr('title', 'Guardá el cambio de perfil primero.'); }
+    else { $btn.prop('disabled', false).attr('title', ''); }
+  }
+  $('#u_grupo').on('change', actualizarBotonPermisosIndividuales);
+  actualizarBotonPermisosIndividuales();
+
+  function triHtml(i, col, perfilValor, excepcionValor){
+    let estado = 'heredado', icono = perfilValor ? 'fa-check' : 'fa-minus', clase = 'tri-heredado';
+    let titulo = `Según el perfil: ${perfilValor ? 'Sí' : 'No'} (clic para hacer una excepción)`;
+    if(excepcionValor === true){ estado = 'si'; icono = 'fa-check'; clase = 'tri-si'; titulo = 'Concedido para este usuario (clic para cambiar)'; }
+    else if(excepcionValor === false){ estado = 'no'; icono = 'fa-times'; clase = 'tri-no'; titulo = 'Quitado para este usuario (clic para cambiar)'; }
+    return `<button type="button" class="tri ${clase}" data-i="${i}" data-col="${col}" data-estado="${estado}" title="${titulo}"><i class="fas ${icono}"></i></button>`;
+  }
+  function pintarPermisosUsuario(){
+    const COLS = ['leer', 'insertar', 'editar', 'borrar'];
+    let html = '', modulo = null;
+    permisosUsuario.forEach((f, i) => {
+      if(f.modulo !== modulo){
+        modulo = f.modulo;
+        html += `<tr class="perm-modulo"><td colspan="5">${modulo}</td></tr>`;
+      }
+      html += `<tr><td class="perm-ventana">${f.ventana}</td>` +
+        COLS.map(c => `<td class="text-center">${triHtml(i, c, f.perfil[c], f.excepcion[c])}</td>`).join('') + '</tr>';
+    });
+    $('#tbl_permisos_usuario tbody').html(html);
+  }
+  $('#tbl_permisos_usuario').on('click', '.tri', function(){
+    const f = permisosUsuario[$(this).data('i')], c = $(this).data('col'), actual = f.excepcion[c];
+    f.excepcion[c] = (actual === undefined || actual === null) ? true : (actual === true ? false : null);
+    pintarPermisosUsuario();
+  });
+  $('#btn_permisos_individuales').on('click', function(){
+    $.getJSON(`${API}/${USU_ID}/permisos`, res => {
+      permisosUsuario = res.data || []; pintarPermisosUsuario(); $('#modalPermisosUsuario').modal('show');
+    }).fail(() => Swal.fire('Error', 'No se pudieron cargar los permisos individuales.', 'error'));
+  });
+  $('#btn_guardar_permisos_usuario').on('click', function(){
+    const filas = permisosUsuario.map(f => ({ pag_id: f.pag_id, leer: f.excepcion.leer, insertar: f.excepcion.insertar, editar: f.excepcion.editar, borrar: f.excepcion.borrar }));
+    const $b = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando…');
+    api(`${API}/${USU_ID}/permisos`, 'PUT', { permisos: filas }).then(res => {
+      if(res.success){
+        Swal.fire({ icon:'success', title:'Permisos individuales guardados', text:'Se aplican de inmediato a {{ usuario.usu_nick }}.', timer:2200, showConfirmButton:false });
+        $('#modalPermisosUsuario').modal('hide');
+      } else Swal.fire('Error', res.error || 'No se pudieron guardar', 'error');
+    }).finally(() => $b.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar permisos individuales'));
+  });
+  {% endif %}
+
+  // ---------------- Guardar usuario ----------------
+  $('#btn_guardar_usuario').on('click', function(){
+    const nick = $('#u_nick').val().trim();
+    const email = $('#u_email').val().trim();
+    const gru_id = $('#u_grupo').val();
+    if(!gru_id) return Swal.fire('Atención', 'Seleccioná el perfil.', 'warning');
+
+    let body, metodo, url;
+    if(MODO === 'editar'){
+      body = { gru_id, usu_email: email, usu_estado: $('#u_estado').is(':checked') };
+      metodo = 'PUT'; url = `${API}/${USU_ID}`;
+    } else {
+      if(!nick) return Swal.fire('Atención', 'Ingresá el nombre de usuario.', 'warning');
+      {% if modo == 'nuevo' %}
+      if(!claveCoincide() || !$('#u_clave').val()) return Swal.fire('Atención', 'Cargá la contraseña dos veces y verificá que coincidan.', 'warning');
+      body = { usu_nick: nick, usu_email: email, gru_id, usu_clave: $('#u_clave').val(), usu_clave2: $('#u_clave2').val() };
+      if($('#chk_func_nuevo').is(':checked')){
+        const nombres = $('#fn_nombres').val().trim(), apellidos = $('#fn_apellidos').val().trim();
+        const ci = $('#fn_ci').val().trim(), car_id = $('#fn_cargo').val();
+        if(!nombres || !apellidos) return Swal.fire('Atención', 'Indicá nombre y apellido del funcionario nuevo.', 'warning');
+        if(!ci) return Swal.fire('Atención', 'Indicá la cédula del funcionario nuevo.', 'warning');
+        if(!car_id) return Swal.fire('Atención', 'Seleccioná el cargo del funcionario nuevo.', 'warning');
+        body.funcionario_nuevo = { nombres, apellidos, ci, car_id };
+      } else {
+        if(!$('#u_fun').val()) return Swal.fire('Atención', 'Buscá y elegí el funcionario, o marcá que todavía no está registrado.', 'warning');
+        body.fun_id = $('#u_fun').val();
+      }
+      {% endif %}
+      metodo = 'POST'; url = API;
+    }
+
+    const $b = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando…');
+    api(url, metodo, body).then(res => {
+      if(res.success){
+        Swal.fire({ icon:'success', title:'Guardado', timer:1500, showConfirmButton:false })
+          .then(() => window.location.href = "{{ url_for('segmod.usuarios_index') }}");
+      } else {
+        Swal.fire('Atención', res.error || 'No se pudo guardar', 'warning');
+        $b.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar usuario');
+      }
+    }).catch(() => { Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error'); $b.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar usuario'); });
+  });
+});
+</script>
+{% endblock %}

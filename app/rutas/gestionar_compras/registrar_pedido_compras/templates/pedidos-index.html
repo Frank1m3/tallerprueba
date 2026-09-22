@@ -15,7 +15,7 @@ Listar Pedidos de Compra
       </div>
     </div>
     <div class="page-header-actions">
-      <a href="{{ url_for('pdcmod.pedidos_agregar') }}" class="btn-app btn-app-primary" target="_blank">
+      <a href="{{ url_for('pdcmod.pedidos_agregar') }}" class="btn-app btn-app-primary">
         <i class="fas fa-plus"></i> Nuevo pedido
       </a>
     </div>
@@ -88,8 +88,9 @@ $(document).ready(function(){
                 orderable: false,
                 className: 'text-center',
                 render: function(row){
+                    const editable = row.estado === 'PENDIENTE';
                     return `<button class="btn-app btn-app-secondary btn-sm ver" data-id="${row.id_pedido_compra_cab}"><i class="fas fa-eye"></i> Ver</button> ` +
-                           `<button class="btn-app btn-app-secondary btn-sm editar" data-id="${row.id_pedido_compra_cab}"><i class="fas fa-edit"></i> Editar</button> ` +
+                           `<button class="btn-app btn-app-secondary btn-sm editar" data-id="${row.id_pedido_compra_cab}" ${editable ? '' : 'disabled title="Solo se puede modificar un pedido pendiente"'}><i class="fas fa-edit"></i> Editar</button> ` +
                            `<button class="btn-app btn-app-secondary btn-sm btn-cambiar-estado" data-id="${row.id_pedido_compra_cab}" data-estado="${row.estado}"><i class="fas fa-random"></i> Cambiar estado</button>`;
                 }
             }
@@ -103,13 +104,13 @@ $(document).ready(function(){
     $('#tbl_pedidos').on('click', '.ver', function(){
         const id = $(this).data('id');
         // Construir la URL directamente con el ID para evitar ValueError
-        window.open('/gestionar-compras/registrar-pedido-compras/pedidos/detalle/' + id, '_blank');
+        window.location.href = '/gestionar-compras/registrar-pedido-compras/pedidos/detalle/' + id;
     });
 
     // Editar pedido
     $('#tbl_pedidos').on('click', '.editar', function(){
         const id = $(this).data('id');
-        window.open('/gestionar-compras/registrar-pedido-compras/editar/' + id, '_blank');
+        window.location.href = '/gestionar-compras/registrar-pedido-compras/editar/' + id;
     });
 
     // Cambiar estado (libre; incluye ANULADO, así que reemplaza al viejo "Eliminar")

@@ -94,6 +94,7 @@ const initDatatable = () => {
                 Swal.fire('Error', 'No se pudo cargar la lista de proveedores.', 'error');
             }
         },
+        order: [[0, 'desc']],
         columns: [
             { data: 'id_proveedor' },
             { data: 'nombre' },

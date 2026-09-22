@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="page-header-actions">
-      <button class="btn-app btn-app-primary" id="btn_nuevo"><i class="fas fa-user-plus"></i> Nuevo usuario</button>
+      <a href="{{ url_for('segmod.usuarios_nuevo') }}" class="btn-app btn-app-primary"><i class="fas fa-user-plus"></i> Nuevo usuario</a>
     </div>
   </div>
 
@@ -25,54 +25,6 @@
           </thead>
           <tbody></tbody>
         </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="modalUsuario" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalUsuarioTitulo">Nuevo usuario</h5>
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="u_id">
-        <div class="form-group">
-          <label class="field-label">Usuario (3 a 10 caracteres)</label>
-          <input type="text" id="u_nick" class="form-control" maxlength="10">
-        </div>
-        <div class="form-group" id="grp_funcionario">
-          <label class="field-label">Funcionario</label>
-          <select id="u_fun" class="form-control">
-            <option value="">— Seleccione —</option>
-            {% for f in funcionarios %}<option value="{{ f['fun_id'] }}">{{ f['nombre_completo'] }} ({{ f['ci'] }})</option>{% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="field-label">Perfil</label>
-          <select id="u_grupo" class="form-control">
-            {% for g in grupos %}<option value="{{ g['gru_id'] }}">{{ g['gru_des'] }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="field-label">Correo electrónico (para el código de verificación y las alertas)</label>
-          <input type="email" id="u_email" class="form-control">
-        </div>
-        <div class="form-group" id="grp_clave">
-          <label class="field-label">Contraseña inicial</label>
-          <input type="password" id="u_clave" class="form-control" autocomplete="new-password">
-          <small class="text-muted">Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
-        </div>
-        <div class="form-check" id="grp_estado">
-          <input type="checkbox" class="form-check-input" id="u_estado" checked>
-          <label class="form-check-label" for="u_estado">Usuario activo (al reactivarlo se reinician los intentos fallidos)</label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-app btn-app-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn-app btn-app-primary" id="btn_guardar_usuario"><i class="fas fa-save"></i> Guardar</button>
       </div>
     </div>
   </div>
@@ -111,39 +63,8 @@ $(document).ready(function(){
 
   function fila(id){ return tabla.rows().data().toArray().find(r => r.usu_id === id); }
 
-  $('#btn_nuevo').on('click', function(){
-    $('#modalUsuarioTitulo').text('Nuevo usuario');
-    $('#u_id').val(''); $('#u_nick').val('').prop('disabled', false); $('#u_fun').val('');
-    $('#u_email').val(''); $('#u_clave').val(''); $('#u_estado').prop('checked', true);
-    $('#grp_funcionario, #grp_clave').show(); $('#grp_estado').hide();
-    $('#modalUsuario').modal('show');
-  });
-
   $('#tbl_usuarios tbody').on('click', '.btn-editar', function(){
-    const u = fila($(this).data('id'));
-    $('#modalUsuarioTitulo').text('Editar usuario');
-    $('#u_id').val(u.usu_id); $('#u_nick').val(u.usu_nick).prop('disabled', true);
-    $('#u_grupo').val(u.gru_id); $('#u_email').val(u.usu_email || ''); $('#u_estado').prop('checked', u.usu_estado);
-    $('#grp_funcionario, #grp_clave').hide(); $('#grp_estado').show();
-    $('#modalUsuario').modal('show');
-  });
-
-  $('#btn_guardar_usuario').on('click', function(){
-    const id = $('#u_id').val();
-    const body = { gru_id: $('#u_grupo').val(), usu_email: $('#u_email').val() };
-    let p;
-    if(id){
-      body.usu_estado = $('#u_estado').is(':checked');
-      p = api(`${API}/${id}`, 'PUT', body);
-    } else {
-      Object.assign(body, { usu_nick: $('#u_nick').val(), fun_id: $('#u_fun').val(), usu_clave: $('#u_clave').val() });
-      p = api(API, 'POST', body);
-    }
-    p.then(res => {
-      if(res.success){ $('#modalUsuario').modal('hide'); tabla.ajax.reload(null, false);
-        Swal.fire({ icon:'success', title:'Guardado', timer:1500, showConfirmButton:false }); }
-      else Swal.fire('Atención', res.error || 'No se pudo guardar', 'warning');
-    });
+    window.location.href = `/seguridad/usuarios/${$(this).data('id')}/editar`;
   });
 
   $('#tbl_usuarios tbody').on('click', '.btn-desbloquear', function(){

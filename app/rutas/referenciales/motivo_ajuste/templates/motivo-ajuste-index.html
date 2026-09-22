@@ -35,6 +35,7 @@
     $('#tbl').DataTable({
       language: { url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}" },
       ajax: API,
+      order: [[0, 'desc']],
       columns: [
         { data: 'id' }, { data: 'descripcion' },
         { data: null, render: r => `<button type="button" name="btn_editar" class="btn btn-primary btn-sm mr-1" data-id="${r.id}">Editar</button><button type="button" name="btn_eliminar" class="btn btn-danger btn-sm" data-id="${r.id}">Eliminar</button>`, orderable:false, searchable:false }

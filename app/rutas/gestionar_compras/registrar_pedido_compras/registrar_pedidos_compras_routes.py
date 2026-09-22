@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, current_app as app
+from flask import Blueprint, render_template, jsonify, flash, redirect, url_for, current_app as app
 from app.dao.referenciales.sucursal.sucursal_dao import SucursalDao
 from app.dao.referenciales.funcionario.funcionario_dao import FuncionarioDao
 from app.dao.gestionar_compras.registrar_pedido_compras.pedido_de_compras_dao import PedidoDeComprasDao
@@ -67,3 +67,18 @@ def pedidos_detalle(id_pedido):
     if not pedido:
         return "Pedido no encontrado", 404
     return render_template('detalle.html', pedido=pedido)
+
+
+# ==============================
+# Editar un pedido (solo si está PENDIENTE)
+# ==============================
+@pdcmod.route('/editar/<int:id_pedido>')
+def pedidos_editar(id_pedido):
+    pedido = PedidoDeComprasDao().obtener_para_editar(id_pedido)
+    if not pedido:
+        flash('El pedido no existe.', 'danger')
+        return redirect(url_for('pdcmod.pedidos_index'))
+    if pedido['estado'] != 'PENDIENTE':
+        flash(f"Solo se puede modificar un pedido en estado PENDIENTE (este está {pedido['estado']}).", 'warning')
+        return redirect(url_for('pdcmod.pedidos_index'))
+    return render_template('pedidos-editar.html', pedido=pedido, sucursales=SucursalDao().getSucursales())

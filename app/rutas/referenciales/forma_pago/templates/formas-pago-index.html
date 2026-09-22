@@ -79,6 +79,7 @@ Formas de Pago
         url: "{{ url_for('static', filename='vendor/datatables/es-ES.json') }}",
       },
       ajax: '/api/v1/formas_pago',
+      order: [[0, 'desc']],
       columns: [
         { data: 'id' },
         { data: 'descripcion' },

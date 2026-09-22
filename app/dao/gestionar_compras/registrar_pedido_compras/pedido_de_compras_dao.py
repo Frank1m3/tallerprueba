@@ -44,9 +44,11 @@ class PedidoDeComprasDao:
         cur = con.cursor()
         try:
             cur.execute("""
-                SELECT pc.id_pre_compra_cab, pc.id_proveedor, prov.prov_nombre, pc.estado
+                SELECT pc.id_pre_compra_cab, pc.id_proveedor, prov.prov_nombre, pc.estado,
+                       pc.id_sucursal, pc.id_deposito, pc.fun_id, sc.nro_solicitud, sc.fecha_necesaria
                 FROM presupuesto_compra_cab pc
                 LEFT JOIN proveedor prov ON prov.id_proveedor = pc.id_proveedor
+                LEFT JOIN v_com_solicitud sc ON sc.id_solicitud = pc.id_solicitud
                 WHERE pc.cod_presupuesto = %s
                 ORDER BY pc.id_pre_compra_cab DESC
                 LIMIT 1
@@ -60,6 +62,11 @@ class PedidoDeComprasDao:
                 'id_proveedor': cab[1],
                 'proveedor_nombre': cab[2] or '',
                 'estado': cab[3],
+                'id_sucursal': cab[4],
+                'id_deposito': cab[5],
+                'id_funcionario': cab[6],
+                'nro_solicitud': cab[7],
+                'fecha_necesaria': cab[8].strftime("%Y-%m-%d") if cab[8] else None,
                 'detalle': []
             }
 
@@ -473,6 +480,108 @@ class PedidoDeComprasDao:
         except Exception as e:
             app.logger.error(f"Error al obtener solicitud nro {nro_solicitud}: {str(e)}")
             return None
+        finally:
+            cur.close()
+            con.close()
+
+    # ------------------------------
+    # Edición de un pedido (solo mientras está PENDIENTE)
+    # ------------------------------
+    def obtener_para_editar(self, id_pedido):
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("""
+                SELECT pdc.id_pedido_compra_cab, pdc.nro_pedido, pdc.fecha_pedido, pdc.fecha_necesaria,
+                       pdc.id_funcionario, CONCAT(f.nombres, ' ', f.apellidos), pdc.id_sucursal, pdc.id_deposito,
+                       pdc.id_proveedor, prov.prov_nombre, pdc.tipo_factura, COALESCE(pdc.estado, '')
+                FROM pedido_compra_cab pdc
+                LEFT JOIN funcionarios f ON f.fun_id = pdc.id_funcionario
+                LEFT JOIN proveedor prov ON prov.id_proveedor = pdc.id_proveedor
+                WHERE pdc.id_pedido_compra_cab = %s
+            """, (id_pedido,))
+            f = cur.fetchone()
+            if not f:
+                return None
+            pedido = {
+                'id_pedido': f[0], 'nro_pedido': f[1],
+                'fecha_pedido': f[2].strftime("%Y-%m-%d") if f[2] else '',
+                'fecha_necesaria': f[3].strftime("%Y-%m-%d") if f[3] else '',
+                'id_funcionario': f[4], 'funcionario': (f[5] or '').strip(),
+                'id_sucursal': f[6], 'id_deposito': f[7],
+                'id_proveedor': f[8], 'proveedor': f[9] or '',
+                'tipo_factura': f[10] or '', 'estado': f[11], 'detalle': []
+            }
+            cur.execute("""
+                SELECT item_code, item_descripcion, cant_pedido, costo_unitario
+                FROM pedido_compra_det WHERE id_pedido_compra_cab = %s ORDER BY id_pedido_compra_det
+            """, (id_pedido,))
+            pedido['detalle'] = [{'item_code': r[0], 'descripcion': r[1] or '', 'cantidad': float(r[2]),
+                                  'precio': float(r[3])} for r in cur.fetchall()]
+            return pedido
+        finally:
+            cur.close()
+            con.close()
+
+    def modificar(self, id_pedido, cabecera, detalles):
+        """Actualiza cabecera y detalle. Solo se permite si el pedido está PENDIENTE.
+        Devuelve (ok, mensaje_de_error)."""
+        if not detalles:
+            return False, 'El pedido debe tener al menos un producto.'
+        con = Conexion().getConexion()
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT estado, nro_pedido FROM pedido_compra_cab WHERE id_pedido_compra_cab = %s", (id_pedido,))
+            f = cur.fetchone()
+            if not f:
+                return False, 'El pedido no existe.'
+            if (f[0] or '') != 'PENDIENTE':
+                return False, f'Solo se puede modificar un pedido en estado PENDIENTE (este está {f[0]}).'
+            nro_pedido = f[1]
+
+            if not cabecera.get('id_sucursal') or not cabecera.get('id_deposito') or not cabecera.get('tipo_factura'):
+                return False, 'Completá sucursal, depósito y tipo de factura.'
+            cur.execute("""UPDATE pedido_compra_cab
+                           SET id_sucursal = %s, id_deposito = %s, tipo_factura = %s, fecha_necesaria = %s
+                           WHERE id_pedido_compra_cab = %s""",
+                        (cabecera['id_sucursal'], cabecera['id_deposito'], cabecera['tipo_factura'],
+                         cabecera.get('fecha_necesaria') or None, id_pedido))
+
+            # unidad de medida e impuesto de los ítems que ya estaban en el pedido
+            cur.execute("""SELECT item_code, item_descripcion, unidad_med, tipo_impuesto
+                           FROM pedido_compra_det WHERE id_pedido_compra_cab = %s""", (id_pedido,))
+            previos = {r[0]: r for r in cur.fetchall()}
+            cur.execute("DELETE FROM pedido_compra_det WHERE id_pedido_compra_cab = %s", (id_pedido,))
+            vistos = set()
+            for d in detalles:
+                codigo = str(d.get('item_code') or '')
+                cant, costo = float(d.get('cantidad') or 0), float(d.get('precio') or 0)
+                if not codigo or cant <= 0 or costo <= 0:
+                    con.rollback()
+                    return False, 'Todos los productos deben tener cantidad y precio mayores a cero.'
+                if codigo in vistos:
+                    con.rollback()
+                    return False, f'El producto {codigo} está repetido.'
+                vistos.add(codigo)
+                if codigo in previos:
+                    _, descripcion, unidad, impuesto = previos[codigo]
+                else:
+                    cur.execute("SELECT descripcion, unidad_med, id_tipo_impuesto FROM item WHERE item_code = %s", (codigo,))
+                    it = cur.fetchone()
+                    if not it:
+                        con.rollback()
+                        return False, f'El producto {codigo} no existe.'
+                    descripcion, unidad, impuesto = it
+                cur.execute("""INSERT INTO pedido_compra_det
+                               (id_pedido_compra_cab, nro_pedido, item_code, item_descripcion, unidad_med, cant_pedido, costo_unitario, tipo_impuesto)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                            (id_pedido, nro_pedido, codigo, descripcion, unidad, cant, costo, impuesto))
+            con.commit()
+            return True, None
+        except Exception as e:
+            con.rollback()
+            app.logger.error(f"Error al modificar pedido {id_pedido}: {e}")
+            return False, 'No se pudo modificar el pedido.'
         finally:
             cur.close()
             con.close()

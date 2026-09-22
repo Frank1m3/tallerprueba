@@ -5,6 +5,7 @@
 {% block contenido %}
 <style>
   .nro-sol { font-weight: 700; color: var(--pos-primary); font-variant-numeric: tabular-nums; }
+  .filtros-sol > [class*="col-"] { margin-bottom: .5rem; }
 </style>
 
 <div class="container-fluid px-4">
@@ -19,15 +20,50 @@
       </div>
     </div>
     <div class="page-header-actions">
-      <a href="{{ url_for('solmod.solicitud_agregar') }}" target="_blank" class="btn-app btn-app-primary">
+      <a href="{{ url_for('solmod.solicitud_agregar') }}" class="btn-app btn-app-primary">
         <i class="fas fa-plus"></i> Nueva Solicitud
       </a>
     </div>
   </div>
 
+  <!-- Filtros -->
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-info)"></span> Filtros</div>
+    <div class="app-card-body">
+      <div class="row align-items-end filtros-sol">
+        <div class="col-md-2 col-6">
+          <label class="field-label" for="f_desde">Fecha desde</label>
+          <input type="date" id="f_desde" class="form-control">
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="field-label" for="f_hasta">Fecha hasta</label>
+          <input type="date" id="f_hasta" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label class="field-label" for="f_sucursal">Sucursal</label>
+          <select id="f_sucursal" class="form-control"><option value="">Todas</option></select>
+        </div>
+        <div class="col-md-3">
+          <label class="field-label" for="f_estado">Estado</label>
+          <select id="f_estado" class="form-control">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="APROBADA">Aprobada</option>
+            <option value="ANULADO">Anulado</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="button" id="f_limpiar" class="btn-app btn-app-secondary w-100"><i class="fas fa-eraser"></i> Limpiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tarjeta principal -->
   <div class="app-card">
-    <div class="app-card-header"><span class="dot"></span> Listado de solicitudes registradas</div>
+    <div class="app-card-header"><span class="dot"></span> Listado de solicitudes registradas
+      <span id="lbl_filtradas" style="margin-left:auto;font-size:.78rem;color:var(--pos-text-muted);font-weight:500;text-transform:none;letter-spacing:0"></span>
+    </div>
     <div class="app-card-body">
       <div class="table-responsive">
         <table id="tbl_solicitudes" class="table table-hover w-100">
@@ -38,6 +74,7 @@
               <th>Sucursal</th>
               <th>Depósito</th>
               <th>Fecha</th>
+              <th>Fecha necesaria</th>
               <th>Estado</th>
               <th class="text-center">Acciones</th>
             </tr>
@@ -76,11 +113,12 @@ $(document).ready(function(){
       dataSrc: 'data'
     },
     columns: [
-      { data: 'nro_solicitud',   render: v => `<span class="nro-sol">#${v}</span>` },
+      { data: 'nro_solicitud',   render: (v, tipo, fila) => tipo === 'sort' || tipo === 'type' ? fila.id_solicitud : `<span class="nro-sol">#${v}</span>` },
       { data: 'solicitante' },
       { data: 'sucursal' },
       { data: 'deposito' },
       { data: 'fecha_solicitud', render: v => v ? `<span style="font-variant-numeric:tabular-nums">${v}</span>` : '—' },
+      { data: 'fecha_necesaria', render: v => v ? `<span style="font-variant-numeric:tabular-nums">${v}</span>` : '—' },
       { data: 'estado',          render: v => estadoBadge(v) },
       {
         data: null,
@@ -94,7 +132,8 @@ $(document).ready(function(){
             </button>
             <button class="btn-app btn-app-secondary btn-sm btn-cambiar-estado" data-id="${row.id_solicitud}" data-estado="${row.estado}">
               <i class="fas fa-random"></i> Cambiar estado
-            </button>`;
+            </button>
+            ${row.estado === 'APROBADA' ? `<a class="btn-app btn-app-secondary btn-sm" href="/gestionar-compras/comparador-ofertas/comparador-index?solicitud=${row.nro_solicitud}" title="Pedir cotización a los proveedores y comparar las ofertas"><i class="fas fa-paper-plane"></i> Cotizaciones</a>` : ''}`;
         }
       }
     ],
@@ -103,10 +142,48 @@ $(document).ready(function(){
     dom: '<"d-flex justify-content-between align-items-center mb-3"lf>rtip'
   });
 
+  // ---------------- Filtros: fecha (desde/hasta), sucursal y estado ----------------
+  // Las fechas vienen como AAAA-MM-DD, por eso se comparan como texto.
+  $.fn.dataTable.ext.search.push(function(settings, data, dataIndex, fila){
+    if(settings.nTable.id !== 'tbl_solicitudes') return true;
+    const desde = $('#f_desde').val(), hasta = $('#f_hasta').val();
+    const suc = $('#f_sucursal').val(), est = $('#f_estado').val();
+    if(desde && (!fila.fecha_solicitud || fila.fecha_solicitud < desde)) return false;
+    if(hasta && (!fila.fecha_solicitud || fila.fecha_solicitud > hasta)) return false;
+    if(suc && fila.sucursal !== suc) return false;
+    if(est && fila.estado !== est) return false;
+    return true;
+  });
+
+  // las sucursales del combo salen de las propias solicitudes cargadas
+  tabla.on('xhr.dt', function(e, settings, json){
+    const previa = $('#f_sucursal').val();
+    const nombres = [...new Set(((json && json.data) || []).map(s => s.sucursal).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+    $('#f_sucursal').empty().append('<option value="">Todas</option>')
+      .append(nombres.map(n => $('<option>').val(n).text(n)));
+    if(nombres.includes(previa)) $('#f_sucursal').val(previa);
+  });
+
+  function aplicarFiltros(){
+    const d = $('#f_desde').val(), h = $('#f_hasta').val();
+    if(d && h && d > h){ $('#f_hasta').val(d); }          // el rango nunca queda invertido
+    $('#f_hasta').attr('min', d || ''); $('#f_desde').attr('max', $('#f_hasta').val() || '');
+    tabla.draw();
+  }
+  $('#f_desde, #f_hasta, #f_sucursal, #f_estado').on('change', aplicarFiltros);
+  $('#f_limpiar').on('click', function(){
+    $('#f_desde, #f_hasta').val(''); $('#f_sucursal, #f_estado').val('');
+    aplicarFiltros();
+  });
+  tabla.on('draw', function(){
+    const total = tabla.data().count(), vistas = tabla.rows({ search: 'applied' }).count();
+    $('#lbl_filtradas').text(vistas === total ? `${total} solicitud(es)` : `${vistas} de ${total} solicitud(es)`);
+  });
+
   // Modificar
   $('#tbl_solicitudes tbody').on('click', '.btn-modificar', function(){
     const id = $(this).data('id');
-    window.open(`/gestionar-compras/registrar-solicitud-compras/solicitudes/modificar/${id}`, '_blank');
+    window.location.href = `/gestionar-compras/registrar-solicitud-compras/solicitudes/modificar/${id}`;
   });
 
   // Cambiar estado (libre; anular ahora también se hace desde acá, eligiendo ANULADO)

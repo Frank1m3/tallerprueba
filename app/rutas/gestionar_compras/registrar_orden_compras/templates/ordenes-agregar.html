@@ -200,7 +200,7 @@ $(document).ready(function(){
                     });
                     actualizarTotal();
                 } else Swal.fire('Error', res.error||'Presupuesto no encontrado','error');
-            });
+            }).fail(xhr => Swal.fire('Error', (xhr.responseJSON && xhr.responseJSON.error) || 'Presupuesto no encontrado', 'error'));
         }
     });
 

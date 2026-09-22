@@ -176,6 +176,7 @@ from app.rutas.gestionar_compras.registrar_presupuesto.registrar_presupuesto_rou
 from app.rutas.gestionar_compras.registrar_recepcion_compras.recepcion_mercaderia_routes    import rm_mod
 from app.rutas.gestionar_compras.registrar_orden_compras.registrar_orden_compras_routes     import ocmod
 from app.rutas.gestionar_compras.registrar_factura_compras.registrar_factura_compras_routes import facmod
+from app.rutas.gestionar_compras.comparador_ofertas.comparador_ofertas_routes import cmpmod
 
 app.register_blueprint(pdcmod,   url_prefix=f'{modulo_compras}/registrar-pedido-compras')
 app.register_blueprint(solmod,   url_prefix=f'{modulo_compras}/registrar-solicitud-compras')
@@ -183,6 +184,9 @@ app.register_blueprint(presumod, url_prefix=f'{modulo_compras}/registrar-presupu
 app.register_blueprint(rm_mod,   url_prefix=f'{modulo_compras}/registrar-recepcion-compras')
 app.register_blueprint(ocmod,    url_prefix=f'{modulo_compras}/registrar-orden-compras')
 app.register_blueprint(facmod,   url_prefix=f'{modulo_compras}/registrar-factura-compras')
+app.register_blueprint(cmpmod,   url_prefix=f'{modulo_compras}/comparador-ofertas')
+from app.rutas.gestionar_compras.portal_proveedor.portal_routes import portalmod
+app.register_blueprint(portalmod, url_prefix='/cotizar')   # público: se entra solo con el enlace personal
 
 # ================================
 # Gestionar Compras - APIs
@@ -193,6 +197,7 @@ from app.rutas.gestionar_compras.registrar_presupuesto.registrar_presupuesto_api
 from app.rutas.gestionar_compras.registrar_recepcion_compras.recepcion_mercaderia_api       import rm_api
 from app.rutas.gestionar_compras.registrar_orden_compras.registrar_orden_compras_api        import ocapi
 from app.rutas.gestionar_compras.registrar_factura_compras.registrar_factura_compras_api    import facapi
+from app.rutas.gestionar_compras.comparador_ofertas.comparador_ofertas_api    import cmpapi
 
 app.register_blueprint(pdcapi,    url_prefix=f'{api_v1}{modulo_compras}/registrar-pedido-compras')
 app.register_blueprint(scapi,     url_prefix=f'{api_v1}{modulo_compras}/registrar-solicitud-compras')
@@ -200,6 +205,7 @@ app.register_blueprint(presuapi,  url_prefix=f'{api_v1}{modulo_compras}/registra
 app.register_blueprint(rm_api,    url_prefix=f'{api_v1}{modulo_compras}/recepcion-mercaderias')
 app.register_blueprint(ocapi,     url_prefix=f'{api_v1}{modulo_compras}/registrar-orden-compras')
 app.register_blueprint(facapi,    url_prefix=f'{api_v1}{modulo_compras}/registrar-factura-compras')
+app.register_blueprint(cmpapi,    url_prefix=f'{api_v1}{modulo_compras}/comparador-ofertas')
 
 # ================================
 # Cierre - Rutas y APIs

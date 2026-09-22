@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block titulo %}Modificar Pedido {{ pedido.nro_pedido }}{% endblock %}
+{% block contenido %}
+<style>
+  #tblDetalle input.inp { width:110px; text-align:right; border-radius:6px; border:1px solid var(--pos-border); padding:.3rem .5rem; font-size:.86rem; }
+  .app-card-body .row > [class*="col-md"] { margin-bottom: .85rem; }
+  .app-card-body .row { margin-bottom: -.85rem; }
+  .tbl-empty { text-align:center; color:var(--pos-text-muted); padding:2rem 0 !important; }
+</style>
+<div class="container-fluid px-4">
+  <div class="page-header">
+    <div class="page-header-heading">
+      <span class="page-header-icon" style="background:var(--pos-warning)"><i class="fas fa-edit"></i></span>
+      <div>
+        <h2 class="page-header-title">Modificar Pedido N° {{ pedido.nro_pedido }}</h2>
+        <p class="page-header-subtitle">Solo se pueden modificar los pedidos en estado pendiente.</p>
+      </div>
+    </div>
+    <span class="badge-app is-pendiente">{{ pedido.estado }}</span>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot"></span> Datos del pedido</div>
+    <div class="app-card-body">
+      <div class="row">
+        <div class="col-md-2"><label class="field-label">Nro. Pedido</label><input type="text" class="form-control" value="{{ pedido.nro_pedido }}" readonly></div>
+        <div class="col-md-3"><label class="field-label">Proveedor</label><input type="text" class="form-control" value="{{ pedido.proveedor }}" readonly></div>
+        <div class="col-md-3"><label class="field-label">Solicitante</label><input type="text" class="form-control" value="{{ pedido.funcionario }}" readonly></div>
+        <div class="col-md-2"><label class="field-label">Fecha del pedido</label><input type="date" class="form-control" value="{{ pedido.fecha_pedido }}" readonly></div>
+        <div class="col-md-2"><label class="field-label">Fecha necesaria</label><input type="date" id="txt_fecha_necesaria" class="form-control" value="{{ pedido.fecha_necesaria }}" min="{{ pedido.fecha_pedido }}"></div>
+        <div class="col-md-4">
+          <label class="field-label">Sucursal</label>
+          <select id="cbo_sucursal" class="form-control">
+            {% for s in sucursales %}<option value="{{ s['id_sucursal'] }}" {{ 'selected' if s['id_sucursal'] == pedido.id_sucursal else '' }}>{{ s['descripcion'] }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="field-label">Depósito</label>
+          <select id="cbo_deposito" class="form-control"><option value="">Seleccione</option></select>
+        </div>
+        <div class="col-md-4">
+          <label class="field-label">Tipo de factura</label>
+          <select id="cbo_tipo_factura" class="form-control">
+            <option value="CONTADO" {{ 'selected' if pedido.tipo_factura == 'CONTADO' else '' }}>Contado</option>
+            <option value="CREDITO" {{ 'selected' if pedido.tipo_factura == 'CREDITO' else '' }}>Crédito</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-success)"></span> Agregar producto</div>
+    <div class="app-card-body">
+      <div class="row align-items-end">
+        <div class="col-md-5"><label class="field-label">Producto</label><select id="cbo_producto" class="form-control"><option value="">— Seleccione —</option></select></div>
+        <div class="col-md-2"><label class="field-label">Cantidad</label><input type="number" id="txt_cantidad" min="1" step="any" class="form-control" placeholder="0"></div>
+        <div class="col-md-3"><label class="field-label">Precio unitario</label><input type="number" id="txt_precio" min="0" step="any" class="form-control" placeholder="0"></div>
+        <div class="col-md-2"><button type="button" id="btn_agregar" class="btn-app btn-app-success w-100"><i class="fas fa-plus"></i> Agregar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header"><span class="dot" style="background:var(--pos-primary)"></span> Detalle del pedido
+      <span id="lbl_items" style="margin-left:auto;font-size:.78rem;color:var(--pos-text-muted);font-weight:500;text-transform:none;letter-spacing:0"></span>
+    </div>
+    <div class="app-card-body" style="padding:0">
+      <div class="table-responsive">
+        <table id="tblDetalle" class="table table-hover w-100 mb-0">
+          <thead><tr><th>Código</th><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Precio unit.</th><th class="text-right">Subtotal</th><th class="text-center">Acción</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td colspan="4" class="text-right"><strong>Total</strong></td><td class="text-right"><strong id="lbl_total">0</strong></td><td></td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="app-card-footer">
+      <a href="{{ url_for('pdcmod.pedidos_index') }}" class="btn-app btn-app-secondary"><i class="fas fa-times"></i> Cancelar</a>
+      <button type="button" id="btnGuardar" class="btn-app btn-app-primary"><i class="fas fa-save"></i> Guardar cambios</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function(){
+  const ID_PEDIDO = {{ pedido.id_pedido }};
+  const ID_DEPOSITO = {{ pedido.id_deposito or 'null' }};
+  let detalle = {{ pedido.detalle|tojson }};
+  const fmt = n => Number(n || 0).toLocaleString('es-PY', {maximumFractionDigits: 2});
+  const esc = t => $('<div>').text(t == null ? '' : t).html();
+
+  function cargarDepositos(idSucursal, seleccionar){
+    $('#cbo_deposito').empty().append('<option value="">Seleccione</option>');
+    if(!idSucursal) return;
+    $.getJSON('/api/v1/sucursal-depositos/' + idSucursal, function(res){
+      (res.data || []).forEach(d => $('#cbo_deposito').append(`<option value="${d.id_deposito}">${d.nombre_deposito}</option>`));
+      if(seleccionar) $('#cbo_deposito').val(String(seleccionar));
+    });
+  }
+  cargarDepositos($('#cbo_sucursal').val(), ID_DEPOSITO);
+  $('#cbo_sucursal').on('change', function(){ cargarDepositos($(this).val()); });
+
+  $('#cbo_producto').buscadorSelect({
+    placeholder: 'Buscar producto...',
+    remote: {
+      url: '/api/v1/item/buscar', minLength: 1,
+      mapItem: p => ({ value: p.id_item, text: p.item_code + ' - ' + p.descripcion,
+                       data: { codigo: p.item_code, nombre: p.descripcion, precio: p.precio_unitario } })
+    }
+  });
+  $('#cbo_producto').on('change', function(){
+    const op = $(this).find('option:selected');
+    if($(this).val()){ $('#txt_precio').val(op.data('precio') || ''); $('#txt_cantidad').val('').focus(); }
+  });
+  $('#txt_cantidad').on('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('#btn_agregar').trigger('click'); } });
+
+  function pintar(){
+    const $tb = $('#tblDetalle tbody').empty();
+    if(!detalle.length){ $tb.append('<tr><td colspan="6" class="tbl-empty">Sin productos: agregá al menos uno.</td></tr>'); }
+    let total = 0;
+    detalle.forEach((d, i) => {
+      total += d.cantidad * d.precio;
+      $tb.append(`<tr data-i="${i}"><td><code style="font-size:.78rem">${esc(d.item_code)}</code></td><td>${esc(d.descripcion)}</td>
+        <td class="text-right"><input type="number" class="inp inp-cant" min="0" step="any" value="${d.cantidad}"></td>
+        <td class="text-right"><input type="number" class="inp inp-precio" min="0" step="any" value="${d.precio}"></td>
+        <td class="text-right sub">${fmt(d.cantidad * d.precio)}</td>
+        <td class="text-center"><button type="button" class="btn-app btn-app-danger btn-sm btn-quitar"><i class="fas fa-trash"></i></button></td></tr>`);
+    });
+    $('#lbl_total').text(fmt(total));
+    $('#lbl_items').text(detalle.length + ' ítem' + (detalle.length !== 1 ? 's' : ''));
+  }
+  function actualizarTotales(){
+    let total = 0;
+    $('#tblDetalle tbody tr').each(function(){
+      const d = detalle[$(this).data('i')]; if(!d) return;
+      d.cantidad = parseFloat($(this).find('.inp-cant').val()) || 0;
+      d.precio = parseFloat($(this).find('.inp-precio').val()) || 0;
+      $(this).find('.sub').text(fmt(d.cantidad * d.precio)); total += d.cantidad * d.precio;
+    });
+    $('#lbl_total').text(fmt(total));
+  }
+  $('#tblDetalle').on('input', '.inp', actualizarTotales);
+  $('#tblDetalle').on('click', '.btn-quitar', function(){ detalle.splice($(this).closest('tr').data('i'), 1); pintar(); });
+
+  $('#btn_agregar').on('click', function(){
+    const op = $('#cbo_producto option:selected'), codigo = op.data('codigo');
+    const cantidad = parseFloat($('#txt_cantidad').val()), precio = parseFloat($('#txt_precio').val());
+    if(!$('#cbo_producto').val() || !(cantidad > 0) || !(precio > 0)){ return Swal.fire('Atención', 'Elegí el producto e indicá cantidad y precio mayores a cero.', 'warning'); }
+    if(detalle.some(d => String(d.item_code) === String(codigo))){ return Swal.fire('Duplicado', 'Ese producto ya está en el pedido: modificá su cantidad en la tabla.', 'warning'); }
+    detalle.push({ item_code: codigo, descripcion: op.data('nombre'), cantidad, precio });
+    $('#cbo_producto').val('').trigger('change'); $('#txt_cantidad,#txt_precio').val(''); pintar();
+  });
+
+  $('#btnGuardar').on('click', function(){
+    actualizarTotales();
+    if(!detalle.length){ return Swal.fire('Sin productos', 'El pedido debe tener al menos un producto.', 'error'); }
+    if(detalle.some(d => !(d.cantidad > 0) || !(d.precio > 0))){ return Swal.fire('Datos incompletos', 'Todos los productos deben tener cantidad y precio mayores a cero.', 'warning'); }
+    if(!$('#cbo_deposito').val()){ return Swal.fire('Falta el depósito', 'Seleccioná el depósito.', 'warning'); }
+    const $b = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando…');
+    fetch('/api/v1/gestionar-compras/registrar-pedido-compras/pedidos/' + ID_PEDIDO, {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        cabecera: { id_sucursal: $('#cbo_sucursal').val(), id_deposito: $('#cbo_deposito').val(), tipo_factura: $('#cbo_tipo_factura').val(), fecha_necesaria: $('#txt_fecha_necesaria').val() },
+        detalle: detalle.map(d => ({ item_code: d.item_code, cantidad: d.cantidad, precio: d.precio }))
+      })
+    }).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
+      if(ok && j.success){
+        Swal.fire({ title: '¡Guardado!', text: 'El pedido fue modificado.', icon: 'success', timer: 1600, showConfirmButton: false })
+          .then(() => window.location.href = "{{ url_for('pdcmod.pedidos_index') }}");
+      } else { Swal.fire('No se pudo guardar', (j && j.error) || 'Error', 'error'); }
+    }).catch(() => Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error'))
+      .finally(() => $b.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar cambios'));
+  });
+
+  pintar();
+});
+</script>
+{% endblock %}

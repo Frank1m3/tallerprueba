@@ -18,6 +18,7 @@ class SolicitudDto:
         id_sucursal: Optional[int] = None,
         id_deposito: Optional[int] = None,
         fecha_solicitud: Optional[date] = None,
+        fecha_necesaria: Optional[date] = None,
         detalle_solicitud: Optional[List[SolicitudDetalleDto]] = None
     ):
         self.__id_solicitud_cab = id_solicitud_cab
@@ -26,6 +27,7 @@ class SolicitudDto:
         self.__id_sucursal = id_sucursal
         self.__id_deposito = id_deposito
         self.__fecha_solicitud = fecha_solicitud or date.today()
+        self.__fecha_necesaria = fecha_necesaria
         self.__detalle_solicitud = detalle_solicitud or []
 
     @property
@@ -75,6 +77,13 @@ class SolicitudDto:
         if not isinstance(valor, date):
             raise ValueError("El atributo fecha_solicitud debe ser de tipo 'date'")
         self.__fecha_solicitud = valor
+
+    @property
+    def fecha_necesaria(self) -> Optional[date]:
+        return self.__fecha_necesaria
+    @fecha_necesaria.setter
+    def fecha_necesaria(self, valor: Optional[date]):
+        self.__fecha_necesaria = valor
 
     @property
     def detalle_solicitud(self) -> List[SolicitudDetalleDto]:
